@@ -11,6 +11,8 @@
   // Solo en brivel.app: sin la dirección *.workers.dev, que sería otra copia pública de la web
   "routes": [{ "pattern": "brivel.app", "custom_domain": true }],
   "workers_dev": false,
+  // Borrado diario de las copias sin uso en 12 meses (scheduled en src/index.ts)
+  "triggers": { "crons": ["0 3 * * *"] },
   // Contra abusos (docs/SINCRONIZACION.md): por IP en toda la API, altas por IP y subidas por cuenta. Aproximados, no
   // estrictos; los acotan también el tope de 1 MB por cuenta
   "ratelimits": [

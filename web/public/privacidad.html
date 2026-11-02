@@ -12,12 +12,13 @@
 <main>
   <nav><a href="./">Brivel</a><a href="terminos.html">Términos de uso</a></nav>
   <h1>Política de privacidad</h1>
-  <p class="muted">Última actualización: 2 de noviembre de 2026</p>
+  <p class="muted">Última actualización: 2 de noviembre de 2026 (versión 2: sincronización entre dispositivos)</p>
 
   <div class="box">
-    <p><strong>En resumen:</strong> la web y las apps de Brivel guardan tus datos solo en tu dispositivo. Brivel no
-      tiene cuentas y no recibe tus datos de entrenamiento ni de salud. Para mostrarte la web, Cloudflare trata tu
-      dirección IP. No hay cookies, analítica, publicidad ni rastreadores.</p>
+    <p><strong>En resumen:</strong> la web y las apps de Brivel guardan tus datos en tu dispositivo. Si activas
+      «Usar en otros dispositivos», Brivel guarda además una copia <strong>cifrada</strong> que solo tus dispositivos
+      pueden leer: Brivel no tiene la clave. No hay cuentas con email ni contraseña. Para mostrarte la web, Cloudflare
+      trata tu dirección IP. No hay cookies, analítica, publicidad ni rastreadores.</p>
   </div>
 
   <h2>1. Responsable</h2>
@@ -25,8 +26,8 @@
     Contacto: <a href="mailto:hola@brivel.app">hola@brivel.app</a>.</p>
 
   <h2>2. Datos que se quedan en tu dispositivo</h2>
-  <p>Brivel no recibe estos datos: se guardan y se procesan en tu móvil o en tu navegador, y el plan de entrenamiento
-    se calcula ahí mismo.</p>
+  <p>Se guardan y se procesan en tu móvil o en tu navegador, y el plan de entrenamiento se calcula ahí mismo. Brivel no
+    los recibe, salvo cifrados si activas la sincronización (apartado 4).</p>
   <ul>
     <li><strong>Lo que introduces:</strong> año de nacimiento, nivel, deportes, días y minutos disponibles, objetivo,
       sesiones hechas, pesos levantados y tus respuestas sobre sueño, energía y agujetas.</li>
@@ -59,43 +60,75 @@
       Cloudflare los trata solo el tiempo necesario para las finalidades anteriores, según su DPA.</li>
   </ul>
 
-  <h2>4. Si nos escribes</h2>
+  <h2>4. Sincronización entre dispositivos (opcional)</h2>
+  <p>Solo si la activas en «Usar en otros dispositivos». Sin activarla, nada de esto ocurre.</p>
+  <ul>
+    <li><strong>Qué se guarda:</strong> una copia de los datos del apartado 2 (perfil, objetivo, sesiones hechas, pesos,
+      tus respuestas sobre cómo estás y, si los conectaste, los datos de Apple Salud o Health Connect), salvo la clave y
+      la copia de intervals.icu, que no se suben. Va <strong>cifrada en tu dispositivo</strong> (AES-256-GCM) con una
+      clave que sale de tu código de sincronización y que nunca sale de tus dispositivos: Brivel no puede leerla. Se
+      rellena a bloques de 4 KB para que su tamaño no diga cuánto entrenas.</li>
+    <li><strong>Qué ve el servidor:</strong> un identificador de la copia (un resumen criptográfico de tu código, sin
+      nombre ni email), la versión, la fecha de la última subida y el tamaño de la copia. Para frenar abusos se cuentan
+      las peticiones por dirección IP y por copia durante un minuto; la IP no se guarda en la base de datos.</li>
+    <li><strong>Para qué:</strong> tener los mismos datos en tus dispositivos.</li>
+    <li><strong>Base legal:</strong> tu consentimiento explícito, que das al activarla y que es aparte de estas
+      condiciones (arts. 6.1.a y 9.2.a del RGPD), porque incluye datos de salud. El límite de peticiones por IP, en el
+      interés legítimo en proteger el servicio (art. 6.1.f).</li>
+    <li><strong>Dónde:</strong> en Cloudflare D1 con jurisdicción de la Unión Europea, que garantiza que la base de
+      datos se guarda en la UE. El código que la atiende (Cloudflare Workers) puede ejecutarse fuera de la UE: esas
+      transferencias se amparan en el Marco de Privacidad de Datos UE-EE. UU. y, si dejara de aplicarse, en las
+      cláusulas contractuales tipo, como en el apartado 3. Encargado: Cloudflare, Inc.</li>
+    <li><strong>Cuánto tiempo:</strong> hasta que la borres con «Borrar la copia del servidor», que la elimina al momento,
+      o hasta que pasen 12 meses sin que ningún dispositivo la use (ni para subir ni para bajar), y entonces se borra
+      sola. El historial de recuperación de la base de datos (Time Travel de Cloudflare D1) la puede conservar hasta 7
+      días más; después desaparece.</li>
+    <li><strong>Retirar el consentimiento:</strong> borra la copia. Dejar de sincronizar en un dispositivo no la borra.</li>
+    <li><strong>Tu código:</strong> quien lo tenga puede leer tus datos. Nadie puede recuperarlo: si lo pierdes y no te
+      queda ningún dispositivo con Brivel, la copia se pierde, aunque los datos de cada dispositivo siguen en él.</li>
+    <li><strong>Edad:</strong> solo para mayores de 14 años (art. 7 de la LOPDGDD).</li>
+  </ul>
+
+  <h2>5. Si nos escribes</h2>
   <p>Si escribes a <a href="mailto:hola@brivel.app">hola@brivel.app</a>, usamos tu dirección y tu mensaje solo para
     responderte o atender tu petición, y los borramos cuando ya no hacen falta. Base legal: atender tu petición
     (art. 6.1.f del RGPD) o, si ejerces tus derechos, cumplir la ley (art. 6.1.c).</p>
 
-  <h2>5. Descargas de las apps</h2>
+  <h2>6. Descargas de las apps</h2>
   <p>Las versiones de prueba se descargan desde GitHub, que trata tus datos de acceso según su propia política de
     privacidad.</p>
 
-  <h2>6. Cookies</h2>
+  <h2>7. Cookies</h2>
   <p>Brivel no usa cookies. El almacenamiento local del navegador solo guarda lo que tú introduces para que la web
     funcione: es estrictamente necesario y no se usa para seguirte.</p>
 
-  <h2>7. Edad mínima</h2>
+  <h2>8. Edad mínima</h2>
   <p>Brivel es para mayores de 14 años. Los menores de 14 solo pueden usarla con el consentimiento de sus padres o
     tutores (art. 7 de la LOPDGDD).</p>
 
-  <h2>8. Plan automático</h2>
+  <h2>9. Plan automático</h2>
   <p>El plan de entrenamiento se calcula de forma automática en tu dispositivo. Es una sugerencia: no produce efectos
     jurídicos y tú decides si lo sigues.</p>
 
-  <h2>9. Tus derechos</h2>
+  <h2>10. Tus derechos</h2>
   <p>Tienes derecho a acceder a tus datos, rectificarlos, suprimirlos, oponerte a su tratamiento, limitarlo y llevarlos
-    a otro servicio (arts. 15 a 22 del RGPD). Los datos del apartado 2 los gestionas tú directamente en tu dispositivo.
+    a otro servicio (arts. 15 a 22 del RGPD). Los datos del apartado 2 los gestionas tú directamente en tu dispositivo, y la copia del apartado 4 la borras desde
+    cualquiera de tus dispositivos.
     Para el resto, escribe a <a href="mailto:hola@brivel.app">hola@brivel.app</a>; respondemos en un mes como máximo.
     Ten en cuenta que, sin cuentas, Brivel no puede saber qué datos técnicos son tuyos si no nos das la información
     necesaria para identificarlos (art. 11 del RGPD).</p>
   <p>Si crees que no tratamos bien tus datos, puedes reclamar ante la Agencia Española de Protección de Datos
     (<a href="https://www.aepd.es">www.aepd.es</a>).</p>
 
-  <h2>10. Seguridad</h2>
+  <h2>11. Seguridad</h2>
   <p>La web solo funciona por HTTPS y una política de seguridad de contenidos impide cargar scripts ajenos. En las
-    apps, la clave de intervals.icu se guarda cifrada en el almacén seguro del sistema.</p>
+    apps, la clave de intervals.icu y el código de sincronización se guardan cifrados en el almacén seguro del sistema;
+    en la web, la clave de la sincronización se guarda de forma que ningún script puede leerla, y el código no se guarda.
+    Si alguna vez se filtraran copias cifradas sin sus claves, nadie podría leerlas.</p>
 
-  <h2>11. Cambios</h2>
-  <p>Si esta política cambia, publicaremos aquí la nueva versión con su fecha. Si algún día Brivel ofrece copias en la
-    nube, será opcional y te pediremos el consentimiento antes de subir ningún dato.</p>
+  <h2>12. Cambios</h2>
+  <p>Si esta política cambia, publicaremos aquí la nueva versión con su fecha. Si un cambio afecta a lo que se guarda
+    al sincronizar, te pediremos de nuevo el consentimiento.</p>
 </main>
 </body>
 </html>

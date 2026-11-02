@@ -3,7 +3,7 @@
 import { WebSyncKeys } from "trainsync-shared"
 
 /** Versión de la política de privacidad que se acepta al activar (CUMPLIMIENTO #6: fecha y versión). */
-export const POLICY_VERSION = "2026-11-02"
+export const POLICY_VERSION = "2026-11-02.2"
 
 interface Stored { key: CryptoKey; bearer: string; account: string; consentAt: string; policy: string }
 

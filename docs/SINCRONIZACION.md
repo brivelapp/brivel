@@ -104,7 +104,7 @@ en local respecto a la base se aplica sobre la versión del servidor.
   9/2022) considera improbable el riesgo y no hace falta avisar a los afectados (art. 34.3.a); a la AEPD se notifica
   en 72 h salvo que el riesgo sea improbable, y esa valoración queda escrita.
 - **Información (art. 13):** política de privacidad con responsable y contacto, finalidad, base legal, encargado
-  (Cloudflare), transferencias, conservación (hasta borrar la cuenta; 12 meses sin uso → borrado automático, propuesta)
+  (Cloudflare), transferencias, conservación (hasta borrar la cuenta o 12 meses sin uso → borrado automático, decidido el 2026-11-02)
   y derechos. Esperaba al nombre definitivo (decisión 2026-10-29); ya está: Brivel (2026-10-30).
 - **Derechos:** borrar = `DELETE /api/boveda`; exportar = en el propio dispositivo; acceso = el bloque cifrado y sus
   metadatos. Como el servidor no sabe a quién pertenece cada bloque, una petición por email solo se puede atender si la

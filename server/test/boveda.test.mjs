@@ -2,7 +2,7 @@
 import { after, before, test } from "node:test"
 import assert from "node:assert/strict"
 import { execFileSync, spawn } from "node:child_process"
-import { randomBytes } from "node:crypto"
+import { createHash, randomBytes } from "node:crypto"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -14,7 +14,7 @@ let dev
 
 before(async () => {
   execFileSync("npx", ["wrangler", "d1", "migrations", "apply", "brivel", "--local", "--persist-to", state], { stdio: "ignore" })
-  dev = spawn("npx", ["wrangler", "dev", "--port", String(PORT), "--persist-to", state], { stdio: "ignore", detached: true })
+  dev = spawn("npx", ["wrangler", "dev", "--port", String(PORT), "--persist-to", state, "--test-scheduled"], { stdio: "ignore", detached: true })
   for (let i = 0; i < 60; i++) {
     try {
       if ((await fetch(`http://127.0.0.1:${PORT}/api/estado`)).ok) return
@@ -86,7 +86,24 @@ test("sin CORS: el navegador no deja a otras webs usar la API", async () => {
   assert.equal(res.headers.get("Access-Control-Allow-Origin"), null)
 })
 
-// El último: agota las altas de esta IP (5 por minuto; las pruebas de arriba ya gastaron 3)
+// Lo mismo que hace el servidor: la cuenta es SHA-256 de los bytes del token
+const accountOf = (token) => createHash("sha256").update(Buffer.from(token, "base64url")).digest("hex")
+const sql = (command) => JSON.parse(execFileSync("npx", ["wrangler", "d1", "execute", "brivel", "--local", "--persist-to", state,
+  "--json", "--command", command], { encoding: "utf8" }))[0].results
+
+test("bajar cuenta como uso y a los 12 meses sin uso se borra", async () => {
+  const [old, recent] = [newToken(), newToken()]
+  for (const t of [old, recent]) assert.equal((await call(t, "PUT", { "If-None-Match": "*" }, block())).status, 201)
+  sql(`update bovedas set usado = '2025-01-01T00:00:00.000Z' where id = '${accountOf(old)}'`)
+  sql(`update bovedas set usado = '2026-01-01T00:00:00.000Z' where id = '${accountOf(recent)}'`)
+  assert.equal((await call(recent)).status, 200)  // la baja: ya cuenta como usada hoy
+  assert.ok(sql(`select usado from bovedas where id = '${accountOf(recent)}'`)[0].usado > "2026-01-02")
+  assert.equal((await fetch(`http://127.0.0.1:${PORT}/__scheduled?cron=0+3+*+*+*`)).status, 200)
+  assert.equal((await call(old)).status, 404)
+  assert.equal((await call(recent)).status, 200)
+})
+
+// El último: agota las altas de esta IP (5 por minuto; las pruebas de arriba ya gastaron 5)
 test("límite de altas por IP: 429", async () => {
   const statuses = []
   for (let i = 0; i < 6; i++) statuses.push((await call(newToken(), "PUT", { "If-None-Match": "*" }, block())).status)
