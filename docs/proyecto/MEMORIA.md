@@ -3,7 +3,7 @@
 **Memoria del proyecto**
 **Autor:** Gabriel Miralles Álvarez
 **Fecha:** 21 de octubre de 2026
-**Código y documentación:** repositorio `trainsync` (licencia AGPL-3.0-only)
+**Código y documentación:** repositorio `brivel` (licencia AGPL-3.0-only)
 
 > Esta memoria documenta el motor de Brivel con rigor académico: estado del arte con fuentes verificadas, diseño
 > trazable, validación reproducible y límites declarados, para que cada decisión del producto se pueda revisar.

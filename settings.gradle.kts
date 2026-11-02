@@ -1,4 +1,4 @@
-rootProject.name = "trainsync"
+rootProject.name = "brivel"
 
 pluginManagement {
     repositories {

@@ -10,7 +10,7 @@ const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
 const instrument = Instrument_Sans({ variable: "--font-instrument", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "TrainSync",
+  title: "Brivel",
   description: "Planes de entrenamiento de resistencia gratuitos sobre tus datos de intervals.icu",
   // La app ya es oscura: Dark Reader la dejaba igual pero alteraba los SVG y rompía la hidratación de React
   other: { "darkreader-lock": "true" },

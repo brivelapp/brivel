@@ -1,7 +1,7 @@
 # Brivel
 
-> Antes TrainSync (nombre de trabajo hasta el 2026-10-30). El código conserva `trainsync` en los identificadores
-> internos. Web: [brivel.app](https://brivel.app) · Repositorio: `brivelapp/brivel` (antes `Mrclusterman/trainsync`).
+> Antes TrainSync (nombre de trabajo hasta el 2026-10-30; los identificadores internos cambiaron el 2026-11-02).
+> Web: [brivel.app](https://brivel.app) · Repositorio: `brivelapp/brivel` (antes `Mrclusterman/trainsync`).
 
 Planes de entrenamiento de resistencia gratuitos y open source sobre los datos de intervals.icu.
 
@@ -26,7 +26,7 @@ no salen de él ([`docs/VISION.md`](docs/VISION.md)).
 ./gradlew :androidApp:assembleDebug       # APK de depuración en androidApp/build/outputs/apk/debug/
 ```
 
-La APK de cada push queda como artefacto `trainsync-debug-apk` en GitHub Actions, y las capturas de iOS como `ios-screenshots`.
+La APK de cada push queda como artefacto `brivel-debug-apk` en GitHub Actions, y las capturas de iOS como `ios-screenshots`.
 
 iOS solo compila en macOS: la CI de GitHub (`.github/workflows/build.yml`) genera el proyecto con XcodeGen, lo compila
 para el simulador y pasa los tests del núcleo en iOS en cada push. Necesita JDK 21 y el SDK de Android (compileSdk 37).
@@ -46,7 +46,7 @@ Backend FastAPI monousuario con el motor de entrenamiento (sección 8 de la memo
   la calidad del día cubre el tipo de carga que te falta (aeróbico bajo, alto o anaeróbico, 28 días), sesiones tempo y
   anaeróbicas, vuelta a la base tras 7 días sin entrenar y ritmos de carrera calculados desde tu FC con tus propias carreras.
 
-Lo marcado `[Inferencia]` en `shared/src/commonMain/kotlin/io/github/mrclusterman/trainsync/engine/` no tiene evidencia publicada
+Lo marcado `[Inferencia]` en `shared/src/commonMain/kotlin/app/brivel/engine/` no tiene evidencia publicada
 (ver `docs/MOTOR_ENTRENAMIENTO.md` §11.2).
 
 - Catálogo de 57 sesiones (`shared/.../engine/Catalog.kt`) con rotación semanal: running por distancia
@@ -76,7 +76,7 @@ Swagger UI: http://localhost:8000/docs
 | `POST /auth/register`, `POST /auth/login` | Cuenta con consentimiento explícito y separado para datos de salud y edad mínima de 14 años |
 | `POST /auth/forgot`, `POST /auth/reset`, `POST /auth/verify`, `GET /me`, `POST /me/verify` | Recuperar la contraseña (enlace de 1 h, de un solo uso, cierra las demás sesiones; la respuesta no revela si la cuenta existe) y confirmar el email. Login limitado a 10 intentos por cuenta cada 15 min. Emails por SMTP (`.env.example`); sin SMTP se escriben en el log, solo para desarrollo |
 | `PUT /me/profile`, `GET /me/plan` | Perfil guardado (objetivo, días, actividades, cribado del ACSM) y plan de la semana; la adherencia de cada bloque sale de las sesiones registradas |
-| `GET /me/goals`, `POST /me/goals`, `PUT /me/goals/{id}`, `DELETE /me/goals/{id}` | Carreras objetivo creadas en la app (nombre, deporte, fecha, distancia, prioridad A/B/C, trail). Se copian al calendario de intervals.icu (RACE_A/B/C, `external_id` trainsync-goal-…) y se borran con él. El plan de carrera elige entre estas y las del calendario: prioridad A > B > C y, a igual prioridad, la más cercana |
+| `GET /me/goals`, `POST /me/goals`, `PUT /me/goals/{id}`, `DELETE /me/goals/{id}` | Carreras objetivo creadas en la app (nombre, deporte, fecha, distancia, prioridad A/B/C, trail). Se copian al calendario de intervals.icu (RACE_A/B/C, `external_id` brivel-goal-…) y se borran con él. El plan de carrera elige entre estas y las del calendario: prioridad A > B > C y, a igual prioridad, la más cercana |
 | `POST /me/week/move`, `POST /me/week/day`, `DELETE /me/week` | Mover una sesión a otro día, "no puedo este día" o "puedo entrenar": la semana se recalcula desde hoy; los días pasados no cambian |
 | `POST /me/sessions`, `POST /me/readiness` | Marcar una sesión como hecha; estado del día sin reloj |
 | `PUT /me/intervals`, `POST /me/plan/today/send` | Vincular intervals.icu una vez (clave cifrada con AES-256-GCM) y enviar al reloj las sesiones de hoy. Con `{"sport": …}`, solo la que vas a hacer: la planificada o una alternativa en otro de tus deportes (mismo trabajo aeróbico), que ocupa su sitio en el calendario |
@@ -96,7 +96,7 @@ npm run dev                 # http://localhost:3000 (backend en :8000)
 npm run gen:types           # regenera src/lib/api-types.ts desde el OpenAPI del backend
 ```
 
-`TRAINSYNC_API_URL` cambia la URL del backend (por defecto `http://localhost:8000`).
+`BRIVEL_API_URL` cambia la URL del backend (por defecto `http://localhost:8000`).
 
 ## Tests
 

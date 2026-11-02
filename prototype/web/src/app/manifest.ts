@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "TrainSync",
-    short_name: "TrainSync",
+    name: "Brivel",
+    short_name: "Brivel",
     description: "Tu plan de entrenamiento semanal, gratis y de código abierto",
     lang: "es",
     start_url: "/salud",

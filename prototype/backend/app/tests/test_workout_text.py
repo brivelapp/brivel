@@ -20,7 +20,7 @@ def test_duration():
     assert [w.duration(m) for m in (10, 0.5, 1.5, 0.17, 2.25, 30.0167)] == ["10m", "30s", "1m30", "10s", "2m15", "30m"]
 
 
-def test_hr_targets_are_trainsync_bpm_as_percent_of_max_hr():
+def test_hr_targets_are_brivel_bpm_as_percent_of_max_hr():
     run = {"sport": "running", "type": "aerobic", "id": "R-Z2", "hr_cap": 144}
     # Z4 de running = 95-100 % de LTHR 174 = 165,3-174 ppm = 86,1-90,6 % de 192
     assert w.target("Z4", run, PROFILE, "hr") == "86.1-90.6% HR"
@@ -87,7 +87,7 @@ def test_every_catalog_session_converts(entry):
 def test_event():
     session = e.build_session("aerobic", "cycling", PROFILE)
     ev = w.event(session, "2026-10-20", PROFILE)
-    assert ev["external_id"] == "trainsync-2026-10-20" and ev["type"] == "Ride" and ev["category"] == "WORKOUT"
+    assert ev["external_id"] == "brivel-2026-10-20" and ev["type"] == "Ride" and ev["category"] == "WORKOUT"
     assert ev["start_date_local"] == "2026-10-20T00:00:00" and ev["moving_time"] == session["duration_min"] * 60
 
 

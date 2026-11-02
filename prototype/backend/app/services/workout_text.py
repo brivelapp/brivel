@@ -1,4 +1,4 @@
-"""Sesión de TrainSync → entrenamiento estructurado de intervals.icu, que lo pasa al reloj o al ciclocomputador.
+"""Sesión de Brivel → entrenamiento estructurado de intervals.icu, que lo pasa al reloj o al ciclocomputador.
 
 Cada paso lleva un objetivo que intervals.icu convierte en límites (el reloj avisa al salirse del rango).
 Sintaxis (forum.intervals.icu/t/workout-builder/1163): pasos con "- ", duración "10m"/"30s"/"1m30",
@@ -70,8 +70,8 @@ def target(zone: str, session: dict, profile: Profile, mode: str) -> str | None:
     if mode == "pace":
         fast, slow = RUN_PACE_ZONES[zone]
         return f"{pace(profile.run_pace * slow)}-{pace(profile.run_pace * fast)}/km Pace"
-    # FC: pulsaciones de las zonas de TrainSync expresadas en % de la FC máx., porque intervals.icu no acepta ppm
-    # y "% LTHR" usaría la LTHR guardada en intervals.icu, que puede no ser la que usa TrainSync
+    # FC: pulsaciones de las zonas de Brivel expresadas en % de la FC máx., porque intervals.icu no acepta ppm
+    # y "% LTHR" usaría la LTHR guardada en intervals.icu, que puede no ser la que usa Brivel
     lo_bpm, hi_bpm = bounds
     pct = lambda bpm: f"{100 * bpm / profile.max_hr:.1f}".rstrip("0").rstrip(".")
     return f"{pct(lo_bpm)}-{pct(hi_bpm)}% HR"
@@ -110,14 +110,14 @@ def event(session: dict, day: str, profile: Profile, key: str | None = None) -> 
     intervals.icu ignora un uid propio y asigna el suyo (comprobado 2026-10-20); external_id sí se respeta.
     """
     return {"category": "WORKOUT", "start_date_local": f"{day}T00:00:00", "type": SPORT_TYPES[session["sport"]],
-            "name": f"TrainSync · {session['name']}", "description": describe(session, profile),
+            "name": f"Brivel · {session['name']}", "description": describe(session, profile),
             "moving_time": session["duration_min"] * 60,
-            "external_id": f"trainsync-{day}" + (f"-{key}" if key else "")}  # varias sesiones el mismo día: una por clave
+            "external_id": f"brivel-{day}" + (f"-{key}" if key else "")}  # varias sesiones el mismo día: una por clave
 
 
 def strength_event(session: dict, day: str) -> dict:
     """Fuerza como entrenamiento de pesas: lista de ejercicios sin guiones, para que no se lea como pasos con objetivo."""
     text = "\n".join([*(f"• {e}" for e in session["exercises"]), "", session["notes"]])
     return {"category": "WORKOUT", "start_date_local": f"{day}T00:00:00", "type": "WeightTraining",
-            "name": f"TrainSync · {session['name']}", "description": text, "moving_time": session["duration_min"] * 60,
-            "external_id": f"trainsync-{day}-strength"}
+            "name": f"Brivel · {session['name']}", "description": text, "moving_time": session["duration_min"] * 60,
+            "external_id": f"brivel-{day}-strength"}

@@ -257,7 +257,7 @@ def goal_event(g: db.RaceGoal) -> dict:
     """La carrera como evento del calendario de intervals.icu (llega al reloj por su sincronización)."""
     sport_type = "TrailRun" if g.trail and g.sport == "running" else GOAL_TYPES[g.sport]
     event = {"category": f"RACE_{g.priority}", "start_date_local": f"{g.date.isoformat()}T00:00:00", "type": sport_type,
-             "name": g.name, "external_id": f"trainsync-goal-{g.id}"}
+             "name": g.name, "external_id": f"brivel-goal-{g.id}"}
     return event | ({"distance": round(g.distance_km * 1000)} if g.distance_km else {})
 
 
@@ -277,7 +277,7 @@ def remove_goal_event(client: IntervalsClient | None, g: db.RaceGoal) -> None:
         return
     try:
         for event in client.events(g.date, g.date):
-            if event.get("external_id") == f"trainsync-goal-{g.id}":
+            if event.get("external_id") == f"brivel-goal-{g.id}":
                 client.delete_event(event["id"])
     except Exception:  # si falla, la copia queda en intervals.icu y se puede borrar allí
         pass

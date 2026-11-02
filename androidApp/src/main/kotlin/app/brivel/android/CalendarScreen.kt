@@ -1,0 +1,106 @@
+package app.brivel.android
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import app.brivel.app.CalendarDay
+import app.brivel.app.BrivelApp
+import app.brivel.app.dateLabel
+import app.brivel.app.WEEKDAY_SHORT
+import app.brivel.app.systemToday
+import kotlinx.datetime.number
+
+/** Calendario mensual: el pasado muestra lo que hiciste de verdad y el futuro, el plan; el día elegido, debajo (punto 4 de la revisión). */
+@Composable
+fun CalendarTab(app: BrivelApp, version: Int, act: Act) {
+    val now = remember { systemToday() }
+    var year by remember { mutableIntStateOf(now.year) }
+    var month by remember { mutableIntStateOf(now.month.number) }
+    val screen = remember(version, year, month) { app.month(year, month) }
+    var selected by remember { mutableStateOf(now.toString()) }  // el día elegido se ve debajo del mes; hoy al abrir
+
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { if (month == 1) { month = 12; year -= 1 } else month -= 1 }) { Glyph(R.drawable.ic_chevron_left, label = "Mes anterior") }
+            Text(screen.title, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
+            IconButton(onClick = { if (month == 12) { month = 1; year += 1 } else month += 1 }) { Glyph(R.drawable.ic_chevron_right, label = "Mes siguiente") }
+        }
+        Row {
+            listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN").forEach {
+                Text(WEEKDAY_SHORT[it]!!, color = Palette.muted, fontSize = 12.sp, modifier = Modifier.weight(1f).padding(start = 6.dp))
+            }
+        }
+        for (week in screen.weeks) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                week.forEach { d -> DayCell(d, d.date == selected, Modifier.weight(1f)) { selected = d.date } }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Glyph(R.drawable.ic_sport_running, 16.dp, Palette.muted)
+            Text("planificada", fontSize = 13.sp, color = Palette.muted)
+            Spacer(Modifier.width(8.dp))
+            Glyph(R.drawable.ic_check, 16.dp, Palette.ok)
+            Text("hecha", fontSize = 13.sp, color = Palette.muted)
+        }
+        val day = remember(version, selected) { app.day(selected) }
+        Text(dateLabel(selected), fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 8.dp))
+        screen.weeks.flatten().firstOrNull { it.date == selected }?.done?.forEach { a ->
+            Module(background = Palette.okSoft) {
+                SectionTitle(a.title)
+                Secondary(listOfNotNull("${a.minutes} min", a.start?.let { "a las $it" }).joinToString(" "))
+            }
+        }
+        key(selected) { DayContent(app, day, app.linkedAthlete != null, act, today = day.isToday) }  // sin arrastrar lo abierto de otro día
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun DayCell(d: CalendarDay, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(12.dp)
+    Column(
+        modifier.aspectRatio(0.8f).clip(shape)
+            .background(if (selected) Palette.okSoft else if (d.inMonth) Palette.surface else Palette.bg)
+            .then(if (d.isToday) Modifier.border(2.dp, Palette.ok, shape) else Modifier)
+            .clickable(onClick = onClick).padding(4.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Text("${d.dayOfMonth}", fontFamily = Mono, fontSize = 12.sp, color = if (d.inMonth) Palette.text else Palette.muted)
+        Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+            d.planned.take(2).forEach { Glyph(sportIcon(it.sport), 14.dp, Palette.muted) }
+        }
+        val done = d.done.map { it.sport } + d.manual
+        if (done.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
+            Glyph(R.drawable.ic_check, 14.dp, Palette.ok, label = "Hecha")
+            if (done.size > 1) Text("${done.size}", color = Palette.ok, fontSize = 11.sp, fontFamily = Mono)
+        }
+    }
+}
+

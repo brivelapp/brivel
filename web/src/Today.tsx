@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { WebApp } from "trainsync-shared"
+import { WebApp } from "brivel-shared"
 import type { DayView, LiftHint, PlanItem, Reason, TodayScreen, Tone } from "./types"
 import { SyncCard } from "./Sync"
 import { clearKeys, loadKeys } from "./sync"

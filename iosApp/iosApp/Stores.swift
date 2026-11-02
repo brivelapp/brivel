@@ -15,7 +15,7 @@ final class DefaultsStore: KeyValueStore {
 
 /// La clave de intervals.icu en el Llavero de iOS, solo en este dispositivo y sin copia en iCloud.
 final class KeychainStore: KeyValueStore {
-    private let service = "io.github.mrclusterman.trainsync"
+    private let service = "app.brivel"
 
     private func query(_ key: String) -> [String: Any] {
         [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: key]

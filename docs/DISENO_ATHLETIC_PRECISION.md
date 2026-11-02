@@ -1,14 +1,14 @@
 <!-- Pegado desde Claude Docs el 2026-10-19; las tablas llegaron aplanadas (una celda por línea). -->
 
-# TrainSync — Sistema de Diseño Frontend
+# Brivel — Sistema de Diseño Frontend
 19 oct 2026 · @Gabriel Miralles Alvarez
 Contexto y decisión de estilo
-TrainSync es una app para atletas amateurs serios: corredores, ciclistas, triatletas y duatletas que leen su HRV, saben qué es el TSB y entrenan con objetivo. El frontend web es la fase de desarrollo actual, con la app móvil (React Native + Expo) como destino final, por lo que el diseño es mobile-first desde el principio.
+Brivel es una app para atletas amateurs serios: corredores, ciclistas, triatletas y duatletas que leen su HRV, saben qué es el TSB y entrenan con objetivo. El frontend web es la fase de desarrollo actual, con la app móvil (React Native + Expo) como destino final, por lo que el diseño es mobile-first desde el principio.
 iOS 26 / Liquid Glass — por qué no se usa directamente
 Apple presentó Liquid Glass en WWDC 2025: un material traslúcido que refleja y refracta su entorno, descrito como el cambio visual más significativo desde iOS 7. Es el lenguaje de diseño nativo de iOS 26 e iPadOS 26, respaldado por un motor de renderizado propio con aceleración de hardware.
-Implementarlo puramente en web tiene tres problemas concretos para TrainSync:
+Implementarlo puramente en web tiene tres problemas concretos para Brivel:
 1. Rendimiento móvil. Los efectos de refracción requieren SVG filters complejos o shaders. En un dashboard con métricas actualizándose, esto genera drops de frames en gamas medias — exactamente el hardware que usan la mayoría de atletas.
-2. Legibilidad de datos. TrainSync muestra números críticos: bpm, TSS, ritmos, series, zonas. Los fondos translúcidos que cambian según el wallpaper degradan la legibilidad. Un atleta mirando su FC objetivo en mitad de un intervalo no puede tener ambigüedad visual.
+2. Legibilidad de datos. Brivel muestra números críticos: bpm, TSS, ritmos, series, zonas. Los fondos translúcidos que cambian según el wallpaper degradan la legibilidad. Un atleta mirando su FC objetivo en mitad de un intervalo no puede tener ambigüedad visual.
 3. Identidad propia. Copiar Apple hace que la app parezca un template de iOS, no un producto con personalidad reconocible.
 La solución adoptada
 Tomar los principios de iOS 26 que funcionan en web — jerarquía de contenido, profundidad, fluidez, controles que se adaptan al scroll — y construir sobre ellos una identidad visual propia. El glassmorphism se usa de forma controlada y exclusivamente en navegación y modales, no en tarjetas de datos.
@@ -232,13 +232,13 @@ React Native / Expo (móvil)
 Iconografía
 Lucide Icons (stroke-width="1.5", no 2) para iconos generales. Iconos de deporte como SVG custom: silueta estilizada para running, bicicleta en dos trazos para ciclismo, ola para natación, combinación para triatlón y duatlón. No usar emoji como iconos de interfaz.
 Lo que nunca debe aparecer y checklist
-Prohibido en TrainSync
+Prohibido en Brivel
 • Gradientes de arcoíris o múltiples colores en un mismo elemento
 • Ilustraciones de personajes corriendo o figuras de stock
 • Sombras de colores muy saturados tipo «neón de gaming»
 • Botones con gradientes de verde a azul (cliché de fitness app)
 • El color morado como acento principal — el más sobreutilizado en apps de salud
-• Animaciones de celebración excesivas (confetti) al completar una sesión. TrainSync celebra con un mensaje limpio y los datos del esfuerzo.
+• Animaciones de celebración excesivas (confetti) al completar una sesión. Brivel celebra con un mensaje limpio y los datos del esfuerzo.
 • Mezcla de estilos: si una pantalla es flat, todas lo son; si usa glassmorphism, solo en los elementos definidos
 • Glassmorphism en tarjetas de datos — solo en nav y modales
 • Emoji como iconos de interfaz

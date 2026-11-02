@@ -979,7 +979,7 @@ Total de semanas disponibles → dividir en:
 ## 10. Estructura de Directorios del Proyecto
 
 ```
-trainsync/
+brivel/
 ├── docker-compose.yml
 ├── docker-compose.dev.yml          # Overrides para desarrollo
 ├── .env.example

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import type { WebApp } from "trainsync-shared"
+import type { WebApp } from "brivel-shared"
 import { clearKeys, saveKeys } from "./sync"
 
 type View = "idle" | "create" | "join" | "code"

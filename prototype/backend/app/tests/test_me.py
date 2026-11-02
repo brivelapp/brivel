@@ -137,7 +137,7 @@ def test_link_intervals_and_send_today(monkeypatch):
     if r.status_code == 409:  # hoy es domingo: día de descanso
         return
     assert r.status_code == 200 and posted
-    assert all(e["external_id"].startswith(f"trainsync-{date.today().isoformat()}-") for e in posted)
+    assert all(e["external_id"].startswith(f"brivel-{date.today().isoformat()}-") for e in posted)
     assert {e["type"] for e in posted} <= {"WeightTraining", "Walk", "Ride"}
     assert "clave-de-pruebas" not in json.dumps(api.get("/me/export", headers=h).json())
 
@@ -245,5 +245,5 @@ def test_send_the_alternative_you_will_do(monkeypatch):
     alt = planned["alternatives"][0]
     r = api.post("/me/plan/today/send", json={"sport": alt["sport"]}, headers=h)
     assert r.status_code == 200 and len(posted) == 1  # solo la elegida
-    assert posted[0]["external_id"] == f"trainsync-{date.today().isoformat()}-{planned['sport']}"  # en su sitio
+    assert posted[0]["external_id"] == f"brivel-{date.today().isoformat()}-{planned['sport']}"  # en su sitio
     assert api.post("/me/plan/today/send", json={"sport": "swimming_pool"}, headers=h).status_code == 404

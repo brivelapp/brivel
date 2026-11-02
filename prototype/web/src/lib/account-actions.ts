@@ -104,7 +104,7 @@ export async function readinessAction(_: FormState, form: FormData): Promise<For
 export async function sendHealthTodayAction(sport: string | null): Promise<FormState> {
   try {
     const sent = await api<{ name: string }[]>("/me/plan/today/send", { method: "POST", body: JSON.stringify({ sport }) });
-    return { message: `Enviado a intervals.icu: ${sent.map((s) => s.name.replace("TrainSync · ", "")).join(", ")}` };
+    return { message: `Enviado a intervals.icu: ${sent.map((s) => s.name.replace("Brivel · ", "")).join(", ")}` };
   } catch (e) { return fail(e); }
 }
 

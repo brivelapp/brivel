@@ -81,7 +81,7 @@ def test_send_today(monkeypatch):
     req = sent[0]
     assert req.url.path.endswith("/events/bulk") and req.url.params["upsert"] == "true"
     body = json.loads(req.content)[0]
-    assert body["external_id"] == f"trainsync-{TODAY.isoformat()}" and body["category"] == "WORKOUT"
+    assert body["external_id"] == f"brivel-{TODAY.isoformat()}" and body["category"] == "WORKOUT"
     assert "- " in body["description"]
     alts = api.get("/plan/today", headers=h).json()["alternatives"]
     if alts:  # la alternativa elegida ocupa el sitio de la principal en el calendario
@@ -201,7 +201,7 @@ def test_goals_are_copied_to_the_intervals_calendar_and_removed_with_them(monkey
             "priority": "A", "distance_km": 51.5}
     created = api.post("/me/goals", json=race, headers=h).json()
     assert created["synced"] is True
-    copy = calendar[f"trainsync-goal-{created['id']}"]
+    copy = calendar[f"brivel-goal-{created['id']}"]
     assert copy["category"] == "RACE_A" and copy["distance"] == 51500 and copy["start_date_local"].startswith(race["date"])
     # La copia no duplica el objetivo: el plan de carrera lo lee de la app, con su deporte real (triatlón)
     assert api.get("/state", headers=h).json()["goal"]["sport"] == "triathlon"
@@ -238,7 +238,7 @@ def test_edit_goal_updates_it_and_moves_its_calendar_copy(monkeypatch):
     later = (TODAY + timedelta(weeks=8)).isoformat()
     r = api.put(f"/me/goals/{goal_id}", json=race | {"date": later, "priority": "A", "name": "10K Alicante"}, headers=h)
     assert r.status_code == 200 and r.json()["synced"] is True and r.json()["priority"] == "A"
-    copy = calendar[f"trainsync-goal-{goal_id}"]
+    copy = calendar[f"brivel-goal-{goal_id}"]
     assert len(calendar) == 1 and copy["start_date_local"].startswith(later) and copy["category"] == "RACE_A"
     assert api.put(f"/me/goals/{goal_id}", json=race | {"date": (TODAY - timedelta(1)).isoformat()},
                    headers=h).status_code == 422

@@ -577,7 +577,7 @@ con Garmin; Garmin no publica la fórmula. Verificado solo que los objetivos pue
 ## 14. Envío al reloj
 
 `POST /plan/today/send` crea la sesión de hoy en el calendario de intervals.icu (`/events/bulk?upsert=true` con
-`external_id` = `trainsync-AAAA-MM-DD`; reenviar la actualiza) y intervals.icu la pasa al reloj si está activado.
+`external_id` = `brivel-AAAA-MM-DD`; reenviar la actualiza) y intervals.icu la pasa al reloj si está activado.
 
 - **Una métrica por sesión:** según usuarios del foro de intervals.icu, al reloj solo llega la métrica principal; mezclar
   ritmo y FC pierde la segunda. [Práctica: foro de intervals.icu, sin confirmar por el desarrollador]
@@ -618,7 +618,7 @@ da una sesión por hecha.
 
 ## 15.2 Reglas añadidas en el núcleo de Kotlin (2026-10-29)
 
-Desde el 2026-10-29 el motor vive solo en `shared/src/commonMain/kotlin/io/github/mrclusterman/trainsync/engine/`; el de
+Desde el 2026-10-29 el motor vive solo en `shared/src/commonMain/kotlin/app/brivel/engine/`; el de
 Python del prototipo queda congelado. Cada regla está cubierta por `ValidationTest` (docs/proyecto/VALIDACION.md).
 
 | Regla | Dónde | Evidencia |

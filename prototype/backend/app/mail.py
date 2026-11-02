@@ -8,7 +8,7 @@ import os
 import smtplib
 from email.message import EmailMessage
 
-log = logging.getLogger("trainsync.mail")
+log = logging.getLogger("brivel.mail")
 APP_URL = os.getenv("APP_URL", "http://localhost:3000")
 
 
@@ -18,7 +18,7 @@ def send(to: str, subject: str, body: str) -> None:
         log.warning("SMTP_HOST sin configurar: email no enviado a %s\n%s\n\n%s", to, subject, body)
         return
     msg = EmailMessage()
-    msg["From"], msg["To"], msg["Subject"] = os.getenv("MAIL_FROM", "TrainSync <no-reply@localhost>"), to, subject
+    msg["From"], msg["To"], msg["Subject"] = os.getenv("MAIL_FROM", "Brivel <no-reply@localhost>"), to, subject
     msg.set_content(body)
     try:
         with smtplib.SMTP(host, int(os.getenv("SMTP_PORT", "587")), timeout=10) as smtp:
@@ -31,13 +31,13 @@ def send(to: str, subject: str, body: str) -> None:
 
 
 def verify_email(to: str, token: str) -> None:
-    send(to, "Confirma tu email en TrainSync",
+    send(to, "Confirma tu email en Brivel",
          f"Confirma que este email es tuyo:\n\n{APP_URL}/verificar?token={token}\n\n"
-         "El enlace caduca en 48 horas. Si no has creado una cuenta en TrainSync, ignora este mensaje.")
+         "El enlace caduca en 48 horas. Si no has creado una cuenta en Brivel, ignora este mensaje.")
 
 
 def reset_password(to: str, token: str) -> None:
-    send(to, "Cambia tu contraseña de TrainSync",
+    send(to, "Cambia tu contraseña de Brivel",
          f"Para elegir una contraseña nueva:\n\n{APP_URL}/entrar/nueva-clave?token={token}\n\n"
          "El enlace caduca en 1 hora y deja de valer en cuanto cambies la contraseña. "
          "Si no lo has pedido tú, ignora este mensaje: tu contraseña sigue igual.")

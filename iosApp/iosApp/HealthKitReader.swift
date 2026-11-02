@@ -44,7 +44,7 @@ final class HealthKitReader {
     }
 
     /// Lee los últimos `days` días y los guarda en la app. Lo que no tenga permiso llega vacío.
-    func sync(_ core: Shared.TrainSyncApp, days: Int = 365) async throws {
+    func sync(_ core: Shared.BrivelApp, days: Int = 365) async throws {
         let to = Date()
         let from = Calendar.current.date(byAdding: .day, value: -days, to: to) ?? to
         let bpm = HKUnit.count().unitDivided(by: .minute())

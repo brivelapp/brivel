@@ -1,8 +1,8 @@
 // Sin conexión (replica/fixes.md #6): las páginas de la app se guardan al verlas y, sin red, se muestra la última copia.
 // Solo GET: las acciones (marcar hecha, mover…) necesitan conexión. Las páginas guardadas tienen datos de salud: se
 // borran al ir a /entrar (cerrar sesión, sesión caducada o cuenta borrada).
-const PAGES = "trainsync-pages-v1";
-const ASSETS = "trainsync-assets-v1";
+const PAGES = "brivel-pages-v1";
+const ASSETS = "brivel-assets-v1";
 const SAVED = ["/", "/plan", "/salud", "/salud/perfil"];
 
 self.addEventListener("install", () => self.skipWaiting());

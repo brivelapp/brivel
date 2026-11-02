@@ -1,5 +1,5 @@
 {
-  "name": "trainsync-web",
+  "name": "brivel-web",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
   "dependencies": {
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "trainsync-shared": "file:../shared/build/dist/js/productionLibrary"
+    "brivel-shared": "file:../shared/build/dist/js/productionLibrary"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",

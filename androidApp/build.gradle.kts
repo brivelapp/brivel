@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "io.github.mrclusterman.trainsync.android"
+    namespace = "app.brivel.android"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "io.github.mrclusterman.trainsync"
+        applicationId = "app.brivel"
         minSdk = 28  // Health Connect
         targetSdk = 36
         versionCode = 1

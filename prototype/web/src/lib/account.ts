@@ -6,7 +6,7 @@ export type HealthDay = components["schemas"]["HealthDay"];
 export type HealthStrength = components["schemas"]["HealthStrength"];
 export type HealthCardio = components["schemas"]["HealthCardio"];
 
-const API_URL = process.env.TRAINSYNC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.BRIVEL_API_URL ?? "http://localhost:8000";
 export const TOKEN_COOKIE = "ts_session";
 
 export class ApiError extends Error {

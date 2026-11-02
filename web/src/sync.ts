@@ -1,6 +1,6 @@
 // Llaves de la sincronización en IndexedDB (docs/SINCRONIZACION.md, auditoría 1). La clave es una CryptoKey no
 // exportable: IndexedDB la guarda tal cual y ningún script puede leer sus bytes. El código no se guarda.
-import { WebSyncKeys } from "trainsync-shared"
+import { WebSyncKeys } from "brivel-shared"
 
 /** Versión de la política de privacidad que se acepta al activar (CUMPLIMIENTO #6: fecha y versión). */
 export const POLICY_VERSION = "2026-11-02.2"

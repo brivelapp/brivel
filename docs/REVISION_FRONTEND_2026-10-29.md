@@ -11,7 +11,7 @@ la web) y `docs/VISION.md` §5 (estructura Hoy · Calendario · Progreso · Perf
 | Problema | Dónde | Regla incumplida |
 |---|---|---|
 | Sin tipografía propia: fuente del sistema y una monoespaciada genérica | Las dos apps (`Theme.kt`: `FontFamily.Monospace`) | DISENO: DM Mono en números, Geist en interfaz, Instrument Sans en textos |
-| Iconos de navegación con caracteres sueltos (◉ ▦ ↗ ●) en Android; en iOS, símbolos genéricos (sol, persona) | `MainActivity.kt`, `TrainSyncApp.swift` | "Nada de emoji ni caracteres como iconos"; iconos con identidad |
+| Iconos de navegación con caracteres sueltos (◉ ▦ ↗ ●) en Android; en iOS, símbolos genéricos (sol, persona) | `MainActivity.kt`, `BrivelApp.swift` | "Nada de emoji ni caracteres como iconos"; iconos con identidad |
 | Deportes con un punto de color, no con un icono | Hoy, Calendario, Progreso | Iconos de deporte propios (silueta corriendo, bici en dos trazos, ola…) |
 | La fuerza es morada (#B388FF) | Calendario, Hoy | "El morado nunca como acento" |
 | Las dos apps no se parecen: Android usa Material 3 por defecto y iOS los controles del sistema, con tamaños y espaciados distintos | Todas | Una sola identidad |
@@ -66,7 +66,7 @@ lenguaje llano, motivos con etiqueta de evidencia.
 
 | Pregunta | Decisión |
 |---|---|
-| Identidad | **Una nueva** (Athletic Precision queda como antecedente). Tres direcciones propuestas en el lienzo "TrainSync · direcciones visuales": A · Señal (instrumento monocromo con señal amarilla), B · Pulso (compañero de salud, tonos de bosque y piel, formas suaves), C · Cuaderno (diario editorial, cifras grandes, filetes y un rojo), y siete más (D–J). **Elegida: B · Pulso afinado (B+)**, con la lista de pasos con chip de zona de A y las barras de rango de E para Progreso. Sistema en `DISENO_PULSO.md` |
+| Identidad | **Una nueva** (Athletic Precision queda como antecedente). Tres direcciones propuestas en el lienzo "Brivel · direcciones visuales": A · Señal (instrumento monocromo con señal amarilla), B · Pulso (compañero de salud, tonos de bosque y piel, formas suaves), C · Cuaderno (diario editorial, cifras grandes, filetes y un rojo), y siete más (D–J). **Elegida: B · Pulso afinado (B+)**, con la lista de pasos con chip de zona de A y las barras de rango de E para Progreso. Sistema en `DISENO_PULSO.md` |
 | Plataformas | **Misma identidad, controles nativos**: colores, fuentes, iconos y componentes comunes; navegación, menús y gestos de cada sistema |
 | Modo claro | **Oscuro y claro desde ya**, según el ajuste del móvil |
 | Tipografía | **Propia, empaquetada** en la app (licencia OFL, sin peticiones a internet): Figtree e IBM Plex Mono |

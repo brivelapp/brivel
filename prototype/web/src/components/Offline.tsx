@@ -14,7 +14,7 @@ export function Offline() {
   const online = useSyncExternalStore(subscribe, () => navigator.onLine, () => true);
   const path = usePathname();
   useEffect(() => {  // cerrar sesión o borrar la cuenta lleva a /entrar sin recargar: el SW no lo ve
-    if (path.startsWith("/entrar") && "caches" in window) caches.delete("trainsync-pages-v1").catch(() => {});
+    if (path.startsWith("/entrar") && "caches" in window) caches.delete("brivel-pages-v1").catch(() => {});
   }, [path]);
   useEffect(() => {
     if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {

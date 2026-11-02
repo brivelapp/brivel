@@ -11,6 +11,6 @@ export async function GET() {
     throw e;
   }
   return new Response(JSON.stringify(data, null, 2), {
-    headers: { "Content-Type": "application/json", "Content-Disposition": 'attachment; filename="trainsync-datos.json"' },
+    headers: { "Content-Type": "application/json", "Content-Disposition": 'attachment; filename="brivel-datos.json"' },
   });
 }

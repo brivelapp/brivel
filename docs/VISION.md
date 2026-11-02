@@ -187,9 +187,10 @@ peticiones al día, 5 GB de D1; [`SINCRONIZACION.md`](SINCRONIZACION.md)); solo 
 
 ## 12. Nombre
 
-**Decidido el 2026-10-30: Brivel** (*brío* + «-vel»). Sustituye a TrainSync, que queda en los identificadores internos
-(paquete `io.github.mrclusterman.trainsync`, `applicationId`, bundle id, claves de guardado, repositorio): cambiarlos
-instalaría otra app y perdería los datos del móvil.
+**Decidido el 2026-10-30: Brivel** (*brío* + «-vel»). Sustituye a TrainSync. Hasta el 2026-11-02 el nombre antiguo
+siguió en los identificadores internos; ese día pasaron todos a Brivel: paquete y `applicationId`/bundle id
+`app.brivel` (antes `io.github.mrclusterman.trainsync`), claves de guardado `brivel.*` y repositorio `brivelapp/brivel`.
+La app se instala como una nueva: los datos de la anterior no pasan solos (se pueden llevar con la sincronización).
 
 Criterios: palabra inventada o real, neutra en español e inglés, dos sílabas como mucho y `.app` libre.
 

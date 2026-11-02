@@ -10,7 +10,7 @@ from datetime import date, datetime, timezone
 from sqlalchemy import JSON, Date, DateTime, ForeignKey, Integer, String, UniqueConstraint, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///data/trainsync.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///data/brivel.db")
 if DATABASE_URL.startswith("sqlite:///") and not DATABASE_URL.endswith(":memory:"):
     os.makedirs(os.path.dirname(DATABASE_URL.removeprefix("sqlite:///")) or ".", exist_ok=True)
 engine = create_engine(DATABASE_URL)

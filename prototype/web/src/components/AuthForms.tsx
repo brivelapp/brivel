@@ -44,11 +44,11 @@ export function AuthForms() {
           {/* Casillas sin marcar y consentimiento de salud separado de los términos (CUMPLIMIENTO #6) */}
           <label className="mt-4 flex gap-2 text-sm">
             <input name="accept_terms" type="checkbox" required className="mt-1" />
-            <span>Acepto los términos de uso. TrainSync no es consejo médico ni un producto sanitario.</span>
+            <span>Acepto los términos de uso. Brivel no es consejo médico ni un producto sanitario.</span>
           </label>
           <label className="mt-3 flex gap-2 text-sm">
             <input name="health_consent" type="checkbox" required className="mt-1" />
-            <span>Doy mi consentimiento explícito para que TrainSync trate mis datos de salud (actividad, frecuencia
+            <span>Doy mi consentimiento explícito para que Brivel trate mis datos de salud (actividad, frecuencia
               cardíaca, sueño y respuestas del cribado) solo para crear mi plan. Puedo retirarlo borrando mi cuenta.</span>
           </label>
           <Error state={registerState} />

@@ -20,7 +20,7 @@ La app lo tiene que explicar al activar la sincronización.
 - Del secreto salen, con HKDF-SHA256 y etiquetas distintas: la **clave** AES-256-GCM (nunca sale del dispositivo) y el
   **token** de acceso. El servidor guarda solo `SHA-256(token)` como identificador de la cuenta; con 128 bits de
   entropía no hace falta un hash lento.
-- Se cifra el JSON entero de `AppData` (`trainsync.data`). Nonce aleatorio de 96 bits en cada subida.
+- Se cifra el JSON entero de `AppData` (`brivel.data`). Nonce aleatorio de 96 bits en cada subida.
 - **Datos asociados (AAD): identificador de la cuenta y versión.** Así el servidor no puede cambiar un bloque por el
   de otra cuenta ni devolver uno viejo como nuevo: cada dispositivo recuerda la última versión que vio y rechaza una
   menor.
@@ -146,7 +146,7 @@ Revisado como lo haría un auditor de seguridad. Lo que se añade al diseño:
 
 ## Implementación
 
-**Paso 1, núcleo (2026-11-02):** `shared/src/commonMain/kotlin/io/github/mrclusterman/trainsync/sync/`, con tests en
+**Paso 1, núcleo (2026-11-02):** `shared/src/commonMain/kotlin/app/brivel/sync/`, con tests en
 `commonTest/.../sync/` que corren en JVM, JS y, en el CI, iOS.
 
 - **Librería:** `cryptography-kotlin` 0.6.0 con el proveedor `optimal`: JDK en Android y JVM, WebCrypto en la web y
@@ -193,7 +193,7 @@ local nueva).
 **Paso 3, web (2026-11-02, probado en local con dos navegadores, sin publicar):**
 
 - **Sincronizar (`sync/Syncer.kt`, común a web y apps):** baja la copia, la descifra, combina a tres bandas con la base
-  guardada (`trainsync.sync`: cuenta, última versión vista y base) y sube solo si cambió. Ante un `409` vuelve a empezar
+  guardada (`brivel.sync`: cuenta, última versión vista y base) y sube solo si cambió. Ante un `409` vuelve a empezar
   (3 intentos). Rechaza una versión menor que la última vista. **Unirse** con un código junta los datos de aquí con los
   de la copia (base vacía: no se borra nada de ningún lado); **crear** solo con un código nuevo, así un código mal
   tecleado o ya borrado da error en vez de crear otra copia. Si la copia desaparece, avisa y nunca borra los datos del
@@ -212,16 +212,16 @@ local nueva).
 
 **Paso 4, apps (2026-11-02, sin publicar):**
 
-- **Núcleo (`TrainSyncApp`):** `createSync`, `joinSync`, `syncDevices`, `forgetSync` y `deleteSync`, contra
+- **Núcleo (`BrivelApp`):** `createSync`, `joinSync`, `syncDevices`, `forgetSync` y `deleteSync`, contra
   `https://brivel.app/api/boveda`. El código se guarda en el almacén seguro (`sync.code`: Keystore en Android, Llavero
   solo de este dispositivo en iOS), así el móvil puede volver a enseñarlo para añadir otro dispositivo. La fecha y la
-  versión de la política aceptadas van en `trainsync.syncConsent`. «Borrar todo» también olvida el código. Textos
+  versión de la política aceptadas van en `brivel.syncConsent`. «Borrar todo» también olvida el código. Textos
   comunes en `Texts.kt` (`SYNC_*`); `PRIVACY_NOTE` ya no dice que no hay copias en la nube.
 - **Pantallas:** `SyncCard.kt` (Android) y `SyncSection.swift` (iOS), en Perfil y, solo para unirse, en la bienvenida.
   Mismos pasos que la web; el consentimiento y la edad son casillas (Android) o interruptores (iOS) sin marcar.
 - **Cuándo sincroniza:** al abrir la app y 1,5 s después de cada cambio. Sin conexión no avisa (se sube en el siguiente
   cambio); los errores del servidor (copia borrada, versión vieja) sí.
-- **Comprobado:** test del núcleo con dos `TrainSyncApp` contra el servidor falso; Android visto en el emulador (Perfil
+- **Comprobado:** test del núcleo con dos `BrivelApp` contra el servidor falso; Android visto en el emulador (Perfil
   y consentimiento). iOS solo se compila en el CI.
 
 **Sin hacer todavía:** QR (basta el código escrito); cambio de código (auditoría 6); y antes de publicar, el paso 5

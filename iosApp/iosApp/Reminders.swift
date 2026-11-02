@@ -9,7 +9,7 @@ enum Reminders {
         try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
     }
 
-    static func reschedule(_ core: Shared.TrainSyncApp) {
+    static func reschedule(_ core: Shared.BrivelApp) {
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
         guard let hour = core.data.reminderHour?.intValue else { return }

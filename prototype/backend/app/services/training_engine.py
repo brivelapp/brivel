@@ -1,4 +1,4 @@
-"""Motor de entrenamiento de TrainSync (memoria técnica, sección 8).
+"""Motor de entrenamiento de Brivel (memoria técnica, sección 8).
 
 Funciones puras y deterministas: no hacen I/O ni dependen de un LLM (DD-05).
 Reglas y fuentes: docs/MOTOR_ENTRENAMIENTO.md (v0.2) y MEMORIA_TECNICA.md (v0.4).
@@ -375,7 +375,7 @@ def pace_at(bpm: float, model: tuple[float, float]) -> float:
 
 
 def hr_bounds(zone: str, sport: str, lthr: float, max_hr: float | None, hr_cap: int | None) -> tuple[float, float] | None:
-    """Límites de FC (ppm) de una zona de TrainSync; None en Z6 (abierta: manda el RPE)."""
+    """Límites de FC (ppm) de una zona de Brivel; None en Z6 (abierta: manda el RPE)."""
     lo, hi = HR_ZONES["running" if sport == "running" else "cycling"][zone]
     if hi is None:
         return None

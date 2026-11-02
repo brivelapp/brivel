@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "gen:types": "openapi-typescript ${TRAINSYNC_API_URL:-http://localhost:8000}/openapi.json -o src/lib/api-types.ts"
+    "gen:types": "openapi-typescript ${BRIVEL_API_URL:-http://localhost:8000}/openapi.json -o src/lib/api-types.ts"
   },
   "dependencies": {
     "next": "16.4.2",

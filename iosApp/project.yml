@@ -11,7 +11,7 @@ targets:
     sources: [iosApp]
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: io.github.mrclusterman.trainsync
+        PRODUCT_BUNDLE_IDENTIFIER: app.brivel
         PRODUCT_NAME: Brivel
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES

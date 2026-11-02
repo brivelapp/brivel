@@ -10,7 +10,7 @@ kotlin {
     jvm()  // tests rápidos en el ordenador, también los que comparan con el prototipo en Python
 
     android {
-        namespace = "io.github.mrclusterman.trainsync.shared"
+        namespace = "app.brivel.shared"
         compileSdk = 37
         minSdk = 28
     }
@@ -20,7 +20,7 @@ kotlin {
         binaries.library()
         generateTypeScriptDefinitions()
         useEsModules()
-        outputModuleName = "trainsync-shared"
+        outputModuleName = "brivel-shared"
         nodejs {  // los tests, sin navegador
             testTask {
                 environment("GOLDEN_DIR", file("src/jvmAndJsTest/resources/golden").absolutePath)

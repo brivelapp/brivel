@@ -18,7 +18,7 @@ jobs:
         working-directory: web
       - uses: actions/upload-artifact@v7
         with:
-          name: trainsync-debug-apk
+          name: brivel-debug-apk
           path: androidApp/build/outputs/apk/debug/*.apk
 
   ios:
@@ -42,21 +42,21 @@ jobs:
           xcrun simctl boot "$DEVICE"
           xcrun simctl bootstatus "$DEVICE" -b
           xcrun simctl install "$DEVICE" build/Build/Products/Debug-iphonesimulator/Brivel.app
-          xcrun simctl launch "$DEVICE" io.github.mrclusterman.trainsync
+          xcrun simctl launch "$DEVICE" app.brivel
           sleep 8
           mkdir -p screenshots
           xcrun simctl io "$DEVICE" screenshot screenshots/inicio.png
           # Con un perfil y un objetivo de prueba (datos sintéticos): cada pestaña
-          xcrun simctl terminate "$DEVICE" io.github.mrclusterman.trainsync
-          xcrun simctl spawn "$DEVICE" defaults write io.github.mrclusterman.trainsync trainsync.data -string \
+          xcrun simctl terminate "$DEVICE" app.brivel
+          xcrun simctl spawn "$DEVICE" defaults write app.brivel brivel.data -string \
             '{"profile":{"birthYear":1990,"level":"intermediate","strength":"gym","cardio":["walking","running"],"days":{"MON":45,"WED":45,"FRI":45,"SAT":60}},"goal":{"kind":"FITNESS","since":"2026-01-05"},"blockStart":"2026-01-05"}'
           for mode in dark light; do
             xcrun simctl ui "$DEVICE" appearance $mode
             for t in 0 1 2 3; do
-              xcrun simctl launch "$DEVICE" io.github.mrclusterman.trainsync -tab $t
+              xcrun simctl launch "$DEVICE" app.brivel -tab $t
               sleep 6
               xcrun simctl io "$DEVICE" screenshot screenshots/pestana-$t-$mode.png
-              xcrun simctl terminate "$DEVICE" io.github.mrclusterman.trainsync
+              xcrun simctl terminate "$DEVICE" app.brivel
             done
           done
       - uses: actions/upload-artifact@v7
@@ -76,7 +76,7 @@ jobs:
           zip -qry Brivel.ipa Payload
       - uses: actions/upload-artifact@v7
         with:
-          name: trainsync-ipa
+          name: brivel-ipa
           path: iosApp/Brivel.ipa
 
   prototype:
