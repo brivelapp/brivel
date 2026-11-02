@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "brivel",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-14",
+  // La web (web/dist) la sirve Cloudflare sin pasar por el Worker; el Worker solo atiende /api
+  "assets": { "directory": "../web/dist", "run_worker_first": ["/api/*"] },
+  // Creada el 2026-11-02 con `wrangler d1 create brivel --jurisdiction=eu`: los datos se quedan en la UE y no se puede
+  // cambiar después (docs/SINCRONIZACION.md)
+  "d1_databases": [{ "binding": "DB", "database_name": "brivel", "database_id": "4ecfd370-b140-406e-a1be-c59d183ac4ee", "migrations_dir": "migrations" }],
+  // Solo en brivel.app: sin la dirección *.workers.dev, que sería otra copia pública de la web
+  "routes": [{ "pattern": "brivel.app", "custom_domain": true }],
+  "workers_dev": false
+}

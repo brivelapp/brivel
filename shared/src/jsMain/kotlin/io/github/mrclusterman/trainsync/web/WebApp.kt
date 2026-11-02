@@ -7,6 +7,7 @@ package io.github.mrclusterman.trainsync.web
 
 import io.github.mrclusterman.trainsync.app.EVIDENCE_MEANING
 import io.github.mrclusterman.trainsync.app.GoalKind
+import io.github.mrclusterman.trainsync.app.HEALTH_NOTICE
 import io.github.mrclusterman.trainsync.app.KeyValueStore
 import io.github.mrclusterman.trainsync.app.SPORT_LABEL
 import io.github.mrclusterman.trainsync.app.TrainSyncApp
@@ -49,6 +50,11 @@ class WebApp {
     private val json = Json { encodeDefaults = true }
 
     val needsOnboarding: Boolean get() = app.needsOnboarding
+
+    val healthNotice: String get() = HEALTH_NOTICE
+
+    /** Como "Borrar todo de este móvil" en Perfil de las apps. */
+    fun deleteAll() = app.deleteAll()
 
     fun todayJson(): String = json.encodeToString(app.todayScreen())
 

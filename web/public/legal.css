@@ -1,0 +1,16 @@
+/* Páginas legales: estáticas, sin scripts ni fuentes externas; colores de Pulso (src/styles.css) */
+:root { --bg: #F3F0E9; --surface: #FFFFFF; --text: #1B2420; --muted: #5D6762; --ok: #1F7A5C; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0F1412; --surface: #18201C; --text: #EEF2EE; --muted: #A3B0A8; --ok: #5FD3A4; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 system-ui, sans-serif; }
+main { max-width: 720px; margin: 0 auto; padding: 24px 16px 56px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 8px 0 4px; }
+h2 { font-size: 19px; margin: 32px 0 8px; }
+p, li { margin: 0 0 10px; }
+ul { padding-left: 22px; }
+a { color: var(--ok); }
+.muted { color: var(--muted); }
+.box { background: var(--surface); border-radius: 16px; padding: 16px 18px; margin: 16px 0; }
+nav { display: flex; flex-wrap: wrap; gap: 8px 20px; font-weight: 600; }

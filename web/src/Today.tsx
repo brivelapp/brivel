@@ -185,6 +185,19 @@ function DayContent({ core, day, act }: { core: WebApp; day: DayView; act: Act }
   )
 }
 
+/** Privacidad, términos y código fuente (AGPL), y borrar lo guardado en este navegador, como en Perfil de las apps. */
+function Footer({ core, act }: { core: WebApp; act: Act }) {
+  const erase = () => confirm("¿Borrar todos tus datos de este navegador?") && act(() => core.deleteAll(), "Datos borrados")
+  return (
+    <footer className="legal">
+      <a href="privacidad.html">Privacidad</a>
+      <a href="terminos.html">Términos</a>
+      <a href="https://github.com/brivelapp/brivel">Código fuente</a>
+      <button className="link" onClick={erase}>Borrar mis datos</button>
+    </footer>
+  )
+}
+
 export function Today() {
   const core = useMemo(() => new WebApp(), [])
   const wide = useWide()
@@ -207,9 +220,13 @@ export function Today() {
         <h1>Hoy</h1>
         <section className="module">
           <p>La versión web aún no tiene bienvenida. Prueba Hoy con un perfil de ejemplo: guardado solo en este navegador.</p>
-          <button className="primary" onClick={() => act(() => core.startDemo())}>Usar datos de prueba</button>
         </section>
+        <section className="state caution">
+          <p>{core.healthNotice}</p>
+        </section>
+        <button className="primary" onClick={() => act(() => core.startDemo())}>Usar datos de prueba</button>
         {status}
+        <Footer core={core} act={act} />
       </main>
     )
   }
@@ -268,6 +285,7 @@ export function Today() {
       </aside>
       </div>
       {status}
+      <Footer core={core} act={act} />
     </main>
   )
 }

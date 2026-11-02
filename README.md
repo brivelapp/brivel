@@ -1,7 +1,7 @@
 # Brivel
 
-> Antes TrainSync (nombre de trabajo hasta el 2026-10-30). El código y el repositorio conservan `trainsync` en los
-> identificadores internos.
+> Antes TrainSync (nombre de trabajo hasta el 2026-10-30). El código conserva `trainsync` en los identificadores
+> internos. Web: [brivel.app](https://brivel.app) · Repositorio: `brivelapp/brivel` (antes `Mrclusterman/trainsync`).
 
 Planes de entrenamiento de resistencia gratuitos y open source sobre los datos de intervals.icu.
 

@@ -132,9 +132,16 @@ Cuatro apartados y un flujo de objetivo. Todo lo de hoy (Salud, Plan, Hoy) se re
   como relevo: recibe, el móvil descarga y se borra. Avisos: el programa de Garmin podría tener las altas pausadas (sin
   confirmar), Strava exige suscripción y prohíbe intermediarios desde el 2026-06-30, y un servidor con datos de salud
   hace a Brivel responsable del tratamiento (RGPD art. 9; revisar `CUMPLIMIENTO.md` antes).
+- **Servidor (2026-10-30, decidido: Cloudflare Workers + D1):** Gabriel lo quiere para alojar la web, cuentas y
+  sincronización, Garmin/Strava directos y, al final, el motor como API. Hecha la base en `server/` (sirve `web/dist`
+  y `/api/estado` comprueba D1), publicada en https://brivel.app el 2026-11-02 (Worker `brivel`, D1 `brivel` en la UE; sin `workers.dev`). Cuentas y
+  sincronización: código de sincronización con cifrado de extremo a extremo, sin email ni contraseña; diseño revisado en
+  [`SINCRONIZACION.md`](SINCRONIZACION.md). Esto cambia «sin servidor ni cuentas» de arriba: las cuentas serán
+  opcionales y la app seguirá funcionando sin ellas.
 
-**Coste:** sin servidor, lo fijo son las cuentas de desarrollador (Apple ~99 $/año, Google ~25 $ una vez; cifras de
-memoria, sin comprobar) y un dominio.
+**Coste:** lo fijo son las cuentas de desarrollador (Apple ~99 $/año, Google ~25 $ una vez; cifras de memoria, sin
+comprobar) y el dominio `brivel.app`. El servidor (Workers + D1) entra en el plan gratis de Cloudflare (100.000
+peticiones al día, 5 GB de D1; [`SINCRONIZACION.md`](SINCRONIZACION.md)); solo costaría si se pasa de ahí.
 
 ## 8. Datos
 
@@ -175,7 +182,7 @@ memoria, sin comprobar) y un dominio.
 | Móvil | Apps nativas, todo en el móvil (sección 7) |
 | Longevidad | Solo lo que miden relojes y básculas; sin analíticas |
 | Entrenadores | Más adelante (Fase 4) |
-| Financiación | Sin servidor: solo cuentas de desarrollador y dominio |
+| Financiación | Cuentas de desarrollador y dominio; el servidor, en el plan gratis de Cloudflare mientras quepa |
 | Nombre | **Brivel** (2026-10-30; antes TrainSync). Dominio `brivel.app` comprado; marca sin registrar (sección 12) |
 
 ## 12. Nombre
