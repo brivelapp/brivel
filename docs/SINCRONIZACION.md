@@ -1,6 +1,6 @@
 # Cuentas y sincronización (diseño, 2026-10-30)
 
-Estado: **aprobado por Gabriel; pasos 1 a 4 (núcleo, servidor, web y apps) hechos el 2026-11-02, sin publicar**; falta el paso 5 (legal). Ver «Implementación» al final. Revisado y auditado el 2026-10-30 (cifrado, conflictos, RGPD y Cloudflare); las
+Estado: **publicado el 2026-11-02** en brivel.app (API, web y política v2; EIPD aprobada). Las apps lo llevan desde el commit `97ce075`. **Pendiente:** registrar la tarea diaria de borrado (falta el subdominio workers.dev de la cuenta). Ver «Implementación» al final. Revisado y auditado el 2026-10-30 (cifrado, conflictos, RGPD y Cloudflare); las
 correcciones de esa revisión ya están incorporadas y se resumen al final. Servidor: Cloudflare Workers + D1
 (`server/`, solo la base hecha: sirve la web y `/api/estado`).
 
@@ -187,8 +187,8 @@ local nueva).
   está vacío o pasa de 1 MB; `DELETE` → `204`; `429` al pasar un límite. Todo con `Cache-Control: no-store` y sin CORS.
 - **Límites (binding de rate limiting de Workers):** 60 peticiones por minuto por IP en toda la API, 5 altas por
   minuto por IP y 20 subidas por minuto por cuenta.
-- **Publicar:** `npm run deploy` aplica la migración en la D1 real y despliega. No se ha hecho: lo decide Gabriel, y
-  conviene hacerlo cuando haya web o app que lo use (pasos 3 y 4) y los requisitos legales del paso 5.
+- **Publicar:** `npm run deploy` aplica la migración en la D1 real y despliega. Hecho el 2026-11-02, con una prueba
+  de crear, bajar y borrar en producción y la tabla vacía al terminar.
 
 **Paso 3, web (2026-11-02, probado en local con dos navegadores, sin publicar):**
 
