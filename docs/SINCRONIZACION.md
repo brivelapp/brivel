@@ -1,6 +1,6 @@
 # Cuentas y sincronización (diseño, 2026-10-30)
 
-Estado: **aprobado por Gabriel; pasos 1 (núcleo) y 2 (servidor, sin publicar) hechos el 2026-11-02**, ver «Implementación» al final. Revisado y auditado el 2026-10-30 (cifrado, conflictos, RGPD y Cloudflare); las
+Estado: **aprobado por Gabriel; pasos 1 (núcleo), 2 (servidor) y 3 (web) hechos el 2026-11-02, sin publicar**, ver «Implementación» al final. Revisado y auditado el 2026-10-30 (cifrado, conflictos, RGPD y Cloudflare); las
 correcciones de esa revisión ya están incorporadas y se resumen al final. Servidor: Cloudflare Workers + D1
 (`server/`, solo la base hecha: sirve la web y `/api/estado`).
 
@@ -189,6 +189,28 @@ local nueva).
   minuto por IP y 20 subidas por minuto por cuenta.
 - **Publicar:** `npm run deploy` aplica la migración en la D1 real y despliega. No se ha hecho: lo decide Gabriel, y
   conviene hacerlo cuando haya web o app que lo use (pasos 3 y 4) y los requisitos legales del paso 5.
+
+**Paso 3, web (2026-11-02, probado en local con dos navegadores, sin publicar):**
+
+- **Sincronizar (`sync/Syncer.kt`, común a web y apps):** baja la copia, la descifra, combina a tres bandas con la base
+  guardada (`trainsync.sync`: cuenta, última versión vista y base) y sube solo si cambió. Ante un `409` vuelve a empezar
+  (3 intentos). Rechaza una versión menor que la última vista. **Unirse** con un código junta los datos de aquí con los
+  de la copia (base vacía: no se borra nada de ningún lado); **crear** solo con un código nuevo, así un código mal
+  tecleado o ya borrado da error en vez de crear otra copia. Si la copia desaparece, avisa y nunca borra los datos del
+  dispositivo. «Borrar todo» deja de sincronizar: si no, la siguiente sincronización borraría también la copia.
+- **Cifrado tras una interfaz (`Aead`):** en las apps, la librería; en la web, WebCrypto con la clave AES derivada como
+  **no exportable** (`web/WebSync.kt`). `web/src/sync.ts` guarda en IndexedDB la clave, el token, la cuenta, la fecha
+  del consentimiento y la versión de la política aceptada (CUMPLIMIENTO #6); el código no se guarda. Un test en JS
+  comprueba que esta clave y la de la librería se entienden y que no se puede exportar.
+- **HTTP tras una interfaz (`SyncTransport`):** ktor en las apps; `fetch` en la web, y promesas con la biblioteca
+  estándar en vez de kotlinx.coroutines. Con ktor la web pasaba de 755 a 1.248 kB; así queda en 816 kB.
+- **Pantalla (`web/src/Sync.tsx`):** «Usar en otros dispositivos» en Hoy y en el inicio. Activar o unirse pide dos
+  casillas sin marcar: consentimiento explícito para guardar una copia cifrada con datos de salud (art. 9.2.a) con
+  enlace a la política, y tener 14 años o más. El código se enseña una vez, en grupos de 3. Con la sincronización
+  activada: «Sincronizar ahora», «Dejar de sincronizar aquí» y «Borrar la copia del servidor». Cada cambio se sube
+  1,5 s después. CSP: `connect-src 'self' https://intervals.icu`.
+- **Sin hacer todavía:** QR (en la web basta el código escrito); cambio de código (auditoría 6); y antes de publicar,
+  el paso 5 (política de privacidad con la sincronización, EIPD, registro de actividades).
 
 ## Descartado
 

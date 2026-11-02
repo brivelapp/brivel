@@ -63,6 +63,16 @@ button { font: inherit; min-height: 50px; border: 0; border-radius: 999px; paddi
 button.primary { background: var(--ok); color: var(--on-ok); font-weight: 600; }
 button:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
 button.link { min-height: 0; padding: 0; background: none; color: inherit; text-decoration: underline; }
+button:disabled { opacity: 0.5; cursor: default; }
+.row.wrap { flex-wrap: wrap; }
+
+/* Sincronización (Sync.tsx) */
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.check input { width: 22px; height: 22px; flex: none; margin-top: 1px; accent-color: var(--ok); }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.field input { min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--muted); background: var(--bg);
+  color: var(--text); font-size: 17px; letter-spacing: 0.08em; text-transform: uppercase; }
+.code { font-size: 22px; font-weight: 600; letter-spacing: 0.06em; word-spacing: 0.3em; user-select: all; }
 
 .legal { display: flex; flex-wrap: wrap; gap: 8px 18px; padding-top: 8px; font-size: 13px; color: var(--muted); }
 .legal a { color: inherit; }

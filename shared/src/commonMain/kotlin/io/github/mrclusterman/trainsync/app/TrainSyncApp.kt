@@ -18,6 +18,7 @@ import kotlinx.serialization.json.Json
 
 private const val DATA_KEY = "trainsync.data"
 private const val API_KEY = "intervals.apiKey"
+internal const val SYNC_STATE_KEY = "trainsync.sync"  // sync/Syncer.kt
 
 /**
  * store: datos de la app; secrets: almacén seguro del sistema (solo la clave de intervals.icu).
@@ -39,6 +40,9 @@ class TrainSyncApp(
         data = new
         store.write(DATA_KEY, json.encodeToString(new))
     }
+
+    /** Los datos combinados con los de otro dispositivo (sync/Syncer.kt). */
+    internal fun replaceData(new: AppData) = save(new)
 
     // ------------------------------------------------------------ objetivo y perfil
 
@@ -291,10 +295,11 @@ class TrainSyncApp(
     /** Todo lo guardado, en JSON (portabilidad, RGPD art. 20). La clave de intervals.icu no se incluye. */
     fun exportJson(): String = Json { prettyPrint = true; encodeDefaults = true }.encodeToString(data)
 
-    /** Borra todo del móvil, clave incluida. */
+    /** Borra todo del móvil, clave incluida, y deja de sincronizar: si no, la próxima sincronización lo borraría también en el servidor. */
     fun deleteAll() {
         secrets.write(API_KEY, null)
         store.write(DATA_KEY, null)
+        store.write(SYNC_STATE_KEY, null)
         data = AppData()
     }
 }

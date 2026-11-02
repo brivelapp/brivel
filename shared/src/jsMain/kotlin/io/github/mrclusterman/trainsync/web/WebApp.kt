@@ -13,7 +13,12 @@ import io.github.mrclusterman.trainsync.app.SPORT_LABEL
 import io.github.mrclusterman.trainsync.app.TrainSyncApp
 import io.github.mrclusterman.trainsync.app.UserProfile
 import io.github.mrclusterman.trainsync.app.kg
+import io.github.mrclusterman.trainsync.app.conflictMessage
 import io.github.mrclusterman.trainsync.app.repRange
+import io.github.mrclusterman.trainsync.sync.SyncCode
+import io.github.mrclusterman.trainsync.sync.Syncer
+import kotlinx.browser.window
+import kotlin.js.Promise
 import kotlinx.browser.localStorage
 import kotlinx.browser.sessionStorage
 import kotlinx.datetime.LocalDate
@@ -46,15 +51,67 @@ internal fun liftJson(app: TrainSyncApp, line: String): String? {
 class WebApp {
     // La clave de intervals.icu no se queda en el navegador: sessionStorage se borra al cerrar la pestaña. Cifrarla no
     // serviría (la llave estaría en el mismo navegador); contra scripts ajenos protege la CSP de web/vite.config.ts
-    private val app = TrainSyncApp(WebStore(localStorage), WebStore(sessionStorage), ::browserToday)
+    private val local = WebStore(localStorage)
+    private val app = TrainSyncApp(local, WebStore(sessionStorage), ::browserToday)
     private val json = Json { encodeDefaults = true }
 
     val needsOnboarding: Boolean get() = app.needsOnboarding
 
     val healthNotice: String get() = HEALTH_NOTICE
 
-    /** Como "Borrar todo de este móvil" en Perfil de las apps. */
-    fun deleteAll() = app.deleteAll()
+    /** Como "Borrar todo de este móvil" en Perfil de las apps; deja de sincronizar (la web borra sus llaves). */
+    fun deleteAll() {
+        app.deleteAll()
+        syncer = null
+    }
+
+    // ------------------------------------------------------------ sincronización (docs/SINCRONIZACION.md)
+
+    private var syncer: Syncer? = null
+
+    private fun syncerFor(keys: WebSyncKeys) =
+        Syncer(app, local, keys.toSyncKeys(), WebTransport(window.location.origin + "/api/boveda", keys.bearer))
+
+    // Activada = hay llaves. Si el estado local se perdió, la próxima sincronización se junta como la primera vez
+    val syncActive: Boolean get() = syncer != null
+
+    /** Al abrir la web: las llaves guardadas en IndexedDB (web/src/sync.ts). */
+    fun useSync(keys: WebSyncKeys) {
+        syncer = syncerFor(keys)
+    }
+
+    /** Código nuevo: sube los datos de aquí y devuelve el código (se enseña una vez) y las llaves (las guarda la web). */
+    fun createSync(): Promise<WebSyncStart> = promise {
+        val code = SyncCode.generate()
+        val keys = webKeys(code.secret)
+        syncerFor(keys).also { it.sync(create = true); syncer = it }
+        WebSyncStart(code.text, keys)
+    }
+
+    /** Unirse con el código de otro dispositivo: junta los datos de aquí con los de la copia. */
+    fun joinSync(text: String): Promise<WebSyncKeys> = promise {
+        val code = SyncCode.parse(text) ?: throw IllegalArgumentException("El código no es válido: revisa las letras")
+        val keys = webKeys(code.secret)
+        syncerFor(keys).also { it.sync(); syncer = it }
+        keys
+    }
+
+    /** Devuelve el aviso si los dos dispositivos cambiaron lo mismo; null si no. */
+    fun syncNow(): Promise<String?> = promise {
+        conflictMessage(checkNotNull(syncer) { "La sincronización no está activada" }.sync().conflicts)
+    }
+
+    /** Deja de sincronizar en este navegador; la copia del servidor se queda. */
+    fun forgetSync() {
+        syncer?.forget()
+        syncer = null
+    }
+
+    /** Borra la copia del servidor (RGPD art. 17); los datos de este navegador se quedan. */
+    fun deleteSync(): Promise<Unit> = promise {
+        checkNotNull(syncer) { "La sincronización no está activada" }.deleteRemote()
+        syncer = null
+    }
 
     fun todayJson(): String = json.encodeToString(app.todayScreen())
 
@@ -88,3 +145,7 @@ class WebApp {
         app.logLift(date, line, weight.replace(',', '.').toDoubleOrNull(), reps.toIntOrNull() ?: 0, sets)
     }
 }
+
+/** El código, para enseñarlo una sola vez, y las llaves, para guardarlas en IndexedDB. */
+@JsExport
+class WebSyncStart(val code: String, val keys: WebSyncKeys)

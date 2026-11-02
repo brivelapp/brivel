@@ -103,3 +103,12 @@ fun ageAllowed(birthYear: Int, currentYear: Int): Boolean = currentYear - birthY
 const val PRIVACY_NOTE = "Tus datos se guardan solo en este móvil. Brivel no tiene servidor: no hay cuentas ni " +
     "copias en la nube. Si vinculas intervals.icu, la app habla directamente con intervals.icu con tu clave, que se " +
     "guarda cifrada en el almacén seguro del sistema."
+
+private val CONFLICT_LABEL = mapOf("profile" to "tu perfil", "goal" to "tu objetivo", "weekChanges" to "los cambios de la semana",
+    "readiness" to "cómo estabas un día", "choices" to "el deporte elegido un día", "intervalsAthlete" to "el atleta de intervals.icu",
+    "reminderHour" to "el recordatorio")
+
+/** Aviso tras sincronizar cuando los dos dispositivos cambiaron lo mismo (sync/Merge.kt): gana el del servidor. */
+fun conflictMessage(conflicts: Set<String>): String? = conflicts.takeIf { it.isNotEmpty() }
+    ?.joinToString(", ") { CONFLICT_LABEL[it] ?: it }
+    ?.let { "Cambiaste $it aquí y en otro dispositivo a la vez: se ha quedado lo del otro." }

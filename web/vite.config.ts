@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from "vite"
 import react from "@vitejs/plugin-react"
 
-// Solo scripts, estilos y fuentes propios, y conexiones solo a intervals.icu: un script ajeno no corre y, si corriera,
+// Solo scripts, estilos y fuentes propios, y conexiones solo a intervals.icu y a la propia API: un script ajeno no corre y, si corriera,
 // no podría mandar la clave ni los datos de salud a otro sitio. Solo en el build: el servidor de desarrollo usa estilos en línea
 const CSP = [
   "default-src 'none'",
@@ -9,7 +9,7 @@ const CSP = [
   "style-src 'self'",
   "font-src 'self'",
   "img-src 'self' data:",  // los iconos pequeños van incrustados como data:
-  "connect-src https://intervals.icu",
+  "connect-src 'self' https://intervals.icu",  // 'self': la sincronización (/api/boveda)
   "base-uri 'none'",
   "form-action 'none'",
 ].join("; ")

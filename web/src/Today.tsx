@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { WebApp } from "trainsync-shared"
 import type { DayView, LiftHint, PlanItem, Reason, TodayScreen, Tone } from "./types"
+import { SyncCard } from "./Sync"
+import { clearKeys, loadKeys } from "./sync"
 import running from "../../iosApp/iosApp/Assets.xcassets/sport_running.imageset/sport_running.svg"
 import cycling from "../../iosApp/iosApp/Assets.xcassets/sport_cycling.imageset/sport_cycling.svg"
 import swimming from "../../iosApp/iosApp/Assets.xcassets/sport_swimming.imageset/sport_swimming.svg"
@@ -187,7 +189,11 @@ function DayContent({ core, day, act }: { core: WebApp; day: DayView; act: Act }
 
 /** Privacidad, términos y código fuente (AGPL), y borrar lo guardado en este navegador, como en Perfil de las apps. */
 function Footer({ core, act }: { core: WebApp; act: Act }) {
-  const erase = () => confirm("¿Borrar todos tus datos de este navegador?") && act(() => core.deleteAll(), "Datos borrados")
+  const erase = () => {
+    if (!confirm("¿Borrar todos tus datos de este navegador? Si sincronizas, la copia del servidor se queda.")) return
+    act(() => core.deleteAll(), "Datos borrados")
+    clearKeys()
+  }
   return (
     <footer className="legal">
       <a href="privacidad.html">Privacidad</a>
@@ -203,13 +209,36 @@ export function Today() {
   const wide = useWide()
   const [, setVersion] = useState(0)
   const [message, setMessage] = useState<string | null>(null)
+  // Con la sincronización activada, cada cambio se sube poco después (varios seguidos, de una vez)
+  const syncTimer = useRef<number | undefined>(undefined)
+  const syncSoon = () => {
+    if (!core.syncActive) return
+    clearTimeout(syncTimer.current)
+    syncTimer.current = window.setTimeout(() => core.syncNow().then(
+      (conflict) => { if (conflict) setMessage(conflict); setVersion((v) => v + 1) },
+      (e) => setMessage(e instanceof Error && e.message ? e.message : "No se pudo sincronizar"),
+    ), 1500)
+  }
+  useEffect(() => {
+    loadKeys().then((keys) => {
+      if (!keys) return
+      core.useSync(keys)
+      setVersion((v) => v + 1)
+      syncSoon()
+    })
+  }, [core])
   const act: Act = (f, success) => {
     try {
       f()
       setMessage(success ?? null)
+      syncSoon()
     } catch (e) {
       setMessage(e instanceof Error && e.message ? e.message : "No se pudo completar")
     }
+    setVersion((v) => v + 1)
+  }
+  const synced = (m: string | null) => {
+    setMessage(m)
     setVersion((v) => v + 1)
   }
   const status = <p className="status" role="status">{message}</p>
@@ -225,6 +254,7 @@ export function Today() {
           <p>{core.healthNotice}</p>
         </section>
         <button className="primary" onClick={() => act(() => core.startDemo())}>Usar datos de prueba</button>
+        <SyncCard core={core} onDone={synced} />
         {status}
         <Footer core={core} act={act} />
       </main>
@@ -282,6 +312,7 @@ export function Today() {
         {screen.warnings.map((w) => <ReasonRow key={w} core={core} reason={{ text: w, evidence: null }} />)}
         {screen.info.map((t) => <p key={t} className="muted">{t}</p>)}
       </section>
+      <SyncCard core={core} onDone={synced} />
       </aside>
       </div>
       {status}

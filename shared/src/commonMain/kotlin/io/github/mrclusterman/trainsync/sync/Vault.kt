@@ -13,8 +13,14 @@ import kotlin.io.encoding.Base64
 private const val FORMAT: Byte = 1  // primer byte del bloque: permite cambiar el cifrado más adelante
 private const val PAD = 4096  // relleno a múltiplos de 4 KB: el tamaño no revela cuánto se entrena
 
+/** AES-256-GCM con nonce aleatorio delante (`nonce | cifrado | etiqueta`). En la web, una CryptoKey no exportable. */
+interface Aead {
+    suspend fun encrypt(plain: ByteArray, associatedData: ByteArray): ByteArray
+    suspend fun decrypt(sealed: ByteArray, associatedData: ByteArray): ByteArray
+}
+
 /** Lo que sale del código: la clave AES-256-GCM (nunca sale del dispositivo), el token de acceso y la cuenta. */
-class SyncKeys internal constructor(internal val key: AES.GCM.Key, val token: ByteArray, val account: String) {
+class SyncKeys internal constructor(internal val aead: Aead, val token: ByteArray, val account: String) {
     /** `Authorization: Bearer …`: el token en base64url sin relleno (43 caracteres), como lo lee server/src/index.ts. */
     val bearer: String get() = Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT).encode(token)
 }
@@ -26,19 +32,28 @@ suspend fun deriveKeys(code: SyncCode): SyncKeys {
     suspend fun hkdf(label: String) = provider.get(HKDF)
         .secretDerivation(SHA256, 32.bytes, salt = ByteArray(32), info = label.encodeToByteArray())
         .deriveSecretToByteArray(code.secret)
-    val token = hkdf("brivel-sync-token-v1")
-    val key = provider.get(AES.GCM).keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, hkdf("brivel-sync-key-v1"))
-    return SyncKeys(key, token, provider.get(SHA256).hasher().hash(token).toHexString())
+    val token = hkdf(TOKEN_LABEL)
+    val cipher = provider.get(AES.GCM).keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, hkdf(KEY_LABEL)).cipher()
+    val aead = object : Aead {
+        override suspend fun encrypt(plain: ByteArray, associatedData: ByteArray) = cipher.encrypt(plain, associatedData)
+        override suspend fun decrypt(sealed: ByteArray, associatedData: ByteArray) = cipher.decrypt(sealed, associatedData)
+    }
+    return SyncKeys(aead, token, accountOf(token))
 }
+
+internal const val KEY_LABEL = "brivel-sync-key-v1"
+internal const val TOKEN_LABEL = "brivel-sync-token-v1"
+
+internal suspend fun accountOf(token: ByteArray) = CryptographyProvider.Default.get(SHA256).hasher().hash(token).toHexString()
 
 /** Cifra `plain` para subirlo como `version`. El nonce de 96 bits es aleatorio en cada llamada. */
 suspend fun seal(keys: SyncKeys, plain: ByteArray, version: Long): ByteArray =
-    byteArrayOf(FORMAT) + keys.key.cipher().encrypt(pad(plain), associatedData(keys, version))
+    byteArrayOf(FORMAT) + keys.aead.encrypt(pad(plain), associatedData(keys, version))
 
 /** Descifra un bloque bajado con la versión de su ETag. Falla si lo cambiaron, es de otra cuenta o de otra versión. */
 suspend fun open(keys: SyncKeys, blob: ByteArray, version: Long): ByteArray {
     require(blob.isNotEmpty() && blob[0] == FORMAT) { "Esta copia tiene un formato más nuevo: actualiza Brivel" }
-    return unpad(keys.key.cipher().decrypt(blob.copyOfRange(1, blob.size), associatedData(keys, version)))
+    return unpad(keys.aead.decrypt(blob.copyOfRange(1, blob.size), associatedData(keys, version)))
 }
 
 private fun associatedData(keys: SyncKeys, version: Long) = "$FORMAT:${keys.account}:$version".encodeToByteArray()
