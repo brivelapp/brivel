@@ -1,6 +1,6 @@
 # Cuentas y sincronización (diseño, 2026-10-30)
 
-Estado: **aprobado por Gabriel; pasos 1 (núcleo), 2 (servidor) y 3 (web) hechos el 2026-11-02, sin publicar**, ver «Implementación» al final. Revisado y auditado el 2026-10-30 (cifrado, conflictos, RGPD y Cloudflare); las
+Estado: **aprobado por Gabriel; pasos 1 a 4 (núcleo, servidor, web y apps) hechos el 2026-11-02, sin publicar**; falta el paso 5 (legal). Ver «Implementación» al final. Revisado y auditado el 2026-10-30 (cifrado, conflictos, RGPD y Cloudflare); las
 correcciones de esa revisión ya están incorporadas y se resumen al final. Servidor: Cloudflare Workers + D1
 (`server/`, solo la base hecha: sirve la web y `/api/estado`).
 
@@ -209,8 +209,23 @@ local nueva).
   enlace a la política, y tener 14 años o más. El código se enseña una vez, en grupos de 3. Con la sincronización
   activada: «Sincronizar ahora», «Dejar de sincronizar aquí» y «Borrar la copia del servidor». Cada cambio se sube
   1,5 s después. CSP: `connect-src 'self' https://intervals.icu`.
-- **Sin hacer todavía:** QR (en la web basta el código escrito); cambio de código (auditoría 6); y antes de publicar,
-  el paso 5 (política de privacidad con la sincronización, EIPD, registro de actividades).
+
+**Paso 4, apps (2026-11-02, sin publicar):**
+
+- **Núcleo (`TrainSyncApp`):** `createSync`, `joinSync`, `syncDevices`, `forgetSync` y `deleteSync`, contra
+  `https://brivel.app/api/boveda`. El código se guarda en el almacén seguro (`sync.code`: Keystore en Android, Llavero
+  solo de este dispositivo en iOS), así el móvil puede volver a enseñarlo para añadir otro dispositivo. La fecha y la
+  versión de la política aceptadas van en `trainsync.syncConsent`. «Borrar todo» también olvida el código. Textos
+  comunes en `Texts.kt` (`SYNC_*`); `PRIVACY_NOTE` ya no dice que no hay copias en la nube.
+- **Pantallas:** `SyncCard.kt` (Android) y `SyncSection.swift` (iOS), en Perfil y, solo para unirse, en la bienvenida.
+  Mismos pasos que la web; el consentimiento y la edad son casillas (Android) o interruptores (iOS) sin marcar.
+- **Cuándo sincroniza:** al abrir la app y 1,5 s después de cada cambio. Sin conexión no avisa (se sube en el siguiente
+  cambio); los errores del servidor (copia borrada, versión vieja) sí.
+- **Comprobado:** test del núcleo con dos `TrainSyncApp` contra el servidor falso; Android visto en el emulador (Perfil
+  y consentimiento). iOS solo se compila en el CI.
+
+**Sin hacer todavía:** QR (basta el código escrito); cambio de código (auditoría 6); y antes de publicar, el paso 5
+(política de privacidad con la sincronización, EIPD, registro de actividades).
 
 ## Descartado
 

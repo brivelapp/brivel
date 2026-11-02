@@ -228,6 +228,7 @@ struct ProfileView: View {
                         }.buttonStyle(PrimaryStyle()).disabled(athlete.isEmpty || apiKey.isEmpty)
                     }
                 }
+                SyncSection()
                 Module {
                     Secondary("Tus datos")
                     Secondary(TextsKt.PRIVACY_NOTE)

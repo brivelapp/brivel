@@ -100,9 +100,9 @@ const val MIN_AGE = 14  // LOPDGDD art. 7: edad mínima para consentir en Españ
 
 fun ageAllowed(birthYear: Int, currentYear: Int): Boolean = currentYear - birthYear >= MIN_AGE
 
-const val PRIVACY_NOTE = "Tus datos se guardan solo en este móvil. Brivel no tiene servidor: no hay cuentas ni " +
-    "copias en la nube. Si vinculas intervals.icu, la app habla directamente con intervals.icu con tu clave, que se " +
-    "guarda cifrada en el almacén seguro del sistema."
+const val PRIVACY_NOTE = "Tus datos se guardan en este móvil. Solo si activas «Usar en otros dispositivos», Brivel guarda " +
+    "además una copia cifrada que solo tus dispositivos pueden leer. Si vinculas intervals.icu, la app habla directamente " +
+    "con intervals.icu con tu clave, que se guarda cifrada en el almacén seguro del sistema."
 
 private val CONFLICT_LABEL = mapOf("profile" to "tu perfil", "goal" to "tu objetivo", "weekChanges" to "los cambios de la semana",
     "readiness" to "cómo estabas un día", "choices" to "el deporte elegido un día", "intervalsAthlete" to "el atleta de intervals.icu",
@@ -112,3 +112,16 @@ private val CONFLICT_LABEL = mapOf("profile" to "tu perfil", "goal" to "tu objet
 fun conflictMessage(conflicts: Set<String>): String? = conflicts.takeIf { it.isNotEmpty() }
     ?.joinToString(", ") { CONFLICT_LABEL[it] ?: it }
     ?.let { "Cambiaste $it aquí y en otro dispositivo a la vez: se ha quedado lo del otro." }
+
+/** Versión de la política de privacidad que se acepta al activar la sincronización (web/public/privacidad.html). */
+const val PRIVACY_POLICY_VERSION = "2026-11-02"
+
+// Sincronización (docs/SINCRONIZACION.md): los mismos textos que web/src/Sync.tsx
+const val SYNC_INTRO = "Opcional. Sin activarlo, tus datos siguen solo en este móvil."
+const val SYNC_ACTIVE = "Una copia cifrada en el servidor que solo tus dispositivos pueden leer."
+const val SYNC_CONSENT = "Acepto que Brivel guarde en su servidor una copia cifrada de mis datos, también los de salud, para usarlos " +
+    "en mis dispositivos. Puedo retirarlo cuando quiera borrando la copia. Detalles en brivel.app/privacidad."
+const val SYNC_AGE = "Tengo 14 años o más"
+const val SYNC_NO_RECOVERY = "Nadie puede recuperar el código. Si lo pierdes y no te queda ningún dispositivo con Brivel, la copia " +
+    "se pierde; los datos de cada dispositivo siguen en él."
+const val SYNC_JOIN_NOTE = "Se juntan los datos de este móvil con los de la copia."

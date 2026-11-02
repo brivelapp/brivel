@@ -71,6 +71,7 @@ fun Onboarding(app: TrainSyncApp, act: Act) {
                 Secondary("Te dice qué hacer hoy y por qué, con tus datos y según la evidencia. Gratis, sin anuncios y de código abierto.")
                 Secondary(PRIVACY_NOTE)
                 Button(onClick = { step = 1 }, modifier = Modifier.fillMaxWidth()) { Text("Empezar") }
+                SyncCard(app, act, 0, allowCreate = false)
             }
             1 -> {
                 Text("¿Qué quieres conseguir?", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)

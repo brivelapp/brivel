@@ -29,7 +29,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import io.github.mrclusterman.trainsync.app.TrainSyncApp
 import io.github.mrclusterman.trainsync.app.systemToday
+import io.github.mrclusterman.trainsync.sync.SyncException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -52,6 +55,7 @@ class Act(val app: TrainSyncApp, private val scope: CoroutineScope, private val 
         try {
             block()
             success?.let { show(it) }
+            syncSoon()
         } catch (e: Exception) {
             show(e.message)
         }
@@ -65,9 +69,37 @@ class Act(val app: TrainSyncApp, private val scope: CoroutineScope, private val 
             try {
                 block()
                 success?.let { show(it) }
+                syncSoon()
             } catch (e: Exception) {
                 show(e.message)
             }
+            refresh()
+        }
+    }
+
+    private var pending: Job? = null
+
+    /** Con la sincronización activada, sube los cambios poco después (varios seguidos, de una vez). Sin red, calla. */
+    fun syncSoon() {
+        if (app.syncCode == null) return
+        pending?.cancel()
+        pending = scope.launch {
+            delay(1500)
+            try {
+                app.syncDevices()?.let { show(it) }
+            } catch (e: SyncException) {
+                show(e.message)
+            } catch (_: Exception) {
+                // sin conexión: se sube en el próximo cambio o al abrir la app
+            }
+            refresh()
+        }
+    }
+
+    fun syncNow() {
+        pending?.cancel()
+        scope.launch {
+            show(try { app.syncDevices() ?: "Sincronizado" } catch (e: Exception) { e.message })
             refresh()
         }
     }
@@ -91,6 +123,8 @@ fun Root(app: TrainSyncApp) {
         if (app.linkedAthlete != null) runCatching { app.sync() }
         // Health Connect, si ya dio permiso: datos frescos sin pulsar nada
         if (app.data.health != null) runCatching { HealthConnectReader(context).sync(app) }
+        // Otros dispositivos, si está activado: lo que cambiaron mientras tanto
+        runCatching { app.syncDevices() }.getOrNull()?.let { scope.launch { snackbar.showSnackbar(it) } }
         version += 1
     }
 

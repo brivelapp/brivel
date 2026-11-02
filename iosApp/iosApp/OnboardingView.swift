@@ -57,6 +57,7 @@ struct OnboardingView: View {
                     Secondary("Te dice qué hacer hoy y por qué, con tus datos y según la evidencia. Gratis, sin anuncios y de código abierto.")
                     Secondary(TextsKt.PRIVACY_NOTE)
                     Button("Empezar") { step = 1 }.buttonStyle(PrimaryStyle()).frame(maxWidth: .infinity)
+                    SyncSection(allowCreate: false)
                 case 1:
                     Text("¿Qué quieres conseguir?").font(.screenTitle).padding(.top, 24)
                     Secondary("Podrás cambiarlo o abandonarlo cuando quieras.")

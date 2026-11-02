@@ -10,6 +10,10 @@ import io.github.mrclusterman.trainsync.engine.workoutEvent
 import io.github.mrclusterman.trainsync.intervals.IntervalsClient
 import io.github.mrclusterman.trainsync.intervals.IntervalsException
 import io.github.mrclusterman.trainsync.intervals.str
+import io.github.mrclusterman.trainsync.sync.SyncClient
+import io.github.mrclusterman.trainsync.sync.SyncCode
+import io.github.mrclusterman.trainsync.sync.Syncer
+import io.github.mrclusterman.trainsync.sync.deriveKeys
 import io.ktor.client.engine.HttpClientEngine
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -19,6 +23,9 @@ import kotlinx.serialization.json.Json
 private const val DATA_KEY = "trainsync.data"
 private const val API_KEY = "intervals.apiKey"
 internal const val SYNC_STATE_KEY = "trainsync.sync"  // sync/Syncer.kt
+private const val SYNC_CODE_KEY = "sync.code"  // en el almacén seguro, como la clave de intervals.icu
+private const val SYNC_CONSENT_KEY = "trainsync.syncConsent"  // fecha y versión de la política aceptadas (CUMPLIMIENTO #6)
+private const val SYNC_URL = "https://brivel.app/api/boveda"
 
 /**
  * store: datos de la app; secrets: almacén seguro del sistema (solo la clave de intervals.icu).
@@ -290,6 +297,60 @@ class TrainSyncApp(
         }
     }
 
+    // ------------------------------------------------------------ otros dispositivos (docs/SINCRONIZACION.md)
+
+    /** El código guardado en el almacén seguro: se puede volver a enseñar para añadir otro dispositivo. */
+    val syncCode: String? get() = secrets.read(SYNC_CODE_KEY)
+
+    private suspend fun syncerFor(code: SyncCode): Syncer {
+        val keys = deriveKeys(code)
+        return Syncer(this, store, keys, SyncClient(SYNC_URL, keys.bearer, httpEngine))
+    }
+
+    private fun startSync(code: SyncCode) {
+        secrets.write(SYNC_CODE_KEY, code.text)
+        store.write(SYNC_CONSENT_KEY, "${today()} $PRIVACY_POLICY_VERSION")
+    }
+
+    /** Código nuevo: sube los datos de este móvil y devuelve el código. Requiere el consentimiento en la pantalla. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    suspend fun createSync(): String {
+        val code = SyncCode.generate()
+        syncerFor(code).sync(create = true)
+        startSync(code)
+        return code.text
+    }
+
+    /** Unirse con el código de otro dispositivo: junta los datos de aquí con los de la copia sin borrar nada. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    suspend fun joinSync(text: String) {
+        val code = SyncCode.parse(text) ?: throw IllegalArgumentException("El código no es válido: revisa las letras")
+        syncerFor(code).sync()
+        startSync(code)
+    }
+
+    /** Sincroniza si está activado. Devuelve el aviso si los dos dispositivos cambiaron lo mismo; null si no. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    suspend fun syncDevices(): String? {
+        val code = syncCode?.let { SyncCode.parse(it) } ?: return null
+        return conflictMessage(syncerFor(code).sync().conflicts)
+    }
+
+    /** Deja de sincronizar en este móvil; la copia del servidor y los datos de aquí se quedan. */
+    fun forgetSync() {
+        secrets.write(SYNC_CODE_KEY, null)
+        store.write(SYNC_STATE_KEY, null)
+        store.write(SYNC_CONSENT_KEY, null)
+    }
+
+    /** Borra la copia del servidor (RGPD art. 17); los datos de este móvil se quedan. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    suspend fun deleteSync() {
+        val code = syncCode?.let { SyncCode.parse(it) } ?: return
+        syncerFor(code).deleteRemote()
+        forgetSync()
+    }
+
     // ------------------------------------------------------------ tus datos
 
     /** Todo lo guardado, en JSON (portabilidad, RGPD art. 20). La clave de intervals.icu no se incluye. */
@@ -299,7 +360,7 @@ class TrainSyncApp(
     fun deleteAll() {
         secrets.write(API_KEY, null)
         store.write(DATA_KEY, null)
-        store.write(SYNC_STATE_KEY, null)
+        forgetSync()
         data = AppData()
     }
 }

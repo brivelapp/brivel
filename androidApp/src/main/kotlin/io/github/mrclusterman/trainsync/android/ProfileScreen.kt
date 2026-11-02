@@ -124,6 +124,7 @@ fun ProfileTab(app: TrainSyncApp, version: Int, act: Act, changeGoal: () -> Unit
         ReminderCard(app, act, version)
         HealthCard(app, act, version)
         IntervalsCard(app, act, version)
+        SyncCard(app, act, version)
         Module {
             SectionTitle("Tus datos")
             Secondary(PRIVACY_NOTE)

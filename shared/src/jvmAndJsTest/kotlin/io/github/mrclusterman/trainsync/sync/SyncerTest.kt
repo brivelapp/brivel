@@ -166,6 +166,26 @@ class SyncerTest {
     }
 
     @Test
+    fun appsSyncThroughTheCore() = runTest {
+        val a = TrainSyncApp(Store(), Store(), { LocalDate(2026, 11, 2) }, server.engine)
+        val b = TrainSyncApp(Store(), Store(), { LocalDate(2026, 11, 2) }, server.engine)
+        a.markDone(run.date, run.sport)
+        val code = a.createSync()
+        assertEquals(code, a.syncCode)
+        b.joinSync(code.lowercase().chunked(3).joinToString(" "))
+        assertEquals(setOf(run), b.data.manualDone.toSet())
+        b.markDone(ride.date, ride.sport)
+        assertNull(b.syncDevices())
+        a.syncDevices()
+        assertEquals(setOf(run, ride), a.data.manualDone.toSet())
+        assertEquals(404, assertFailsWith<SyncException> { TrainSyncApp(Store(), Store(), { LocalDate(2026, 11, 2) }, server.engine)
+            .joinSync(SyncCode.generate().text) }.status)
+        a.deleteAll()
+        assertNull(a.syncCode)
+        assertNull(a.syncDevices())  // sin código no hace nada
+    }
+
+    @Test
     fun deleteAllStopsSyncingSoItIsNotPropagated() = runTest {
         val (a, _) = pair()
         a.mark(run.date, run.sport)

@@ -23,6 +23,7 @@ final class AppModel: ObservableObject {
         do {
             try block()
             if let success { message = success }
+            syncSoon()
         } catch {
             message = error.localizedDescription
         }
@@ -34,6 +35,38 @@ final class AppModel: ObservableObject {
             do {
                 try await block()
                 if let success { message = success }
+                syncSoon()
+            } catch {
+                message = error.localizedDescription
+            }
+            refresh()
+        }
+    }
+
+    private var pending: Task<Void, Never>?
+
+    /// Con la sincronización activada, sube los cambios poco después (varios seguidos, de una vez). Sin red, calla.
+    func syncSoon() {
+        guard core.syncCode != nil else { return }
+        pending?.cancel()
+        pending = Task {
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            if Task.isCancelled { return }
+            do {
+                if let conflict = try await core.syncDevices() { message = conflict }
+            } catch {
+                // Solo lo que responde el servidor (copia borrada, otra versión); sin conexión se sube más tarde
+                if (error as NSError).userInfo["KotlinException"] is SyncException { message = error.localizedDescription }
+            }
+            refresh()
+        }
+    }
+
+    func syncNow() {
+        pending?.cancel()
+        Task {
+            do {
+                message = try await core.syncDevices() ?? "Sincronizado"
             } catch {
                 message = error.localizedDescription
             }
@@ -87,6 +120,8 @@ struct RootView: View {
             if model.core.linkedAthlete != nil { try? await model.core.sync() }
             // Apple Salud, si ya dio permiso: datos frescos sin pulsar nada
             if model.core.data.health != nil { try? await HealthKitReader.shared.sync(model.core) }
+            // Otros dispositivos, si está activado: lo que cambiaron mientras tanto
+            if let conflict = try? await model.core.syncDevices() { model.message = conflict }
             model.refresh()
         }
         .alert(model.message ?? "", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {
