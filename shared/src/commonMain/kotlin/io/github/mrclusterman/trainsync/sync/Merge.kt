@@ -7,6 +7,13 @@ package io.github.mrclusterman.trainsync.sync
 import io.github.mrclusterman.trainsync.app.AppData
 import io.github.mrclusterman.trainsync.app.SCHEMA
 
+/**
+ * Lo que se sube: todo menos la copia de intervals.icu. Son hasta 365 días de actividades y bienestar (podría pasar del
+ * tope de 1 MB) y viven en intervals.icu: cada dispositivo con la clave los vuelve a descargar. Así el servidor guarda
+ * menos datos de salud (RGPD art. 5.1.c). La base guardada tampoco la lleva, y `merge` conserva la de este dispositivo.
+ */
+fun syncPayload(data: AppData): AppData = data.copy(cache = null)
+
 /** Los datos combinados y los apartados en los que el cambio de este dispositivo perdió frente al del servidor. */
 class Merged(val data: AppData, val conflicts: Set<String>)
 

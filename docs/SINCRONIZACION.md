@@ -1,6 +1,6 @@
 # Cuentas y sincronización (diseño, 2026-10-30)
 
-Estado: **aprobado por Gabriel; paso 1 (núcleo) hecho el 2026-11-02**, ver «Implementación» al final. Revisado y auditado el 2026-10-30 (cifrado, conflictos, RGPD y Cloudflare); las
+Estado: **aprobado por Gabriel; pasos 1 (núcleo) y 2 (servidor, sin publicar) hechos el 2026-11-02**, ver «Implementación» al final. Revisado y auditado el 2026-10-30 (cifrado, conflictos, RGPD y Cloudflare); las
 correcciones de esa revisión ya están incorporadas y se resumen al final. Servidor: Cloudflare Workers + D1
 (`server/`, solo la base hecha: sirve la web y `/api/estado`).
 
@@ -169,8 +169,26 @@ Revisado como lo haría un auditor de seguridad. Lo que se añade al diseño:
   se devuelve en `conflicts`. Lo descargado (copia de intervals.icu y de Salud) sigue la misma regla, pero sin avisar.
   **Se niega a combinar** datos de una versión más nueva de la app (`schema` mayor): los campos que esta no conoce se
   perderían al volver a subir.
-- **Pendiente de medir:** la copia de intervals.icu (`cache`) va dentro de `AppData` y puede acercarse al tope de 1 MB.
-  Se decide en el paso 2 si se sube o se vuelve a descargar en cada dispositivo.
+- **Lo que se sube (`syncPayload`): todo menos la copia de intervals.icu (`cache`).** La app descarga 365 días de
+  actividades y bienestar con todos sus campos; para quien entrena a diario puede pasar de 1 MB [Inferencia: sin medir
+  con datos reales]. Esos datos viven en intervals.icu y cada dispositivo con la clave los vuelve a descargar, y así el
+  servidor guarda menos datos de salud (minimización, RGPD art. 5.1.c). La base guardada tampoco la lleva, y `merge`
+  conserva la de cada dispositivo. Los datos de Salud (`health`, unos KB) sí se suben: la web no puede leerlos.
+
+**Paso 2, servidor (2026-11-02, probado en local, sin publicar):** `server/src/index.ts`,
+`server/migrations/0001_bovedas.sql` y `server/test/boveda.test.mjs` (`npm test`: arranca `wrangler dev` con una D1
+local nueva).
+
+- **Token:** `Authorization: Bearer <token>`, con los 32 bytes en base64url sin relleno (43 caracteres;
+  `SyncKeys.bearer`). Cuenta = SHA-256 de esos bytes; el token no se guarda.
+- **Respuestas:** `401` sin token válido; `GET` → `200` con el bloque y `ETag: "n"`, o `404`; `PUT` con
+  `If-None-Match: *` → `201` y `ETag: "1"`, o `409` si ya existe; con `If-Match: "n"` → `200` y `ETag: "n+1"`, o `409`
+  si otro subió antes (o la cuenta ya no existe); `428` sin ninguna de las dos; `411` sin `Content-Length`; `413` si
+  está vacío o pasa de 1 MB; `DELETE` → `204`; `429` al pasar un límite. Todo con `Cache-Control: no-store` y sin CORS.
+- **Límites (binding de rate limiting de Workers):** 60 peticiones por minuto por IP en toda la API, 5 altas por
+  minuto por IP y 20 subidas por minuto por cuenta.
+- **Publicar:** `npm run deploy` aplica la migración en la D1 real y despliega. No se ha hecho: lo decide Gabriel, y
+  conviene hacerlo cuando haya web o app que lo use (pasos 3 y 4) y los requisitos legales del paso 5.
 
 ## Descartado
 

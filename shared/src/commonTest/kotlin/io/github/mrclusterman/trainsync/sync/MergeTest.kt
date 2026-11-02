@@ -96,6 +96,16 @@ class MergeTest {
     }
 
     @Test
+    fun localIntervalsCopyStaysButIsNeverUploaded() {
+        val uploaded = syncPayload(full)
+        assertEquals(null, uploaded.cache)
+        val remote = uploaded.copy(reminderHour = 21)  // otro dispositivo cambió algo
+        val merged = merge(base = uploaded, local = full, remote = remote).data
+        assertEquals(full.cache, merged.cache)
+        assertEquals(21, merged.reminderHour)
+    }
+
+    @Test
     fun refusesDataFromANewerApp() {
         assertFailsWith<IllegalArgumentException> { merge(full, full, full.copy(schema = SCHEMA + 1)) }
     }

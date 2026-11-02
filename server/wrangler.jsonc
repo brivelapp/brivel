@@ -10,5 +10,12 @@
   "d1_databases": [{ "binding": "DB", "database_name": "brivel", "database_id": "4ecfd370-b140-406e-a1be-c59d183ac4ee", "migrations_dir": "migrations" }],
   // Solo en brivel.app: sin la dirección *.workers.dev, que sería otra copia pública de la web
   "routes": [{ "pattern": "brivel.app", "custom_domain": true }],
-  "workers_dev": false
+  "workers_dev": false,
+  // Contra abusos (docs/SINCRONIZACION.md): por IP en toda la API, altas por IP y subidas por cuenta. Aproximados, no
+  // estrictos; los acotan también el tope de 1 MB por cuenta
+  "ratelimits": [
+    { "name": "POR_IP", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } },
+    { "name": "ALTAS", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
+    { "name": "SUBIDAS", "namespace_id": "1003", "simple": { "limit": 20, "period": 60 } }
+  ]
 }

@@ -16,6 +16,8 @@ class VaultTest {
         val keys = deriveKeys(SyncCode.fromSecret(VECTOR_SECRET))
         assertEquals(VECTOR_TOKEN, keys.token.toHexString())
         assertEquals(VECTOR_ACCOUNT, keys.account)
+        assertEquals(43, keys.bearer.length)
+        assertContentEquals(keys.token, Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT).decode(keys.bearer))
     }
 
     @Test

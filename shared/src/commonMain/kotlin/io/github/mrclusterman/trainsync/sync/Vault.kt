@@ -8,12 +8,16 @@ import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.algorithms.AES
 import dev.whyoleg.cryptography.algorithms.HKDF
 import dev.whyoleg.cryptography.algorithms.SHA256
+import kotlin.io.encoding.Base64
 
 private const val FORMAT: Byte = 1  // primer byte del bloque: permite cambiar el cifrado más adelante
 private const val PAD = 4096  // relleno a múltiplos de 4 KB: el tamaño no revela cuánto se entrena
 
 /** Lo que sale del código: la clave AES-256-GCM (nunca sale del dispositivo), el token de acceso y la cuenta. */
-class SyncKeys internal constructor(internal val key: AES.GCM.Key, val token: ByteArray, val account: String)
+class SyncKeys internal constructor(internal val key: AES.GCM.Key, val token: ByteArray, val account: String) {
+    /** `Authorization: Bearer …`: el token en base64url sin relleno (43 caracteres), como lo lee server/src/index.ts. */
+    val bearer: String get() = Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT).encode(token)
+}
 
 /** HKDF-SHA256 con etiquetas distintas para la clave y el token; la cuenta es SHA-256(token) en hexadecimal. */
 suspend fun deriveKeys(code: SyncCode): SyncKeys {
