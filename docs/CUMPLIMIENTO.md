@@ -19,7 +19,7 @@ Etiquetas: **[Verificado]** comprobado en el código o en la app real · **[Fuen
 
 | # | Requisito | ¿Aplica? | Estado hoy | Cuándo | Base / nota |
 |---|---|---|---|---|---|
-| 1 | Política de privacidad | Sí | **Hecha (2026-11-02)**: `web/public/privacidad.html` → https://brivel.app/privacidad. **Versión 2 (2026-11-02.2, sin publicar):** añade la sincronización (apartado 4); se publica con la API | Revisar con cada cambio de datos (sincronización, OAuth) | RGPD arts. 13-14. Cubre: datos solo en el dispositivo (incluidos los de salud de Apple Salud y Health Connect), intervals.icu como servicio independiente, Cloudflare como encargado (IP; DPA v6.4 incorporado a su Self-Serve Subscription Agreement §6.1 [Verificado: cloudflare.com/terms y /cloudflare-customer-dpa, 2026-11-02]; transferencias a EE. UU. con el Marco de Privacidad UE-EE. UU. y cláusulas tipo de respaldo, DPA §6.2 y §6.4), derechos y AEPD. Las apps aún no enlazan la política: hace falta antes de las tiendas (Apple y Google piden la URL) |
+| 1 | Política de privacidad | Sí | **Hecha (2026-11-02)**: `web/public/privacidad.html` → https://brivel.app/privacidad. **Versión 2 (2026-11-02.2):** añade la sincronización (apartado 4); publicada con la API | Revisar con cada cambio de datos (sincronización, OAuth) | RGPD arts. 13-14. Cubre: datos solo en el dispositivo (incluidos los de salud de Apple Salud y Health Connect), intervals.icu como servicio independiente, Cloudflare como encargado (IP; DPA v6.4 incorporado a su Self-Serve Subscription Agreement §6.1 [Verificado: cloudflare.com/terms y /cloudflare-customer-dpa, 2026-11-02]; transferencias a EE. UU. con el Marco de Privacidad UE-EE. UU. y cláusulas tipo de respaldo, DPA §6.2 y §6.4), derechos y AEPD. Las apps aún no enlazan la política: hace falta antes de las tiendas (Apple y Google piden la URL) |
 | 2 | Términos de uso | Sí | **Hechos (2026-11-02)**: `web/public/terminos.html` → https://brivel.app/terminos | — | No es consejo médico ni producto sanitario, el usuario entrena bajo su responsabilidad, edad mínima 14, sin garantía en la medida que permita la ley, AGPL y ley española. La web enseña el aviso de salud (`HEALTH_NOTICE`) antes de empezar, como las apps |
 | 3 | Política de reembolso | **No**, mientras sea gratis | — | Si hay pago o donaciones con contraprestación | — |
 | 4 | Política de cookies | Hoy no hay cookies (descrito en la política de privacidad, §6) | [Verificado: 0 cookies en / y /plan] | Fase 1 (cookie de sesión) | Las cookies técnicas estrictamente necesarias (sesión, autenticación) están exentas de consentimiento (art. 22.2 LSSI, guía AEPD) [Fuente: resúmenes de la guía AEPD]. Se describirán en la política de privacidad |
@@ -72,12 +72,11 @@ Etiquetas: **[Verificado]** comprobado en el código o en la app real · **[Fuen
 
 ## 4. Sincronización: documentos del RGPD (2026-11-02)
 
-- **EIPD:** `docs/legal/EIPD_SINCRONIZACION.md`, borrador pendiente de la firma de Gabriel. Riesgo residual bajo o
-  medio-bajo, salvo el de la cuenta del responsable comprometida (medio hasta confirmar la verificación en dos pasos en
-  Cloudflare y GitHub).
+- **EIPD:** `docs/legal/EIPD_SINCRONIZACION.md`, aprobada por Gabriel el 2026-11-02. Riesgo residual bajo o
+  medio-bajo; sin consulta previa a la AEPD.
 - **Registro de actividades (art. 30) y registro de brechas (art. 33.5):** `docs/legal/REGISTRO_ACTIVIDADES.md`.
 - **Encargado:** el DPA v6.4 de Cloudflare forma parte de su Self-Serve Subscription Agreement (§6.1) [Verificado el
   2026-11-02].
 - **Plazo:** borrado automático tras 12 meses sin uso (subir o bajar), decidido el 2026-11-02; tarea diaria del Worker.
-- **Antes de publicar la API:** la verificación en dos pasos en Cloudflare y GitHub (EIPD, R2), la firma de la EIPD, y
-  publicar la política v2 a la vez.
+- **Verificación en dos pasos** en Cloudflare y GitHub: activada, según Gabriel (2026-11-02).
+- **Publicada** con la API y la política v2 el 2026-11-02.

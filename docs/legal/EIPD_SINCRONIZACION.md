@@ -1,8 +1,8 @@
 # Evaluación de impacto (EIPD): sincronización entre dispositivos
 
-**Estado:** borrador del 2026-11-02, preparado por Claude a partir de `docs/SINCRONIZACION.md` y del código. Lo tiene que
-revisar y firmar Gabriel, que es el responsable del tratamiento. Se puede pasar a la herramienta gratuita de la AEPD,
-Gestiona EIPD, que sigue los mismos apartados.
+**Estado:** aprobada por Gabriel, responsable del tratamiento, el 2026-11-02. Preparada por Claude a partir de
+`docs/SINCRONIZACION.md` y del código. Se puede pasar a la herramienta gratuita de la AEPD, Gestiona EIPD, que sigue
+los mismos apartados.
 
 **Revisar** cada vez que cambie lo que se sube, el cifrado o el proveedor (por ejemplo: OAuth de intervals.icu, QR o
 cambio de código).
@@ -57,8 +57,8 @@ Fuente: AEPD, «Listas de tipos de tratamientos de datos que requieren EIPD (art
 - **Derechos:** borrar y retirar el consentimiento desde cualquier dispositivo, al momento. Acceso y portabilidad: los
   datos están en el dispositivo (exportar a JSON en las apps). Sin el código, el responsable no puede saber qué copia
   es de quién (art. 11).
-- **Plazos:** hasta que se borre o tras 12 meses sin uso (decidido por Gabriel el 2026-11-02). Así no se guardan copias
-  olvidadas de quien dejó de usar Brivel.
+- **Plazos:** hasta que se borre o tras 12 meses sin uso (tarea diaria del Worker). Así no se guardan copias olvidadas
+  de quien dejó de usar Brivel.
 
 ## 4. Riesgos y medidas
 
@@ -68,7 +68,7 @@ están en el código.
 | # | Amenaza | Inherente | Medidas | Residual |
 |---|---|---|---|---|
 | R1 | Acceso a la base de datos (brecha en Cloudflare o en la cuenta del responsable) | Alto | Cifrado de extremo a extremo; claves solo en los dispositivos; identificador seudónimo | Bajo |
-| R2 | **Cuenta del responsable comprometida** (Cloudflare o GitHub): alguien publica una web modificada que roba claves o datos descifrados | Alto | Código abierto y auditable; despliegue manual por el responsable; CSP estricta. **Falta comprobar** que Cloudflare y GitHub tienen la verificación en dos pasos activada | **Medio** hasta comprobar la verificación en dos pasos; bajo después |
+| R2 | **Cuenta del responsable comprometida** (Cloudflare o GitHub): alguien publica una web modificada que roba claves o datos descifrados | Alto | Código abierto y auditable; despliegue manual por el responsable; CSP estricta; verificación en dos pasos en Cloudflare y GitHub (confirmada por Gabriel el 2026-11-02) | Bajo |
 | R3 | XSS en la web: un script usa la clave mientras la página está abierta | Medio | CSP `script-src 'self'`, sin scripts de terceros; clave no exportable (no se la pueden llevar); el código no se guarda | Bajo |
 | R4 | El servidor devuelve una copia vieja o de otra cuenta | Medio | Cuenta y versión en los datos asociados; el dispositivo rechaza una versión menor que la última vista | Bajo (no protege la disponibilidad) |
 | R5 | Pérdida de datos al combinar o borrar | Medio | Combinación a tres bandas con tests; nunca se borran los datos del dispositivo; «Borrar todo» deja de sincronizar para no propagar el borrado | Bajo |
@@ -81,20 +81,5 @@ están en el código.
 
 ## 5. Conclusión
 
-Con las medidas descritas, el riesgo residual es **bajo o medio-bajo**, salvo R2, que es **medio** mientras no se
-compruebe la verificación en dos pasos. No hace falta la consulta previa a la AEPD (art. 36), que es para riesgo
-residual alto [Inferencia: según el art. 36.1].
-
-## 6. Plan de acción antes de publicar
-
-1. **Gabriel:** activar la verificación en dos pasos en Cloudflare y en GitHub (R2).
-2. ~~Decidir el borrado tras 12 meses sin uso~~: decidido y hecho el 2026-11-02 (tarea diaria a las 03:00 UTC).
-3. Publicar la política v2 a la vez que la API (`npm run deploy` en `server/`, tras construir la web).
-4. Registro de actividades al día (`docs/legal/REGISTRO_ACTIVIDADES.md`).
-5. Más adelante: cambio de código (R6) y revisar esta EIPD.
-
-## 7. Firma
-
-| Responsable | Fecha | Firma |
-|---|---|---|
-| Gabriel Miralles Alvarez | | |
+Con las medidas descritas, el riesgo residual es **bajo o medio-bajo** en todos los casos. No hace falta la consulta
+previa a la AEPD (art. 36), que es para riesgo residual alto [Inferencia: según el art. 36.1].
