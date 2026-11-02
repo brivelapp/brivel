@@ -1,6 +1,6 @@
 # Cuentas y sincronización (diseño, 2026-10-30)
 
-Estado: **publicado el 2026-11-02** en brivel.app (API, web y política v2; EIPD aprobada). Las apps lo llevan desde el commit `97ce075`. **Pendiente:** registrar la tarea diaria de borrado (falta el subdominio workers.dev de la cuenta). Ver «Implementación» al final. Revisado y auditado el 2026-10-30 (cifrado, conflictos, RGPD y Cloudflare); las
+Estado: **publicado el 2026-11-02** en brivel.app (API, web y política v2; EIPD aprobada). Las apps lo llevan desde el commit `97ce075`. La tarea diaria de borrado (`0 3 * * *`) quedó registrada el 2026-11-02, una vez creado el subdominio workers.dev de la cuenta, que Cloudflare exige para los crons; el Worker sigue sin dirección workers.dev. Ver «Implementación» al final. Revisado y auditado el 2026-10-30 (cifrado, conflictos, RGPD y Cloudflare); las
 correcciones de esa revisión ya están incorporadas y se resumen al final. Servidor: Cloudflare Workers + D1
 (`server/`, solo la base hecha: sirve la web y `/api/estado`).
 
