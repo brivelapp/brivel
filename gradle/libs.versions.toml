@@ -8,6 +8,7 @@ activityCompose = "1.13.0"
 ktor = "3.6.0"
 coroutines = "1.11.0"
 healthConnect = "1.1.0"
+cryptography = "0.6.0"
 
 [libraries]
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
@@ -23,6 +24,8 @@ ktor-client-java = { module = "io.ktor:ktor-client-java", version.ref = "ktor" }
 ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", version.ref = "cryptography" }
+cryptography-provider-optimal = { module = "dev.whyoleg.cryptography:cryptography-provider-optimal", version.ref = "cryptography" }
 health-connect = { module = "androidx.health.connect:connect-client", version.ref = "healthConnect" }
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 

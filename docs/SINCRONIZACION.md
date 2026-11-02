@@ -1,6 +1,6 @@
 # Cuentas y sincronización (diseño, 2026-10-30)
 
-Estado: **aprobado por Gabriel, sin implementar**. Revisado y auditado el 2026-10-30 (cifrado, conflictos, RGPD y Cloudflare); las
+Estado: **aprobado por Gabriel; paso 1 (núcleo) hecho el 2026-11-02**, ver «Implementación» al final. Revisado y auditado el 2026-10-30 (cifrado, conflictos, RGPD y Cloudflare); las
 correcciones de esa revisión ya están incorporadas y se resumen al final. Servidor: Cloudflare Workers + D1
 (`server/`, solo la base hecha: sirve la web y `/api/estado`).
 
@@ -143,6 +143,34 @@ Revisado como lo haría un auditor de seguridad. Lo que se añade al diseño:
 3. Web: «Sincronizar» en Perfil (activar, código y QR, añadir dispositivo, borrar).
 4. Android e iOS.
 5. Textos legales, EIPD, registro de actividades, DPA de Cloudflare; crear D1 con `--jurisdiction=eu`; deploy.
+
+## Implementación
+
+**Paso 1, núcleo (2026-11-02):** `shared/src/commonMain/kotlin/io/github/mrclusterman/trainsync/sync/`, con tests en
+`commonTest/.../sync/` que corren en JVM, JS y, en el CI, iOS.
+
+- **Librería:** `cryptography-kotlin` 0.6.0 con el proveedor `optimal`: JDK en Android y JVM, WebCrypto en la web y
+  CryptoKit en iOS (CommonCrypto no tiene AES-GCM). Todo es `suspend`, porque WebCrypto no tiene versión bloqueante.
+  Fuente: whyoleg.github.io/cryptography-kotlin (proveedores y operaciones).
+- **Código (`SyncCode`):** 16 bytes aleatorios en 26 letras de Crockford más una de control **Luhn mod 32** (27 en
+  total). El control de Crockford es mod 37 y usa `* ~ $ = U`, molestos de teclear en el móvil. Luhn mod 32 detecta
+  cualquier letra cambiada (comprobado en los tests con todas) y casi todos los cambios de orden entre vecinas. Al leer
+  da igual mayúsculas, espacios y guiones; O vale 0 e I o L valen 1.
+- **Claves (`deriveKeys`):** HKDF-SHA256 con sal de 32 ceros (la de RFC 5869 sin sal) e `info`
+  `brivel-sync-key-v1` (clave AES-256) y `brivel-sync-token-v1` (token de 32 bytes). Cuenta = SHA-256(token) en
+  hexadecimal.
+- **Bloque (`seal` y `open`):** `01 | nonce de 12 bytes | cifrado | etiqueta de 16 bytes`. Datos asociados:
+  `1:<cuenta>:<versión>`. Relleno ISO/IEC 7816-4 (`0x80` y ceros) hasta múltiplos de 4096 bytes.
+- **Vectores independientes:** `commonTest/.../sync/Vectors.kt` se generó con `node:crypto` (OpenSSL). En cada
+  plataforma se comprueba el código, el token, la cuenta y que se descifra un bloque hecho por Node.
+- **Combinar (`merge`):** altas y bajas de listas y conjuntos (sesiones hechas, pesos, actividades renombradas); los
+  mapas por día o semana (estado del día, elecciones, cambios de semana) campo a campo; perfil, objetivo (junto con el
+  inicio de su bloque), atleta de intervals.icu y hora del recordatorio a tres bandas, y si chocan gana el servidor y
+  se devuelve en `conflicts`. Lo descargado (copia de intervals.icu y de Salud) sigue la misma regla, pero sin avisar.
+  **Se niega a combinar** datos de una versión más nueva de la app (`schema` mayor): los campos que esta no conoce se
+  perderían al volver a subir.
+- **Pendiente de medir:** la copia de intervals.icu (`cache`) va dentro de `AppData` y puede acercarse al tope de 1 MB.
+  Se decide en el paso 2 si se sube o se vuelve a descargar en cada dispositivo.
 
 ## Descartado
 

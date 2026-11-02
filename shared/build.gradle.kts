@@ -50,9 +50,13 @@ kotlin {
             api(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.ktor.client.core)
+            // Sincronización cifrada (sync/): JDK en Android y JVM, WebCrypto en la web y CryptoKit en iOS
+            implementation(libs.cryptography.core)
+            implementation(libs.cryptography.provider.optimal)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)  // el cifrado es suspend (WebCrypto no tiene versión bloqueante)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
@@ -69,7 +73,6 @@ kotlin {
         val jvmAndJsTest by getting {
             dependencies {
                 implementation(libs.ktor.client.mock)
-                implementation(libs.kotlinx.coroutines.test)
             }
         }
     }

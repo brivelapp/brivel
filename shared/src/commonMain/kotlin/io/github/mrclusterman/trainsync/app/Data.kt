@@ -73,6 +73,7 @@ data class IntervalsCache(
 /** Versión del formato guardado: al cambiarlo, `migrate` adapta los datos antiguos (sin servidor no hay migraciones). */
 const val SCHEMA = 2
 
+/** Campo nuevo: añádelo también a `merge` (sync/Merge.kt), o un cambio de otro dispositivo pisará el de este. */
 @Serializable
 data class AppData(
     val schema: Int = SCHEMA,
