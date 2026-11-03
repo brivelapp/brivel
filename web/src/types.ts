@@ -11,8 +11,12 @@ export interface TodayScreen {
   meetsWho: boolean; weekMinutes: number; strengthDays: number; weekDots: WeekDot[]; warnings: string[]; info: string[]
   askReadiness: boolean; goalFinished: boolean
 }
-/** WebApp.liftJson */
-export interface LiftHint { exercise: string; last: string | null; suggestion: string | null; weight: string }
+// Sesión de fuerza serie a serie (Workout.kt) y figura de su movimiento (Figures.kt); reps son segundos si timed
+export interface LoggedSet { set: number; weightKg: number | null; reps: number }
+export interface StrengthExercise { name: string; pattern: string; sets: number; repsLow: number; repsHigh: number; timed: boolean
+  restSeconds: number; suggestion: string | null; weightKg: number | null; previous: LoggedSet[]; done: LoggedSet[] }
+export interface StrengthScreen { date: string; title: string; exercises: StrengthExercise[]; other: string[] }
+export interface FigureLines { head: [number, number]; body: number[][]; work: number[][] }
 
 // Calendario y Progreso (Screens.kt): solo lo que pinta la web
 export interface DoneActivity { title: string; sport: string; minutes: number; start: string | null }

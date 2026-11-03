@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { WebApp } from "brivel-shared"
-import type { DayView, LiftHint, PlanItem, Reason, TodayScreen, Tone } from "./types"
+import type { DayView, PlanItem, Reason, TodayScreen, Tone } from "./types"
 import { SyncCard } from "./Sync"
 import { clearKeys } from "./sync"
 import { Segmented } from "./ProfileParts"
@@ -85,31 +85,7 @@ function ReadinessCard({ core, act }: { core: WebApp; act: Act }) {
   )
 }
 
-/** Cada ejercicio de fuerza: lo apuntado la última vez, la sugerencia de hoy y apuntar peso y repeticiones. */
-function LiftRow({ core, date, line, act }: { core: WebApp; date: string; line: string; act: Act }) {
-  const json = core.liftJson(line)
-  const hint: LiftHint | null = json ? JSON.parse(json) : null
-  const [open, setOpen] = useState(false)
-  const [weight, setWeight] = useState(hint?.weight ?? "")
-  const [reps, setReps] = useState("")
-  if (!hint) return null
-  return (
-    <div className="lift">
-      <strong>{hint.exercise}</strong>
-      {hint.last && <p className="muted small">{hint.last}</p>}
-      {hint.suggestion && <p className="ok-text small">{hint.suggestion}</p>}
-      {!open
-        ? <button className="text" onClick={() => setOpen(true)}>Apuntar</button>
-        : (
-          <form className="row" onSubmit={(e) => { e.preventDefault(); act(() => core.logLift(date, line, weight, reps), "Apuntado"); setOpen(false) }}>
-            <label>kg<input inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} /></label>
-            <label>reps<input inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value.replace(/\D/g, ""))} /></label>
-            <button className="text" type="submit">Guardar</button>
-          </form>
-        )}
-    </div>
-  )
-}
+const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` }
 
 function SessionCard({ core, item, done, children }: { core: WebApp; item: PlanItem; done: boolean; children?: ReactNode }) {
   const label = core.sportLabel(item.sport)
@@ -144,7 +120,7 @@ function SessionCard({ core, item, done, children }: { core: WebApp; item: PlanI
 }
 
 /** Las sesiones de hoy con sus acciones: hecha, cambiar de deporte, apuntar fuerza, hoy no puedo (DayContent de Android). */
-export function DayContent({ core, day, act }: { core: WebApp; day: DayView; act: Act }) {
+export function DayContent({ core, day, act, openStrength }: { core: WebApp; day: DayView; act: Act; openStrength: (date: string) => void }) {
   const [openSlot, setOpenSlot] = useState<string | null>(null)
   const changeable = core.canChangeDay(day.date)
   return (
@@ -161,7 +137,14 @@ export function DayContent({ core, day, act }: { core: WebApp; day: DayView; act
         return (
           <SessionCard key={item.slot} core={core} item={item} done={done}>
             <div className="row">
-              {!done && <button className="primary grow" onClick={() => act(() => core.markDone(day.date, item.sport))}>La he hecho</button>}
+              {/* Fuerza: apuntar las series ya la cuenta como hecha; "La he hecho" queda para quien no apunta */}
+              {item.sport === "strength" && day.date <= localToday() && (
+                <button className="primary grow" onClick={() => openStrength(day.date)}>{done ? "Ver las series" : "Empezar"}</button>
+              )}
+              {!done && (
+                <button className={item.sport === "strength" && day.date <= localToday() ? "secondary" : "primary grow"}
+                  onClick={() => act(() => core.markDone(day.date, item.sport))}>La he hecho</button>
+              )}
               {!done && !day.isPast && item.alternatives.length > 0 && (
                 <button className="secondary" aria-expanded={open} onClick={() => setOpenSlot(open ? null : item.slot)}>{open ? "Cerrar" : "Cambiar"}</button>
               )}
@@ -173,7 +156,6 @@ export function DayContent({ core, day, act }: { core: WebApp; day: DayView; act
                 <button className="text" onClick={() => { act(() => core.chooseAlternative(day.date, item.slot, alt.sport)); setOpenSlot(null) }}>Haré esta</button>
               </div>
             ))}
-            {item.sport === "strength" && item.exercises.map((line) => <LiftRow key={line} core={core} date={day.date} line={line} act={act} />)}
             {item.chosen && <button className="text" onClick={() => act(() => core.clearChoice(day.date))}>Volver a la planificada</button>}
           </SessionCard>
         )
@@ -205,7 +187,8 @@ export function Footer({ core, act }: { core: WebApp; act: Act }) {
 }
 
 /** Hoy: el estado, la sesión y la semana. La portada, la bienvenida y el pie van en App.tsx. */
-export function Today({ core, act, synced }: { core: WebApp; act: Act; synced: (m: string | null) => void }) {
+export function Today({ core, act, synced, openStrength }:
+  { core: WebApp; act: Act; synced: (m: string | null) => void; openStrength: (date: string) => void }) {
   const wide = useWide()
   const screen: TodayScreen = JSON.parse(core.todayJson())
   const [tone, stateIcon] = STATE[screen.tone]
@@ -234,7 +217,7 @@ export function Today({ core, act, synced }: { core: WebApp; act: Act; synced: (
         </div>
       </section>
       {screen.askReadiness && !wide && <ReadinessCard core={core} act={act} />}
-      <DayContent core={core} day={screen.day} act={act} />
+      <DayContent core={core} day={screen.day} act={act} openStrength={openStrength} />
       </div>
       {/* En ordenador la semana va al lado, fija al desplazar; en el móvil, debajo como en las apps */}
       <aside className="col side">

@@ -97,11 +97,50 @@ legend { font-size: 14px; margin-bottom: 6px; }
 .chip { min-height: 36px; padding: 0 14px; border-radius: 10px; background: none; color: var(--text); box-shadow: inset 0 0 0 1px var(--muted); }
 .chip[aria-pressed="true"] { background: var(--ok-soft); box-shadow: inset 0 0 0 2px var(--ok); font-weight: 700; }
 .small-badge { width: 32px; height: 32px; }
-.lift { display: flex; flex-direction: column; gap: 2px; padding-top: 6px; }
-.lift form { gap: 8px; }
-.lift label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); }
-.lift input { width: 90px; min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--muted);
-  background: var(--surface); color: var(--text); font: 15px "IBM Plex Mono", monospace; }
+/* Sesión de fuerza (Strength.tsx), como StrengthSession.kt */
+.strength { gap: 14px; }
+.strength-title { font-size: 18px; }
+.strength .back { display: grid; place-items: center; background: none; }
+.set-dots { display: flex; gap: 6px; }
+.set-dots span { flex: 1; height: 5px; border-radius: 3px; background: var(--chip); }
+.set-dots span.on { background: var(--ok); }
+.figure-box { width: 64px; height: 64px; border-radius: 18px; background: var(--band); display: grid; place-items: center; flex: none; }
+.figure polyline, .figure circle { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.fig-body { stroke: var(--text); stroke-width: 2.2; }
+.fig-work { stroke: var(--ok); stroke-width: 3; }
+.hint { background: var(--ok-soft); border-radius: 16px; padding: 12px; font-size: 14px; }
+.steppers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stepper { background: var(--surface); border-radius: 24px; padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.stepper-value { height: 48px; display: grid; place-items: center; font-size: 38px; font-weight: 600; text-align: center; width: 100%;
+  border: 0; background: none; color: var(--text); padding: 0; }
+input.stepper-value::placeholder { color: var(--text); font-size: 26px; }
+input.stepper-value:focus-visible { outline: 2px solid var(--ok); border-radius: 12px; }
+.stepper .row button { width: 56px; min-height: 48px; padding: 0; background: var(--chip); color: var(--text); font-size: 22px; font-weight: 700; }
+.rest-ring { position: relative; width: 220px; max-width: 100%; aspect-ratio: 1; margin: 8px auto 0; display: grid; place-items: center; text-align: center; }
+.rest-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-track, .ring-left { fill: none; stroke-width: 10; }
+.ring-track { stroke: var(--chip); }
+.ring-left { stroke: var(--ok); stroke-linecap: round; transition: stroke-dashoffset .25s linear; }
+.rest-clock { font-size: 44px; font-weight: 600; }
+.rest-actions { justify-content: center; }
+.ok-module { background: var(--ok-soft); }
+.rest-bar { position: sticky; bottom: 16px; display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-radius: 999px;
+  background: var(--text); color: var(--bg); }
+.rest-bar .mono { font-size: 17px; font-weight: 600; }
+.rest-track { flex: 1; height: 6px; border-radius: 3px; background: var(--muted); overflow: hidden; }
+.rest-track span { display: block; height: 100%; background: var(--ok); }
+table.sets { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0 6px; font-size: 13px; }
+table.sets th:nth-child(1) { width: 15%; } table.sets th:nth-child(2) { width: 27%; } table.sets th:nth-child(5) { width: 40px; }
+table.sets th { text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+table.sets tr { cursor: pointer; }
+table.sets td { padding: 0 3px; }
+.row-open { min-height: 36px; padding: 0 6px; background: none; color: var(--text); font: inherit; }
+.cell { display: block; text-align: center; padding: 6px 0; border-radius: 10px; background: var(--chip); color: var(--muted); }
+tr.done .cell { background: var(--ok-soft); color: var(--text); }
+tr.now .cell { background: var(--surface); box-shadow: inset 0 0 0 2px var(--ok); }
+.tick { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: var(--chip); color: var(--muted); }
+tr.done .tick { background: var(--ok); color: var(--on-ok); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .status:empty { display: none; }
 .status { position: sticky; bottom: 16px; padding: 12px 16px; border-radius: 14px; background: var(--text); color: var(--bg); font-size: 14px; }
 

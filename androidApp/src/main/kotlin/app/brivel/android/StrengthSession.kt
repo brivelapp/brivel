@@ -109,7 +109,9 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
     var setNo by rememberSaveable { mutableIntStateOf((exercises.getOrNull(current)?.done?.size ?: 0) + 1) }
     var restEnd by rememberSaveable { mutableLongStateOf(0L) }
     var restTotal by rememberSaveable { mutableIntStateOf(0) }
-    var logged by remember { mutableStateOf<Pair<String, String>?>(null) }  // la serie recién apuntada, en el descanso
+    var logged by remember { mutableStateOf<Pair<String, String>?>(null) }
+    // Tras "Serie hecha", el descanso a pantalla; al abrir una serie de la tabla, la serie y el descanso abajo
+    var restView by rememberSaveable { mutableStateOf(false) }  // la serie recién apuntada, en el descanso
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val haptic = LocalHapticFeedback.current
     LaunchedEffect(restEnd) {
@@ -140,10 +142,10 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
             when {
                 mode == "session" -> exercises.forEachIndexed { i, ex ->
                     SessionRows(ex, i == current, setNo) { set ->
-                        current = i; setNo = set; mode = "set"
+                        current = i; setNo = set; mode = "set"; restView = false
                     }
                 }
-                restEnd > 0 -> RestView(restLeft, restTotal, e, setNo, logged,
+                restEnd > 0 && restView -> RestView(restLeft, restTotal, e, setNo, logged,
                     adjust = { restEnd += it * 1000L; if (restEnd <= System.currentTimeMillis()) restEnd = 0 },
                     skip = { restEnd = 0 })
                 e == null || setNo > e.sets && firstPending() < 0 -> Finished(screen.other, close)
@@ -162,12 +164,13 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
                     if (!editing && pending >= 0) {
                         restTotal = e.restSeconds
                         restEnd = System.currentTimeMillis() + e.restSeconds * 1000L
+                        restView = true
                     }
                 }
             }
             Spacer(Modifier.height(16.dp))
         }
-        if (mode == "session" && restEnd > 0) RestBar(restLeft, restTotal)
+        if (restEnd > 0 && (mode == "session" || !restView)) RestBar(restLeft, restTotal)
     }
 }
 

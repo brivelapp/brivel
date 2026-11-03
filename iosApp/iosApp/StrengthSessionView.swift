@@ -51,6 +51,8 @@ struct StrengthSessionView: View {
     @State private var restTotal = 0
     @State private var logged: (String, String)? = nil  // la serie recién apuntada, en el descanso
     @State private var restDone = 0  // sube al terminar cada descanso: vibración
+    // Tras "Serie hecha", el descanso a pantalla; al abrir una serie de la tabla, la serie y el descanso abajo
+    @State private var restView = false
 
     var body: some View {
         let _ = model.version
@@ -76,7 +78,7 @@ struct StrengthSessionView: View {
                                 content(exercises, other: screen.other, left: left)
                             }.padding(.horizontal, 18).padding(.vertical, 14)
                         }
-                        if mode == "session" && restEnd != nil { RestBar(left: left, total: restTotal) }
+                        if restEnd != nil && (mode == "session" || !restView) { RestBar(left: left, total: restTotal) }
                     }
                     .onChange(of: left) { _, l in if l == 0 && restEnd != nil { restEnd = nil; restDone += 1 } }
                 }
@@ -103,9 +105,9 @@ struct StrengthSessionView: View {
         let pending = exercises.firstIndex { $0.done.count < Int($0.sets) }
         if mode == "session" {
             ForEach(Array(exercises.enumerated()), id: \.offset) { i, ex in
-                SessionRows(e: ex, isCurrent: i == current, currentSet: setNo) { set in current = i; setNo = set; mode = "set" }
+                SessionRows(e: ex, isCurrent: i == current, currentSet: setNo) { set in current = i; setNo = set; mode = "set"; restView = false }
             }
-        } else if restEnd != nil {
+        } else if restEnd != nil && restView {
             RestView(left: left, total: restTotal, e: e, setNo: setNo, logged: logged,
                      adjust: { s in restEnd = restEnd.map { $0.addingTimeInterval(TimeInterval(s)) }; if let r = restEnd, r <= .now { restEnd = nil } },
                      skip: { restEnd = nil })
@@ -137,6 +139,7 @@ struct StrengthSessionView: View {
         if !editing && pending != nil {
             restTotal = Int(e.restSeconds)
             restEnd = Date().addingTimeInterval(TimeInterval(e.restSeconds))
+            restView = true
         }
     }
 }

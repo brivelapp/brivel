@@ -1,5 +1,5 @@
 // Raíz de la web: portada, bienvenida e inicio de sesión para quien no tiene datos aquí; después, Hoy y Perfil
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { WebApp } from "brivel-shared"
 import { Footer, Today, type Act } from "./Today"
 import { Landing, Pulse } from "./Landing"
@@ -7,6 +7,7 @@ import { Onboarding } from "./Onboarding"
 import { Profile } from "./Profile"
 import { Calendar } from "./Calendar"
 import { Progress } from "./Progress"
+import { Strength } from "./Strength"
 import { SyncCard } from "./Sync"
 import { loadKeys } from "./sync"
 
@@ -20,6 +21,8 @@ export function App() {
   const [message, setMessage] = useState<string | null>(null)
   const [entry, setEntry] = useState<Entry>("landing")
   const [tab, setTab] = useState<Tab>("today")
+  const [strengthDate, setStrengthDate] = useState<string | null>(null)  // sesión de fuerza abierta, a pantalla completa
+  const closeStrength = useCallback(() => setStrengthDate(null), [])
   const refresh = () => setVersion((v) => v + 1)
 
   // Con la sincronización activada, cada cambio se sube poco después (varios seguidos, de una vez)
@@ -86,6 +89,15 @@ export function App() {
     )
   }
 
+  if (strengthDate) {
+    return (
+      <>
+        <Strength core={core} date={strengthDate} act={act} close={closeStrength} />
+        {status}
+      </>
+    )
+  }
+
   return (
     <>
       <nav className="topbar" aria-label="Secciones">
@@ -96,8 +108,8 @@ export function App() {
           ))}
         </div>
       </nav>
-      {tab === "today" && <Today core={core} act={act} synced={synced} />}
-      {tab === "calendar" && <Calendar core={core} act={act} />}
+      {tab === "today" && <Today core={core} act={act} synced={synced} openStrength={setStrengthDate} />}
+      {tab === "calendar" && <Calendar core={core} act={act} openStrength={setStrengthDate} />}
       {tab === "progress" && <Progress core={core} openProfile={() => setTab("profile")} />}
       {tab === "profile" && <Profile core={core} act={act} synced={synced} />}
       {status}

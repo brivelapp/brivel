@@ -8,7 +8,7 @@ import check from "../../iosApp/iosApp/Assets.xcassets/check.imageset/check.svg"
 const LETTERS = ["L", "M", "X", "J", "V", "S", "D"]
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 
-export function Calendar({ core, act }: { core: WebApp; act: Act }) {
+export function Calendar({ core, act, openStrength }: { core: WebApp; act: Act; openStrength: (date: string) => void }) {
   const now = new Date()
   const [ym, setYm] = useState({ year: now.getFullYear(), month: now.getMonth() + 1 })
   const [selected, setSelected] = useState(iso(now))
@@ -56,7 +56,7 @@ export function Calendar({ core, act }: { core: WebApp; act: Act }) {
               <div><p className="state-title">{a.title}</p><p className="muted">{a.minutes} min{a.start ? ` a las ${a.start}` : ""}</p></div>
             </section>
           ))}
-          <DayContent key={selected} core={core} day={day} act={act} />
+          <DayContent key={selected} core={core} day={day} act={act} openStrength={openStrength} />
         </aside>
       </div>
     </main>

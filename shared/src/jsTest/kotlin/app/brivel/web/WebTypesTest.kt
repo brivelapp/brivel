@@ -18,7 +18,7 @@ import kotlin.test.assertEquals
 
 private val fs: dynamic = js("process.getBuiltinModule('fs')")
 
-/** web/src/types.ts está escrito a mano: cada campo que declara tiene que salir en el JSON de Hoy, liftJson, el mes o el progreso. */
+/** web/src/types.ts está escrito a mano: cada campo que declara tiene que salir en el JSON de Hoy, la sesión de fuerza, una figura, el mes o el progreso. */
 class WebTypesTest {
     private class MemoryStore : KeyValueStore {
         private val map = mutableMapOf<String, String>()
@@ -44,8 +44,14 @@ class WebTypesTest {
         val sent = listOf(30, 31).flatMap { d ->
             today = LocalDate(2026, 10, d)
             val screen = app.todayScreen()
-            val lifts = screen.day.items.flatMap { it.exercises }.mapNotNull { liftJson(app, it) }
-            (listOf(json.encodeToString(screen)) + lifts).flatMap { keys(Json.parseToJsonElement(it)) }
+            // La sesión de fuerza con una serie de la semana anterior y otra de hoy, y una figura
+            val strength = app.strengthScreen(today.toString())?.let { s ->
+                val e = s.exercises.first()
+                app.logSet(today.plusDays(-7).toString(), e.name, 1, 40.0, e.repsHigh)
+                app.logSet(today.toString(), e.name, 1, 42.0, e.repsLow)
+                json.encodeToString(app.strengthScreen(today.toString()))
+            }
+            (listOfNotNull(json.encodeToString(screen), strength, figureLinesJson("sentadilla"))).flatMap { keys(Json.parseToJsonElement(it)) }
         }.toSet()
         // Calendario y Progreso, con datos de Salud (días, entrenamientos con pulso, zonas y distancia)
         app.importHealth(HealthSnapshot("Apple Salud",

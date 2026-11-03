@@ -21,9 +21,9 @@ import app.brivel.app.ageAllowed as ageAllowedCore
 import app.brivel.app.goalLabel as labelOf
 import app.brivel.app.toggleCardio as toggleCardioCore
 import app.brivel.app.dateLabel as dateLabelCore
-import app.brivel.app.kg
 import app.brivel.app.conflictMessage
-import app.brivel.app.repRange
+import app.brivel.app.FIGURES
+import app.brivel.app.polylines
 import app.brivel.sync.SyncCode
 import app.brivel.sync.Syncer
 import kotlinx.browser.window
@@ -32,6 +32,8 @@ import kotlinx.browser.localStorage
 import kotlinx.browser.sessionStorage
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.js.Date
@@ -45,14 +47,13 @@ private class WebStore(private val storage: Storage) : KeyValueStore {
 // La fecha local del navegador; TimeZone.currentSystemDefault() en JS necesita la base de zonas horarias aparte
 private fun browserToday() = Date().let { LocalDate(it.getFullYear(), it.getMonth() + 1, it.getDate()) }
 
-internal fun liftJson(app: BrivelApp, line: String): String? {
-    if (repRange(line) == null) return null
-    val hint = app.liftHint(line)
-    return buildJsonObject {
-        put("exercise", hint.exercise)
-        put("last", hint.last?.let { "La última vez: ${it.weightKg?.let(::kg) ?: "tu peso"} × ${it.reps} (${it.sets} series)" })
-        put("suggestion", hint.suggestion)
-        put("weight", hint.last?.weightKg?.let { kg(it).removeSuffix(" kg") } ?: "")
+/** Figura de un patrón como polilíneas: lo que dibuja la web en SVG (Figures.kt). */
+internal fun figureLinesJson(pattern: String): String? = FIGURES[pattern]?.let { f ->
+    fun lines(d: String) = JsonArray(polylines(d).map { l -> JsonArray(l.flatMap { (x, y) -> listOf(JsonPrimitive(x), JsonPrimitive(y)) }) })
+    buildJsonObject {
+        put("head", JsonArray(listOf(JsonPrimitive(f.headX), JsonPrimitive(f.headY))))
+        put("body", lines(f.body))
+        put("work", lines(f.work))
     }.toString()
 }
 
@@ -171,14 +172,14 @@ class WebApp {
     fun preferTrain(date: String) = app.changeDay(date, app.minutesToTrain(app.day(date)))
     fun cannotTrain(date: String) = app.changeDay(date, 0)
 
-    /** Un ejercicio con repeticiones: lo de la última vez y la sugerencia de hoy; null si va por tiempo (planchas). */
-    fun liftJson(line: String): String? = liftJson(app, line)
+    /** La sesión de fuerza de ese día serie a serie (StrengthScreen), o null si ese día no tiene fuerza. */
+    fun strengthJson(date: String): String? = app.strengthScreen(date)?.let { json.encodeToString(it) }
+    fun lastStrengthDate(): String? = app.lastStrengthDate()
+    fun figureJson(pattern: String): String? = figureLinesJson(pattern)
 
-    /** Como LiftRows de Android: las series salen de la línea del plan ("3 × 8–12"). */
-    fun logLift(date: String, line: String, weight: String, reps: String) {
-        val sets = Regex("""(\d+) ×""").find(line)?.groupValues?.get(1)?.toInt() ?: 1
-        app.logLift(date, line, weight.replace(',', '.').toDoubleOrNull(), reps.toIntOrNull() ?: 0, sets)
-    }
+    /** Apunta o corrige una serie; `weight` vacío: con tu peso corporal. */
+    fun logSet(date: String, exercise: String, set: Int, weight: String, reps: Int) =
+        app.logSet(date, exercise, set, weight.replace(',', '.').toDoubleOrNull(), reps)
 }
 
 /** El código, para enseñarlo una sola vez, y las llaves, para guardarlas en IndexedDB. */
