@@ -275,15 +275,17 @@ class BrivelApp(
     /** El día más reciente de la última semana (hoy incluido) con sesión de fuerza, o null. */
     fun lastStrengthDate(): String? = (0..6).map { today().plusDays(-it).toString() }.firstOrNull { strengthScreen(it) != null }
 
-    /** Apunta o corrige la serie `set` (desde 1) de un ejercicio; `reps` son segundos en los ejercicios por tiempo. */
+    /**
+     * Apunta o corrige la serie `set` (desde 1) de un ejercicio; `reps` son segundos en los ejercicios por tiempo; `rir`:
+     * las repeticiones que te quedaban (null: sin apuntar).
+     */
     @Throws(Exception::class)
-    fun logSet(date: String, exercise: String, set: Int, weightKg: Double?, reps: Int) {
+    fun logSet(date: String, exercise: String, set: Int, weightKg: Double?, reps: Int, rir: Int?) {
         require(date <= today().toString()) { "No se puede apuntar una sesión futura" }
-        require(exercise.isNotBlank() && set in 1..20 && reps in 1..600 && (weightKg == null || weightKg in 0.0..500.0)) {
-            "Revisa el peso y las repeticiones"
-        }
+        require(exercise.isNotBlank() && set in 1..20 && reps in 1..600 && (weightKg == null || weightKg in 0.0..500.0) &&
+            (rir == null || rir in 0..10)) { "Revisa el peso y las repeticiones" }
         save(data.copy(sets = data.sets.filterNot { it.date == date && it.exercise == exercise && it.set == set } +
-            SetLog(date, exercise, set, weightKg, reps)))
+            SetLog(date, exercise, set, weightKg, reps, rir)))
     }
 
     /** Borra una serie; las siguientes de ese ejercicio y día bajan un número para que no queden huecos. */

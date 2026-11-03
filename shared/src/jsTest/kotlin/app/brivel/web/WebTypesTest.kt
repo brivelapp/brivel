@@ -47,8 +47,8 @@ class WebTypesTest {
             // La sesión de fuerza con una serie de la semana anterior y otra de hoy, y una figura
             val strength = app.strengthScreen(today.toString())?.let { s ->
                 val e = s.exercises.first()
-                app.logSet(today.plusDays(-7).toString(), e.name, 1, 40.0, e.repsHigh)
-                app.logSet(today.toString(), e.name, 1, 42.0, e.repsLow)
+                app.logSet(today.plusDays(-7).toString(), e.name, 1, 40.0, e.repsHigh, 2)
+                app.logSet(today.toString(), e.name, 1, 42.0, e.repsLow, null)
                 json.encodeToString(app.strengthScreen(today.toString()))
             }
             (listOfNotNull(json.encodeToString(screen), strength, figureLinesJson("sentadilla"))).flatMap { keys(Json.parseToJsonElement(it)) }

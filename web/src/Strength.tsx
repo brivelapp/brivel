@@ -10,6 +10,7 @@ import back from "../../iosApp/iosApp/Assets.xcassets/chevron_left.imageset/chev
 const kgText = (w: number | null) => (w == null ? "Tu peso" : String(w).replace(".", ","))
 const amount = (reps: number, timed: boolean) => (timed ? `${reps}″` : String(reps))
 const setText = (s: LoggedSet, timed: boolean) => (s.weightKg != null ? `${kgText(s.weightKg)} × ` : "") + amount(s.reps, timed)
+const effort = (rir: number) => (rir === 0 ? "Hasta no poder más" : `Termina con ${rir} en reserva`)
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
 const pendingIndex = (list: StrengthExercise[]) => list.findIndex((e) => e.done.length < e.sets)
 
@@ -37,7 +38,7 @@ export function Strength({ core, date, act, close }: { core: WebApp; date: strin
   const [setNo, setSetNo] = useState(() => (exercises[Math.max(0, pendingIndex(exercises))]?.done.length ?? 0) + 1)
   const [restEnd, setRestEnd] = useState<number | null>(null)
   const [restTotal, setRestTotal] = useState(0)
-  const [logged, setLogged] = useState<[string, string] | null>(null)
+  const [logged, setLogged] = useState<[StrengthExercise, LoggedSet] | null>(null)  // la última serie apuntada
   const [restView, setRestView] = useState(false)  // tras "Serie hecha"; al abrir una serie de la tabla, la serie y el descanso abajo
   const [now, setNow] = useState(Date.now())
 
@@ -64,10 +65,10 @@ export function Strength({ core, date, act, close }: { core: WebApp; date: strin
   const pending = pendingIndex(exercises)
 
   const save = (ex: StrengthExercise, weight: string, reps: number) => {
-    const editing = ex.done.some((d) => d.set === setNo)
-    act(() => core.logSet(date, ex.name, setNo, weight, reps))
+    const editing = ex.done.find((d) => d.set === setNo)
+    act(() => core.logSet(date, ex.name, setNo, weight, reps, editing?.rir ?? null))
     const w = weight.trim() === "" ? null : parseFloat(weight.replace(",", "."))
-    setLogged([`${ex.name} · serie ${setNo} apuntada`, setText({ set: setNo, weightKg: w, reps }, ex.timed)])
+    setLogged([ex, { set: setNo, weightKg: w, reps, rir: editing?.rir ?? null }])
     // Siguiente: otra serie de este ejercicio o el primero que falte; sin ninguno, sesión completa
     const freshJson = core.strengthJson(date)
     const fresh: StrengthExercise[] = freshJson ? JSON.parse(freshJson).exercises : exercises
@@ -76,6 +77,12 @@ export function Strength({ core, date, act, close }: { core: WebApp; date: strin
     else if (p >= 0) { setCurrent(p); setSetNo(fresh[p].done.length + 1) }
     else setSetNo(ex.sets + 1)
     if (!editing && p >= 0) { setRestTotal(ex.restSeconds); setNow(Date.now()); setRestEnd(Date.now() + ex.restSeconds * 1000); setRestView(true) }
+  }
+  const rate = (rir: number) => {
+    if (!logged) return
+    const [ex, s] = logged
+    act(() => core.logSet(date, ex.name, s.set, s.weightKg == null ? "" : String(s.weightKg), s.reps, rir))
+    setLogged([ex, { ...s, rir }])
   }
 
   return (
@@ -94,7 +101,7 @@ export function Strength({ core, date, act, close }: { core: WebApp; date: strin
             open={(n) => { setCurrent(i); setSetNo(n); setMode("set"); setRestView(false) }} />
         ))
         : restEnd != null && restView
-          ? <Rest left={left} total={restTotal} e={e} setNo={setNo} logged={logged}
+          ? <Rest left={left} total={restTotal} e={e} setNo={setNo} logged={logged} rate={rate}
               adjust={(s) => { const end = restEnd + s * 1000; setRestEnd(end <= Date.now() ? null : end) }} skip={() => setRestEnd(null)} />
           : e && !(setNo > e.sets && pending < 0)
             ? <SetView key={`${e.name}-${setNo}`} core={core} e={e} setNo={setNo} next={exercises[current + 1]} done={(w, r) => save(e, w, r)} />
@@ -131,6 +138,7 @@ function SetView({ core, e, setNo, next, done }:
         <div className="grow">
           <h2>{e.name}</h2>
           <p className="muted small-text">Serie {setNo} de {e.sets} · {e.repsLow}–{e.repsHigh} {e.timed ? "segundos" : "repeticiones"}</p>
+          {e.rir != null && <p className="small-text"><strong>{effort(e.rir)}</strong></p>}
         </div>
       </div>
       {e.suggestion && <p className="hint">{e.suggestion}</p>}
@@ -160,9 +168,9 @@ function SetView({ core, e, setNo, next, done }:
   )
 }
 
-function Rest({ left, total, e, setNo, logged, adjust, skip }: {
-  left: number; total: number; e?: StrengthExercise; setNo: number; logged: [string, string] | null
-  adjust: (s: number) => void; skip: () => void
+function Rest({ left, total, e, setNo, logged, rate, adjust, skip }: {
+  left: number; total: number; e?: StrengthExercise; setNo: number; logged: [StrengthExercise, LoggedSet] | null
+  rate: (rir: number) => void; adjust: (s: number) => void; skip: () => void
 }) {
   const r = 52, c = 2 * Math.PI * r
   const last = e && (e.done.find((d) => d.set === setNo) ?? e.previous.find((d) => d.set === setNo))
@@ -180,7 +188,22 @@ function Rest({ left, total, e, setNo, logged, adjust, skip }: {
         <button className="secondary" onClick={() => adjust(15)}>+15 s</button>
         <button className="secondary" onClick={skip}>Saltar</button>
       </div>
-      {logged && <section className="module ok-module"><span className="muted small">{logged[0]}</span><strong>{logged[1]}</strong></section>}
+      {logged && (
+        <section className="module ok-module">
+          <span className="muted small">{logged[0].name} · serie {logged[1].set} apuntada</span>
+          <strong>{setText(logged[1], logged[0].timed)}</strong>
+          {/* Opcional: con lo que te quedaba, Brivel no sube el peso si fuiste más cerca del fallo de lo indicado */}
+          {logged[0].rir != null && (
+            <fieldset className="rir">
+              <legend className="muted small">¿Cuántas más podías hacer?</legend>
+              {[0, 1, 2, 3, 4].map((n) => (
+                <button key={n} className={`mono${logged[1].rir === n ? " on" : ""}`} aria-pressed={logged[1].rir === n}
+                  aria-label={`Me quedaban ${n === 4 ? "4 o más" : n}`} onClick={() => rate(n)}>{n === 4 ? "4+" : n}</button>
+              ))}
+            </fieldset>
+          )}
+        </section>
+      )}
       {e && (
         <section className="module">
           <span className="muted small">Ahora</span>

@@ -49,14 +49,23 @@ class WorkoutTest {
 
         // La semana anterior llegó al máximo en todas las series: hoy propone subir
         val before = LocalDate.parse(date).plusDays(-7).toString()
-        (1..first.sets).forEach { app.logSet(before, first.name, it, 40.0, first.repsHigh) }
+        (1..first.sets).forEach { app.logSet(before, first.name, it, 40.0, first.repsHigh, null) }
         val again = app.strengthScreen(date)!!.exercises.first()
         assertEquals(42.0, again.weightKg)
+        assertNotNull(first.rir)
+
+        // Llegó al máximo pero con menos reserva de la que pide el plan: no sube
+        (1..first.sets).forEach { app.logSet(before, first.name, it, 40.0, first.repsHigh, if (it == 2) first.rir!! - 1 else null) }
+        assertEquals(40.0, app.strengthScreen(date)!!.exercises.first().weightKg)
+        assertEquals(first.rir!! - 1, app.strengthScreen(date)!!.exercises.first().previous[1].rir)
+        (1..first.sets).forEach { app.logSet(before, first.name, it, 40.0, first.repsHigh, first.rir) }
+        assertEquals(42.0, app.strengthScreen(date)!!.exercises.first().weightKg)
+        assertFailsWith<IllegalArgumentException> { app.logSet(date, first.name, 1, 40.0, 8, 11) }
         assertEquals(first.sets, again.previous.size)
 
-        app.logSet(date, first.name, 1, 42.0, first.repsLow)
-        app.logSet(date, first.name, 2, 42.0, first.repsLow)
-        app.logSet(date, first.name, 1, 42.5, first.repsLow)  // corregir sustituye
+        app.logSet(date, first.name, 1, 42.0, first.repsLow, null)
+        app.logSet(date, first.name, 2, 42.0, first.repsLow, null)
+        app.logSet(date, first.name, 1, 42.5, first.repsLow, null)  // corregir sustituye
         assertEquals(listOf(LoggedSet(1, 42.5, first.repsLow), LoggedSet(2, 42.0, first.repsLow)),
             app.strengthScreen(date)!!.exercises.first().done)
         assertTrue("strength" in app.day(date).doneSports)
@@ -64,8 +73,8 @@ class WorkoutTest {
 
         app.deleteSet(date, first.name, 1)
         assertEquals(listOf(LoggedSet(1, 42.0, first.repsLow)), app.strengthScreen(date)!!.exercises.first().done)
-        assertFailsWith<IllegalArgumentException> { app.logSet(today.plusDays(1).toString(), first.name, 1, 40.0, 8) }
-        assertFailsWith<IllegalArgumentException> { app.logSet(date, first.name, 1, 40.0, 0) }
+        assertFailsWith<IllegalArgumentException> { app.logSet(today.plusDays(1).toString(), first.name, 1, 40.0, 8, null) }
+        assertFailsWith<IllegalArgumentException> { app.logSet(date, first.name, 1, 40.0, 0, null) }
     }
 
     @Test

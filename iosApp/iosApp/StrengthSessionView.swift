@@ -38,6 +38,7 @@ private func amount(_ reps: Int, timed: Bool) -> String { timed ? "\(reps)″" :
 private func setText(_ s: LoggedSet, timed: Bool) -> String {
     (s.weightKg.map { "\(kgText($0.doubleValue)) × " } ?? "") + amount(Int(s.reps), timed: timed)
 }
+private func effort(_ rir: Int) -> String { rir == 0 ? "Hasta no poder más" : "Termina con \(rir) en reserva" }
 private func clock(_ s: Int) -> String { String(format: "%d:%02d", s / 60, s % 60) }
 
 struct StrengthSessionView: View {
@@ -49,7 +50,7 @@ struct StrengthSessionView: View {
     @State private var setNo = 1
     @State private var restEnd: Date? = nil
     @State private var restTotal = 0
-    @State private var logged: (String, String)? = nil  // la serie recién apuntada, en el descanso
+    @State private var logged: (StrengthExercise, LoggedSet)? = nil  // la serie recién apuntada, en el descanso
     @State private var restDone = 0  // sube al terminar cada descanso: vibración
     // Tras "Serie hecha", el descanso a pantalla; al abrir una serie de la tabla, la serie y el descanso abajo
     @State private var restView = false
@@ -110,7 +111,12 @@ struct StrengthSessionView: View {
         } else if restEnd != nil && restView {
             RestView(left: left, total: restTotal, e: e, setNo: setNo, logged: logged,
                      adjust: { s in restEnd = restEnd.map { $0.addingTimeInterval(TimeInterval(s)) }; if let r = restEnd, r <= .now { restEnd = nil } },
-                     skip: { restEnd = nil })
+                     skip: { restEnd = nil },
+                     rate: { rir in
+                         guard case let (ex, s)? = logged else { return }
+                         model.run { try model.core.logSet(date: date, exercise: ex.name, set: s.set, weightKg: s.weightKg, reps: s.reps, rir: KotlinInt(int: Int32(rir))) }
+                         logged = (ex, LoggedSet(set: s.set, weightKg: s.weightKg, reps: s.reps, rir: KotlinInt(int: Int32(rir))))
+                     })
         } else if let e, !(setNo > Int(e.sets) && pending == nil) {
             SetView(e: e, setNo: setNo, next: exercises.indices.contains(current + 1) ? exercises[current + 1] : nil) { weight, reps in
                 save(e, weight: weight, reps: reps)
@@ -121,11 +127,12 @@ struct StrengthSessionView: View {
     }
 
     private func save(_ e: StrengthExercise, weight: Double?, reps: Int) {
+        let previousRir = e.done.first { Int($0.set) == setNo }?.rir
         let editing = e.done.contains { Int($0.set) == setNo }
         model.run {
-            try model.core.logSet(date: date, exercise: e.name, set: Int32(setNo), weightKg: weight.map { KotlinDouble(double: $0) }, reps: Int32(reps))
+            try model.core.logSet(date: date, exercise: e.name, set: Int32(setNo), weightKg: weight.map { KotlinDouble(double: $0) }, reps: Int32(reps), rir: previousRir)
         }
-        logged = ("\(e.name) · serie \(setNo) apuntada", setText(LoggedSet(set: Int32(setNo), weightKg: weight.map { KotlinDouble(double: $0) }, reps: Int32(reps)), timed: e.timed))
+        logged = (e, LoggedSet(set: Int32(setNo), weightKg: weight.map { KotlinDouble(double: $0) }, reps: Int32(reps), rir: previousRir))
         // Siguiente: otra serie de este ejercicio o el primero que falte; sin ninguno, sesión completa
         let fresh = model.core.strengthScreen(date: date)?.exercises ?? []
         let pending = fresh.firstIndex { $0.done.count < Int($0.sets) }
@@ -178,6 +185,7 @@ private struct SetView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(e.name).font(.ui(22, .heavy, relativeTo: .title2))
                 Secondary("Serie \(setNo) de \(e.sets) · \(e.repsLow)–\(e.repsHigh) \(e.timed ? "segundos" : "repeticiones")")
+                if let rir = e.rir { Text(effort(Int(rir.int32Value))).font(.ui(14, .bold)) }
             }
         }
         if let s = e.suggestion {
@@ -248,9 +256,10 @@ private struct RestView: View {
     let total: Int
     let e: StrengthExercise?
     let setNo: Int
-    let logged: (String, String)?
+    let logged: (StrengthExercise, LoggedSet)?
     let adjust: (Int) -> Void
     let skip: () -> Void
+    let rate: (Int) -> Void
 
     var body: some View {
         ZStack {
@@ -269,10 +278,26 @@ private struct RestView: View {
             Button("+15 s") { adjust(15) }.buttonStyle(SecondaryStyle())
             Button("Saltar", action: skip).buttonStyle(SecondaryStyle())
         }.frame(maxWidth: .infinity)
-        if let logged {
+        if case let (ex, s)? = logged {
             Module(background: Palette.okSoft) {
-                Secondary(logged.0)
-                Text(logged.1).font(.ui(16, .bold))
+                Secondary("\(ex.name) · serie \(s.set) apuntada")
+                Text(setText(s, timed: ex.timed)).font(.ui(16, .bold))
+                // Opcional: con lo que te quedaba, Brivel no sube el peso si fuiste más cerca del fallo de lo indicado
+                if ex.rir != nil {
+                    Secondary("¿Cuántas más podías hacer?")
+                    HStack(spacing: 8) {
+                        ForEach(0...4, id: \.self) { n in
+                            let on = s.rir?.intValue == n
+                            Button { rate(n) } label: {
+                                Text(n == 4 ? "4+" : "\(n)").font(.mono(16, .semibold)).frame(maxWidth: .infinity, minHeight: 44)
+                                    .foregroundStyle(on ? Palette.onOk : Palette.text)
+                                    .background(on ? Palette.ok : Palette.surface).clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain).accessibilityLabel("Me quedaban \(n == 4 ? "4 o más" : "\(n)")")
+                            .accessibilityAddTraits(on ? .isSelected : [])
+                        }
+                    }
+                }
             }
         }
         if let e {

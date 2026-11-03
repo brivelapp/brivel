@@ -84,7 +84,7 @@ fun restSeconds(p: Prescription, pattern: String): Int = when {
 }
 
 @Serializable
-data class LoggedSet(val set: Int, val weightKg: Double?, val reps: Int)
+data class LoggedSet(val set: Int, val weightKg: Double?, val reps: Int, val rir: Int? = null)
 
 /** Un ejercicio en la pantalla de sesión. `reps*` son segundos si `timed`. */
 @Serializable
@@ -96,6 +96,7 @@ data class StrengthExercise(
     val repsHigh: Int,
     val timed: Boolean,
     val restSeconds: Int,
+    val rir: Int?,  // repeticiones en reserva al terminar cada serie (null: saltos y ejercicios por tiempo)
     val suggestion: String?,
     val weightKg: Double?,  // el peso que propone para hoy (null: tu peso o sin historial)
     val previous: List<LoggedSet>,  // la última sesión anterior a este día
@@ -110,16 +111,20 @@ fun strengthScreen(item: PlanItem, date: String, sets: List<SetLog>): StrengthSc
     val all = latestSets(sets)
     val before = all.filter { it.date < date }
     val dose = item.raceStrength?.dose
+    // Plan de salud: su RIR (nivel, objetivo y tope del cuestionario); carrera: RIR = 10 − RPE planificado, la misma
+    // equivalencia que usa la carga de HealthPlan [Inferencia: Zourdos 2016, escala RPE basada en RIR]
+    val target = item.healthStrength?.rir ?: item.raceStrength?.let { 10 - it.rpePlanned }
     val (logged, other) = item.exercises.partition { prescription(it, dose) != null }
     val exercises = logged.map { line ->
         val p = prescription(line, dose)!!
         val name = exerciseName(line)
-        val hint = liftHint(daySummaries(before), line, p.range.takeUnless { p.timed })
+        val rir = target.takeUnless { p.timed || EXERCISES[name]!!.pattern == "salto" }
+        val hint = liftHint(daySummaries(before), line, p.range.takeUnless { p.timed }, rir)
         val previousDate = before.filter { it.exercise == name }.maxOfOrNull { it.date }
         fun day(d: String?) = all.filter { it.date == d && it.exercise == name }.sortedBy { it.set }
-            .map { LoggedSet(it.set, it.weightKg, it.reps) }
+            .map { LoggedSet(it.set, it.weightKg, it.reps, it.rir) }
         StrengthExercise(name, EXERCISES[name]!!.pattern, p.sets, p.range.first, p.range.last, p.timed,
-            restSeconds(p, EXERCISES[name]!!.pattern), hint.suggestion, hint.weightKg, day(previousDate), day(date))
+            restSeconds(p, EXERCISES[name]!!.pattern), rir, hint.suggestion, hint.weightKg, day(previousDate), day(date))
     }
     return StrengthScreen(date, item.title, item.durationMin, exercises, other, item.notes)
 }

@@ -15,11 +15,15 @@ fun repRange(line: String): IntRange? {
 /** Lo último que apuntaste en ese ejercicio y qué toca hoy; `weightKg`: el peso que propone (null: tu peso o sin historial). */
 data class LiftHint(val exercise: String, val last: LiftLog?, val suggestion: String?, val weightKg: Double? = null)
 
-/** Las series de cada día como un resumen: el peso más alto, las repeticiones mínimas con ese peso y cuántas series. */
+/**
+ * Las series de cada día como un resumen: el peso más alto, las repeticiones mínimas con ese peso, cuántas series y la
+ * menor reserva apuntada con ese peso.
+ */
 fun daySummaries(sets: List<SetLog>): List<LiftLog> = latestSets(sets).groupBy { it.date to it.exercise }
     .map { (key, day) ->
         val top = day.mapNotNull { it.weightKg }.maxOrNull()
-        LiftLog(key.first, key.second, top, day.filter { it.weightKg == top }.minOf { it.reps }, day.size)
+        val atTop = day.filter { it.weightKg == top }
+        LiftLog(key.first, key.second, top, atTop.minOf { it.reps }, day.size, atTop.mapNotNull { it.rir }.minOrNull())
     }
 
 /** Una serie por fecha, ejercicio y número: si dos dispositivos corrigieron la misma, gana la última de la lista. */
@@ -29,9 +33,11 @@ fun latestSets(sets: List<SetLog>): List<SetLog> = sets.associateBy { Triple(it.
  * Progresión doble: si la última vez llegaste al máximo del rango en todas las series, sube el peso un ~5 % (redondeado a
  * 0,5 kg; con tu peso, una variante más difícil); si no, el mismo peso buscando una repetición más. Si te quedaste por
  * debajo del rango, o llevas 3 sesiones con el mismo peso sin ganar repeticiones, baja un ~10 % y vuelve a subir.
- * [Práctica: ACSM 2009, progresión doble; el 5 % y el 10 % son Inferencia dentro del 2–10 % de la nota]
+ * Si llegaste al máximo pero apuntaste menos reserva que `rir` (la que pide el plan), no sube: el peso aún es mucho.
+ * [Práctica: ACSM 2009, progresión doble; Helms 2016, progresión por RIR; el 5 % y el 10 % son Inferencia dentro del
+ * 2–10 % de la nota]
  */
-fun liftHint(lifts: List<LiftLog>, line: String, range: IntRange? = repRange(line)): LiftHint {
+fun liftHint(lifts: List<LiftLog>, line: String, range: IntRange? = repRange(line), rir: Int? = null): LiftHint {
     val name = exerciseName(line)
     val history = lifts.filter { it.exercise == name }.sortedBy { it.date }
     val last = history.lastOrNull()
@@ -43,6 +49,9 @@ fun liftHint(lifts: List<LiftLog>, line: String, range: IntRange? = repRange(lin
     val w = last?.weightKg
     val (suggestion, weight) = when {
         last == null || range == null -> null to w
+        last.reps >= range.last && rir != null && last.rir != null && last.rir < rir ->
+            "Llegaste al máximo, pero más cerca del fallo de lo indicado: repite ${w?.let { kg(it) } ?: "la variante"} " +
+                "hasta que te sobren $rir" to w
         last.reps >= range.last && w != null ->
             "Llegaste al máximo: hoy prueba ${kg(up(w))} y vuelve a ${range.first} repeticiones" to up(w)
         last.reps >= range.last -> "Llegaste al máximo: pasa a una variante más difícil y vuelve a ${range.first} repeticiones" to null

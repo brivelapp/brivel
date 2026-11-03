@@ -49,11 +49,15 @@ data class ManualDone(val date: String, val sport: String)
 
 /** Lo levantado en un ejercicio un día: peso (null con tu peso corporal), repeticiones por serie y series. Formato v2. */
 @Serializable
-data class LiftLog(val date: String, val exercise: String, val weightKg: Double?, val reps: Int, val sets: Int)
+data class LiftLog(val date: String, val exercise: String, val weightKg: Double?, val reps: Int, val sets: Int,
+    val rir: Int? = null)  // rir: solo en el resumen del día (daySummaries), la menor reserva apuntada
 
-/** Una serie de fuerza: peso (null con tu peso corporal) y repeticiones, o segundos en los ejercicios por tiempo. */
+/**
+ * Una serie de fuerza: peso (null con tu peso corporal) y repeticiones, o segundos en los ejercicios por tiempo; `rir`:
+ * las repeticiones que te quedaban, si lo apuntaste.
+ */
 @Serializable
-data class SetLog(val date: String, val exercise: String, val set: Int, val weightKg: Double?, val reps: Int)
+data class SetLog(val date: String, val exercise: String, val set: Int, val weightKg: Double?, val reps: Int, val rir: Int? = null)
 
 /** Cambios de una semana (acumulados) desde `since`; `earlier`: los anteriores de esa semana, para que lo pasado no cambie. */
 @Serializable

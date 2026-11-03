@@ -277,3 +277,7 @@ main.wide ~ .legal { padding-block: 8px 32px; }
 .week-bars > span.on { background: var(--ok); }
 .week-bars .target { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--muted); }
 .topbar { flex-wrap: wrap; gap: 10px; }
+.rir { border: 0; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.rir legend { padding: 0; margin-bottom: 8px; }
+.rir button { min-height: 44px; border-radius: 999px; border: 0; background: var(--surface); color: var(--text); font-weight: 600; font-size: 16px; }
+.rir button.on { background: var(--ok); color: var(--on-ok); }

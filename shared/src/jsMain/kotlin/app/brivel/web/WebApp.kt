@@ -177,9 +177,9 @@ class WebApp {
     fun lastStrengthDate(): String? = app.lastStrengthDate()
     fun figureJson(pattern: String): String? = figureLinesJson(pattern)
 
-    /** Apunta o corrige una serie; `weight` vacío: con tu peso corporal. */
-    fun logSet(date: String, exercise: String, set: Int, weight: String, reps: Int) =
-        app.logSet(date, exercise, set, weight.replace(',', '.').toDoubleOrNull(), reps)
+    /** Apunta o corrige una serie; `weight` vacío: con tu peso corporal; `rir` null: sin apuntar la reserva. */
+    fun logSet(date: String, exercise: String, set: Int, weight: String, reps: Int, rir: Int?) =
+        app.logSet(date, exercise, set, weight.replace(',', '.').toDoubleOrNull(), reps, rir)
 }
 
 /** El código, para enseñarlo una sola vez, y las llaves, para guardarlas en IndexedDB. */

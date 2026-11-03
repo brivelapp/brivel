@@ -90,6 +90,7 @@ fun ExerciseFigure(pattern: String, size: Dp) {
 
 private fun amount(e: StrengthExercise, reps: Int) = if (e.timed) "$reps″" else "$reps"
 private fun weightText(w: Double?) = w?.let { kg(it).removeSuffix(" kg") } ?: "Tu peso"
+private fun effort(rir: Int) = if (rir == 0) "Hasta no poder más" else "Termina con $rir en reserva"
 private fun setText(s: LoggedSet, timed: Boolean) =
     (s.weightKg?.let { "${kg(it).removeSuffix(" kg")} × " } ?: "") + if (timed) "${s.reps}″" else "${s.reps}"
 
@@ -109,7 +110,7 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
     var setNo by rememberSaveable { mutableIntStateOf((exercises.getOrNull(current)?.done?.size ?: 0) + 1) }
     var restEnd by rememberSaveable { mutableLongStateOf(0L) }
     var restTotal by rememberSaveable { mutableIntStateOf(0) }
-    var logged by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var logged by remember { mutableStateOf<Pair<StrengthExercise, LoggedSet>?>(null) }  // la última serie apuntada
     // Tras "Serie hecha", el descanso a pantalla; al abrir una serie de la tabla, la serie y el descanso abajo
     var restView by rememberSaveable { mutableStateOf(false) }  // la serie recién apuntada, en el descanso
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -147,21 +148,27 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
                 }
                 restEnd > 0 && restView -> RestView(restLeft, restTotal, e, setNo, logged,
                     adjust = { restEnd += it * 1000L; if (restEnd <= System.currentTimeMillis()) restEnd = 0 },
-                    skip = { restEnd = 0 })
+                    skip = { restEnd = 0 },
+                    rate = { rir ->
+                        logged?.let { (ex, s) ->
+                            act.run { app.logSet(date, ex.name, s.set, s.weightKg, s.reps, rir) }
+                            logged = ex to s.copy(rir = rir)
+                        }
+                    })
                 e == null || setNo > e.sets && firstPending() < 0 -> Finished(screen.other, close)
                 else -> SetView(e, setNo, exercises.getOrNull(current + 1)) { weight, reps ->
-                    val editing = e.done.any { it.set == setNo }
-                    act.run { app.logSet(date, e.name, setNo, weight, reps) }
-                    logged = "${e.name} · serie $setNo apuntada" to setText(LoggedSet(setNo, weight, reps), e.timed)
+                    val editing = e.done.firstOrNull { it.set == setNo }
+                    act.run { app.logSet(date, e.name, setNo, weight, reps, editing?.rir) }
+                    logged = e to LoggedSet(setNo, weight, reps, editing?.rir)
                     // Siguiente: otra serie de este ejercicio o el primero que falte; sin ninguno, sesión completa
                     val fresh = app.strengthScreen(date)?.exercises ?: exercises
                     val pending = fresh.indexOfFirst { it.done.size < it.sets }
                     when {
-                        !editing && setNo < e.sets && fresh[current].done.none { it.set == setNo + 1 } -> setNo += 1
+                        editing == null && setNo < e.sets && fresh[current].done.none { it.set == setNo + 1 } -> setNo += 1
                         pending >= 0 -> { current = pending; setNo = fresh[pending].done.size + 1 }
                         else -> setNo = e.sets + 1
                     }
-                    if (!editing && pending >= 0) {
+                    if (editing == null && pending >= 0) {
                         restTotal = e.restSeconds
                         restEnd = System.currentTimeMillis() + e.restSeconds * 1000L
                         restView = true
@@ -197,6 +204,7 @@ private fun SetView(e: StrengthExercise, setNo: Int, next: StrengthExercise?, do
         Column(Modifier.weight(1f)) {
             Text(e.name, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 26.sp)
             Secondary("Serie $setNo de ${e.sets} · ${e.repsLow}–${e.repsHigh} ${if (e.timed) "segundos" else "repeticiones"}")
+            e.rir?.let { Text(effort(it), fontSize = 14.sp, fontWeight = FontWeight.Bold) }
         }
     }
     e.suggestion?.let {
@@ -265,7 +273,8 @@ private fun WeightDialog(weight: Double?, dismiss: () -> Unit, save: (Double?) -
 }
 
 @Composable
-private fun RestView(left: Int, total: Int, e: StrengthExercise?, setNo: Int, logged: Pair<String, String>?, adjust: (Int) -> Unit, skip: () -> Unit) {
+private fun RestView(left: Int, total: Int, e: StrengthExercise?, setNo: Int, logged: Pair<StrengthExercise, LoggedSet>?,
+                     adjust: (Int) -> Unit, skip: () -> Unit, rate: (Int) -> Unit) {
     val ok = Palette.ok
     val track = Palette.chip
     Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
@@ -286,10 +295,26 @@ private fun RestView(left: Int, total: Int, e: StrengthExercise?, setNo: Int, lo
         SecondaryButton("+15 s") { adjust(15) }
         SecondaryButton("Saltar", onClick = skip)
     }
-    logged?.let { (title, value) ->
+    logged?.let { (ex, s) ->
         Module(background = Palette.okSoft) {
-            Secondary(title)
-            Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Secondary("${ex.name} · serie ${s.set} apuntada")
+            Text(setText(s, ex.timed), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            // Opcional: con lo que te quedaba, Brivel no sube el peso si fuiste más cerca del fallo de lo indicado
+            ex.rir?.let {
+                Secondary("¿Cuántas más podías hacer?")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    (0..4).forEach { n ->
+                        val on = s.rir == n
+                        Box(Modifier.weight(1f).heightIn(min = 44.dp).clip(CircleShape)
+                            .background(if (on) Palette.ok else Palette.surface)
+                            .clickable(onClickLabel = "Me quedaban ${if (n == 4) "4 o más" else n}") { rate(n) },
+                            contentAlignment = Alignment.Center) {
+                            Text(if (n == 4) "4+" else "$n", fontFamily = Mono, fontWeight = FontWeight.SemiBold,
+                                color = if (on) Palette.onOk else Palette.text)
+                        }
+                    }
+                }
+            }
         }
     }
     e?.let {
