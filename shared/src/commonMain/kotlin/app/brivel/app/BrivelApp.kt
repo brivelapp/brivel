@@ -310,6 +310,20 @@ class BrivelApp(
 
     fun clearHealth() = save(data.copy(health = null))
 
+    /** Un envío de Garmin ya descifrado en el dispositivo (el JSON que prepara el relevo). */
+    @Throws(Exception::class)
+    fun importGarmin(delivery: String) {
+        val d = json.decodeFromString<GarminDelivery>(delivery)
+        require(d.v == 1) { "Este envío de Garmin es de una versión más nueva: actualiza Brivel" }
+        save(data.copy(garmin = mergeGarmin(data.garmin, d, today())))
+    }
+
+    /** Lo de Garmin guardado en este dispositivo, al desconectar. */
+    fun clearGarmin() = save(data.copy(garmin = null))
+
+    /** Cuándo llegó el último envío de Garmin, o null sin datos de Garmin. */
+    fun garminSyncedAt(): String? = data.garmin?.syncedAt
+
     /** Límites de las zonas de FC para repartir los pulsos de cada entrenamiento al leerlos del móvil. */
     fun zoneBounds(measuredMaxHr: Double?): List<Double> =
         heartRateZoneBounds(data.profile, today(), measuredMaxHr, data.health?.workouts ?: emptyList())  // los de la lectura anterior

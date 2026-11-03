@@ -11,9 +11,8 @@
   // Solo en brivel.app: sin la dirección *.workers.dev, que sería otra copia pública de la web
   "routes": [{ "pattern": "brivel.app", "custom_domain": true }],
   "workers_dev": false,
-  // Garmin Connect Developer Program (Starter, aprobado el 2026-11-03). El ID es público; el secreto va aparte con
-  // `wrangler secret put GARMIN_CLIENT_SECRET`
-  "vars": { "GARMIN_CLIENT_ID": "dfb2e676-2bcd-46fb-9a5d-11a94f109bb2" },
+  // Garmin Connect (/api/garmin/*): Worker privado `brivel-garmin`, porque la documentación de Garmin es confidencial
+  "services": [{ "binding": "GARMIN", "service": "brivel-garmin" }],
   // Borrado diario de las copias sin uso en 12 meses (scheduled en src/index.ts)
   "triggers": { "crons": ["0 3 * * *"] },
   // Contra abusos (docs/SINCRONIZACION.md): por IP en toda la API, altas por IP y subidas por cuenta. Aproximados, no

@@ -4,6 +4,7 @@ import app.brivel.engine.plusDays
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -161,5 +162,32 @@ class HealthDataTest {
         val old = AppData(schema = 1, profile = profile)
         assertEquals(SCHEMA, migrate(old).schema)
         assertEquals(profile, migrate(old).profile)
+    }
+
+    @Test
+    fun garminAddsUpAndWinsOverThePhone() {
+        val app = BrivelApp(MemoryStore(), MemoryStore(), { today })
+        app.importGarmin("""{"v":1,"days":[{"date":"2026-10-21","restingHr":51.0,"steps":8000.0}],"workouts":[]}""")
+        // Otro envío del mismo día con otro dato no borra el primero; uno corregido sustituye
+        app.importGarmin("""{"v":1,"days":[{"date":"2026-10-21","hrv":44.0},{"date":"2026-10-22","steps":120.0}],
+            "workouts":[{"id":"garmin-1","sport":"running","start":"2026-10-21T08:00:00","minutes":50.0,"avgHr":148.0,"device":"Forerunner 965"}]}""")
+        app.importGarmin("""{"v":1,"days":[{"date":"2026-10-21","steps":9000.0}]}""")
+        val garmin = app.data.garmin!!
+        assertEquals(DailyHealth("2026-10-21", hrv = 44.0, restingHr = 51.0, steps = 9000.0), garmin.days.first())
+        assertEquals("Forerunner 965", garmin.workouts.single().device)
+        assertEquals("2026-10-22", app.garminSyncedAt())
+        assertFails { app.importGarmin("""{"v":2}""") }
+
+        // Con el móvil: el día de Garmin manda y el móvil rellena; su copia de la misma carrera no cuenta dos veces
+        val phone = HealthSnapshot("Apple Salud", listOf(DailyHealth("2026-10-21", sleepMinutes = 420.0, restingHr = 55.0)),
+            listOf(Workout("hk-1", "running", "2026-10-21T08:03:00", 49.0), Workout("hk-2", "walking", "2026-10-21T18:00:00", 30.0)),
+            "2026-10-22T07:00")
+        val both = combinedHealth(phone, garmin)!!
+        assertEquals(DailyHealth("2026-10-21", sleepMinutes = 420.0, hrv = 44.0, restingHr = 51.0, steps = 9000.0), both.days.first())
+        assertEquals(listOf("garmin-1", "hk-2"), both.workouts.map { it.id })
+        assertEquals("Apple Salud y Garmin", both.source)
+        assertTrue(app.data.deviceData(today) != null)
+        app.clearGarmin()
+        assertEquals(null, app.data.garmin)
     }
 }

@@ -180,6 +180,11 @@ class WebApp {
     /** Apunta o corrige una serie; `weight` vacío: con tu peso corporal; `rir` null: sin apuntar la reserva. */
     fun logSet(date: String, exercise: String, set: Int, weight: String, reps: Int, rir: Int?) =
         app.logSet(date, exercise, set, weight.replace(',', '.').toDoubleOrNull(), reps, rir)
+
+    // Garmin Connect: la web descifra cada envío del relevo con su clave (IndexedDB) y lo entrega aquí ya en claro
+    fun importGarmin(delivery: String) = app.importGarmin(delivery)
+    fun clearGarmin() = app.clearGarmin()
+    fun garminSyncedAt(): String? = app.garminSyncedAt()
 }
 
 /** El código, para enseñarlo una sola vez, y las llaves, para guardarlas en IndexedDB. */

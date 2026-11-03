@@ -7,6 +7,9 @@ const UNUSED_DAYS = 365  // copias sin subir ni bajar en 12 meses: se borran (po
 export default {
   async fetch(request, env) {
     const { pathname } = new URL(request.url)
+    // Garmin Connect va en un Worker privado (su documentación es confidencial): se le pasa tal cual, con sus propios
+    // límites, porque los envíos de Garmin no deben chocar con el límite por IP de la web
+    if (pathname.startsWith("/api/garmin/")) return env.GARMIN ? env.GARMIN.fetch(request) : error(404, "No encontrado")
     const ip = request.headers.get("CF-Connecting-IP") ?? "local"
     if (!(await env.POR_IP.limit({ key: ip })).success) return error(429, "Demasiadas peticiones: espera un minuto")
 

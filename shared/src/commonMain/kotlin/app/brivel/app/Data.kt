@@ -96,6 +96,7 @@ data class AppData(
     val cache: IntervalsCache? = null,
     val intervalsAthlete: String? = null,  // ID del atleta (no es secreto); la clave va en el almacén seguro
     val health: HealthSnapshot? = null,  // Health Connect o Apple Salud, leídos en el propio móvil
+    val garmin: HealthSnapshot? = null,  // Garmin Connect, por el relevo cifrado (se acumula: cada envío trae una parte)
     val lifts: List<LiftLog> = emptyList(),  // formato v2 (un resumen por ejercicio y día): `migrate` lo pasa a `sets`
     val sets: List<SetLog> = emptyList(),  // registro de fuerza, serie a serie
     val reminderHour: Int? = null,  // recordatorio diario a esa hora; null = apagado (se activa a propósito)

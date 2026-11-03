@@ -10,6 +10,7 @@ import { Progress } from "./Progress"
 import { Strength } from "./Strength"
 import { SyncCard } from "./Sync"
 import { loadKeys } from "./sync"
+import { pullGarmin } from "./garmin"
 
 type Entry = "landing" | "onboarding" | "login"
 type Tab = "today" | "calendar" | "progress" | "profile"
@@ -20,7 +21,7 @@ export function App() {
   const [, setVersion] = useState(0)
   const [message, setMessage] = useState<string | null>(null)
   const [entry, setEntry] = useState<Entry>("landing")
-  const [tab, setTab] = useState<Tab>("today")
+  const [tab, setTab] = useState<Tab>(() => (location.hash === "#garmin" ? "profile" : "today"))  // de vuelta de Garmin
   const [strengthDate, setStrengthDate] = useState<string | null>(null)  // sesión de fuerza abierta, a pantalla completa
   const closeStrength = useCallback(() => setStrengthDate(null), [])
   const refresh = () => setVersion((v) => v + 1)
@@ -42,6 +43,8 @@ export function App() {
       refresh()
       syncSoon()
     })
+    // Lo que Garmin dejó en el buzón desde la última visita; sin conexión no hace nada
+    if (location.hash !== "#garmin") pullGarmin(core).then((n) => { if (n) { refresh(); syncSoon() } }, () => {})
   }, [core])
   const act: Act = (f, success) => {
     try {

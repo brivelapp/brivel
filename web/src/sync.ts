@@ -7,7 +7,7 @@ export const POLICY_VERSION = "2026-11-02.2"
 
 interface Stored { key: CryptoKey; bearer: string; account: string; consentAt: string; policy: string }
 
-function request<T>(mode: IDBTransactionMode, f: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+export function request<T>(mode: IDBTransactionMode, f: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     const open = indexedDB.open("brivel", 1)
     open.onupgradeneeded = () => open.result.createObjectStore("sync")

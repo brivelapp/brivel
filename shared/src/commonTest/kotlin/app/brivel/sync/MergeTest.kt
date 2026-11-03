@@ -36,6 +36,7 @@ class MergeTest {
         cache = IntervalsCache(JsonObject(emptyMap()), emptyList(), emptyList(), "2026-11-02T08:00"),
         intervalsAthlete = "i123",
         health = HealthSnapshot("Apple Salud", emptyList(), emptyList(), "2026-11-02T08:00"),
+        garmin = HealthSnapshot("Garmin", emptyList(), emptyList(), "2026-11-02"),
         lifts = listOf(LiftLog("2026-11-02", "Sentadilla", 60.0, 8, 3)),
         sets = listOf(SetLog("2026-11-02", "Sentadilla", 1, 60.0, 8)),
         reminderHour = 8,

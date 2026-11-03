@@ -42,6 +42,7 @@ data class Workout(
     val maxHr: Double? = null,
     val zoneSeconds: List<Double>? = null,
     val distanceMeters: Double? = null,  // para los tiempos previstos de Progreso
+    val device: String? = null,  // modelo del reloj (Garmin): su atribución lo pide
 )
 
 @Serializable
@@ -152,5 +153,51 @@ fun heartRateZoneBounds(profile: UserProfile?, today: LocalDate, measuredMaxHr: 
     return listOf(0.81, 0.89, 0.93, 0.99, 1.02, 1.06).map { it * lthr }
 }
 
-/** Los datos del reloj o del móvil, sea cual sea la fuente: intervals.icu primero (es más completo), si no el móvil. */
-fun AppData.deviceData(today: LocalDate): IntervalsCache? = cache ?: health?.let { healthCache(it, profile, today) }
+/** Los datos del reloj o del móvil, sea cual sea la fuente: intervals.icu primero (es más completo), si no el móvil y Garmin. */
+fun AppData.deviceData(today: LocalDate): IntervalsCache? = cache ?: combinedHealth(health, garmin)?.let { healthCache(it, profile, today) }
+
+/** Un envío de Garmin ya descifrado en el dispositivo: el relevo lo prepara con el formato de Brivel. */
+@Serializable
+data class GarminDelivery(val v: Int, val days: List<DailyHealth> = emptyList(), val workouts: List<Workout> = emptyList())
+
+private const val GARMIN_DAYS = 730  // lo que se guarda de Garmin: dos años
+
+/**
+ * Un envío con lo que ya había: Garmin manda cada dato por separado y lo corrige al volver a sincronizar el reloj, así
+ * que en cada día el dato nuevo sustituye al anterior sin borrar los demás; las actividades, por id.
+ */
+fun mergeGarmin(old: HealthSnapshot?, delivery: GarminDelivery, today: LocalDate): HealthSnapshot {
+    val since = today.plusDays(-GARMIN_DAYS).toString()
+    val days = (old?.days ?: emptyList()).associateBy { it.date }.toMutableMap()
+    for (n in delivery.days) {
+        val o = days[n.date] ?: DailyHealth(n.date)
+        days[n.date] = DailyHealth(n.date, n.sleepMinutes ?: o.sleepMinutes, n.hrv ?: o.hrv, n.restingHr ?: o.restingHr,
+            n.weightKg ?: o.weightKg, n.steps ?: o.steps, n.vo2max ?: o.vo2max)
+    }
+    val workouts = ((old?.workouts ?: emptyList()) + delivery.workouts).associateBy { it.id }.values
+    return HealthSnapshot("Garmin", days.values.filter { it.date >= since }.sortedBy { it.date },
+        workouts.filter { it.start >= since }.sortedBy { it.start }, today.toString())
+}
+
+/**
+ * Móvil y Garmin juntos. Cada día manda lo de Garmin (lo midió el reloj) y el móvil rellena lo que falte. Una actividad
+ * del móvil que empieza a menos de 5 minutos de una de Garmin es la misma, que Garmin Connect copia en Salud.
+ * [Inferencia: los 5 minutos]
+ */
+fun combinedHealth(phone: HealthSnapshot?, garmin: HealthSnapshot?): HealthSnapshot? {
+    if (phone == null || garmin == null) return phone ?: garmin
+    val fromGarmin = garmin.days.associateBy { it.date }
+    val days = (phone.days.map { it.date } + garmin.days.map { it.date }).distinct().sorted().map { date ->
+        val g = fromGarmin[date]
+        val p = phone.days.firstOrNull { it.date == date }
+        DailyHealth(date, g?.sleepMinutes ?: p?.sleepMinutes, g?.hrv ?: p?.hrv, g?.restingHr ?: p?.restingHr,
+            g?.weightKg ?: p?.weightKg, g?.steps ?: p?.steps, g?.vo2max ?: p?.vo2max)
+    }
+    val starts = garmin.workouts.map { minuteOf(it.start) }
+    val phoneOnly = phone.workouts.filter { w -> starts.none { kotlin.math.abs(it - minuteOf(w.start)) < 5 } }
+    return HealthSnapshot("${phone.source} y Garmin", days, (garmin.workouts + phoneOnly).sortedBy { it.start },
+        maxOf(phone.syncedAt, garmin.syncedAt))
+}
+
+private fun minuteOf(start: String): Long =
+    kotlinx.datetime.LocalDateTime.parse(start.take(19)).let { it.date.toEpochDays() * 1440L + it.hour * 60 + it.minute }
