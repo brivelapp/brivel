@@ -29,12 +29,7 @@ import app.brivel.app.DayView
 import app.brivel.app.Reason
 import app.brivel.app.SPORT_LABEL
 import app.brivel.app.BrivelApp
-import app.brivel.app.kg
-import app.brivel.app.repRange
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.input.KeyboardType
 
 @Composable
 fun TodayTab(app: BrivelApp, version: Int, act: Act, openGoal: () -> Unit) {
@@ -97,7 +92,11 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
             var open by remember { mutableStateOf(false) }
             val canChange = !done && !day.isPast && item.alternatives.isNotEmpty()
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (!done && (day.isPast || today)) {
+                if (item.isStrength && (day.isPast || today)) {
+                    // Apuntar las series ya la cuenta como hecha
+                    PrimaryButton(if (done) "Ver las series" else "Empezar", Modifier.weight(1f)) { act.openStrength(day.date) }
+                    if (!done) SecondaryButton("La he hecho") { act.run { app.markDone(day.date, item.sport) } }
+                } else if (!done && (day.isPast || today)) {
                     PrimaryButton("La he hecho", Modifier.weight(1f)) { act.run { app.markDone(day.date, item.sport) } }
                 }
                 if (canChange) SecondaryButton(if (open) "Cerrar" else "Cambiar") { open = !open }
@@ -119,7 +118,6 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
                     Text("Enviar al reloj")
                 }
             }
-            if (item.isStrength && (day.isPast || today)) LiftRows(app, day.date, item.exercises, act)
             if (item.chosen) TextButton(onClick = { act.run { app.clearChoice(day.date) } }) { Text("Volver a la planificada") }
         }
     }
@@ -153,34 +151,3 @@ private fun ReadinessCard(act: Act) {
 // Del 1 al 5, con el mismo selector que el Perfil
 private val RATINGS = (1..5).map { n -> "$n" to when (n) { 1 -> "1 mal"; 5 -> "5 bien"; else -> "$n" } }
 
-/** Cada ejercicio de fuerza: lo apuntado la última vez, la sugerencia de hoy y apuntar peso y repeticiones. */
-@Composable
-fun LiftRows(app: BrivelApp, date: String, exercises: List<String>, act: Act) {
-    exercises.filter { repRange(it) != null }.forEach { line ->
-        val hint = app.liftHint(line)
-        var open by remember { mutableStateOf(false) }
-        var weight by remember { mutableStateOf(hint.last?.weightKg?.let { kg(it).removeSuffix(" kg") } ?: "") }
-        var reps by remember { mutableStateOf("") }
-        Column(Modifier.padding(top = 6.dp)) {
-            Text(hint.exercise, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            hint.last?.let { l ->
-                Secondary("La última vez: ${l.weightKg?.let { kg(it) } ?: "tu peso"} × ${l.reps} (${l.sets} series)")
-            }
-            hint.suggestion?.let { Text(it, fontSize = 13.sp, color = Palette.ok) }
-            if (!open) TextButton(onClick = { open = true }) { Text("Apuntar", fontSize = 13.sp) }
-            else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(weight, { weight = it }, label = { Text("kg") }, singleLine = true, modifier = Modifier.width(90.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-                OutlinedTextField(reps, { reps = it.filter(Char::isDigit) }, label = { Text("reps") }, singleLine = true,
-                    modifier = Modifier.width(90.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                TextButton(onClick = {
-                    act.run("Apuntado") {
-                        val sets = Regex("""(\d+) ×""").find(line)?.groupValues?.get(1)?.toInt() ?: 1
-                        app.logLift(date, line, weight.replace(',', '.').toDoubleOrNull(), reps.toIntOrNull() ?: 0, sets)
-                    }
-                    open = false
-                }) { Text("Guardar") }
-            }
-        }
-    }
-}

@@ -86,4 +86,14 @@ class WorkoutTest {
         app.brivel.engine.CORE.forEach { assertNotNull(EXERCISES[it], it) }
         app.brivel.engine.PATTERNS.values.forEach { (gym, bw) -> assertNotNull(EXERCISES[gym], gym); assertNotNull(EXERCISES[bw], bw) }
     }
+
+    @Test
+    fun figuresForEveryPatternAndReadablePaths() {
+        EXERCISES.values.forEach { assertNotNull(FIGURES[it.pattern], it.pattern) }
+        assertEquals(listOf(listOf(26f to 13f, 19f to 26f), listOf(27f to 41f, 33f to 41f), listOf(8f to 14f, 36f to 14f)),
+            polylines(FIGURES["sentadilla"]!!.body))
+        assertEquals(listOf(listOf(30f to 36f, 44f to 36f, 44f to 44f), listOf(4f to 44f, 44f to 44f)), polylines("M30 36h14v8M4 44h40"))
+        FIGURES.values.flatMap { polylines(it.body) + polylines(it.work) }.flatten()
+            .forEach { (x, y) -> assertTrue(x in 0f..48f && y in 0f..48f) }
+    }
 }

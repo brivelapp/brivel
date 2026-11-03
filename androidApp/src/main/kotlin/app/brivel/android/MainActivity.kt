@@ -18,7 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -48,7 +50,7 @@ class MainActivity : ComponentActivity() {
 
 /** Ejecuta una acción, refresca las pantallas y enseña el error si lo hay. */
 class Act(val app: BrivelApp, private val scope: CoroutineScope, private val snackbar: SnackbarHostState,
-          private val refresh: () -> Unit) {
+          private val refresh: () -> Unit, val openStrength: (date: String) -> Unit = {}) {
     private fun show(text: String?) = scope.launch { snackbar.showSnackbar(text ?: "No se pudo completar") }
 
     fun run(success: String? = null, block: () -> Unit) {
@@ -112,9 +114,10 @@ private val TABS = listOf("Hoy" to R.drawable.ic_tab_today, "Calendario" to R.dr
 fun Root(app: BrivelApp) {
     var version by remember { mutableIntStateOf(0) }
     var tab by remember { mutableIntStateOf(0) }
+    var strengthDate by rememberSaveable { mutableStateOf<String?>(null) }  // sesión de fuerza abierta, a pantalla completa
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val act = remember { Act(app, scope, snackbar) { version += 1 } }
+    val act = remember { Act(app, scope, snackbar, { version += 1 }) { strengthDate = it } }
     val context = LocalContext.current
 
     // Al abrir, datos frescos de intervals.icu si está vinculado; sin red, la copia guardada
@@ -133,7 +136,7 @@ fun Root(app: BrivelApp) {
         containerColor = Palette.bg,
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            if (!onboarding) NavigationBar(containerColor = Palette.surface) {
+            if (!onboarding && strengthDate == null) NavigationBar(containerColor = Palette.surface) {
                 TABS.forEachIndexed { i, (label, icon) ->
                     NavigationBarItem(selected = tab == i, onClick = { tab = i },
                         icon = { Icon(painterResource(icon), contentDescription = null) },
@@ -148,6 +151,8 @@ fun Root(app: BrivelApp) {
         Box(Modifier.padding(padding)) {
             if (onboarding) {
                 Onboarding(app, act)
+            } else if (strengthDate != null) {
+                StrengthSession(app, strengthDate!!, version, act) { strengthDate = null }
             } else when (tab) {
                 0 -> TodayTab(app, version, act) { act.run { app.abandonGoal() } }
                 1 -> CalendarTab(app, version, act)
