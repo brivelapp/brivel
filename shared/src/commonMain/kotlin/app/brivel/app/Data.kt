@@ -78,6 +78,14 @@ data class IntervalsCache(
     val syncedAt: String,
 )
 
+/**
+ * La conexión con Garmin (política de privacidad, apartado 5): la clave X25519 con la que el relevo cifra cada envío y
+ * el token del buzón, en base64url. Va en los datos para que la sincronización la lleve, cifrada de extremo a extremo,
+ * a los demás dispositivos de la misma sesión: cualquiera de ellos descarga y abre el buzón. No sale al exportar.
+ */
+@Serializable
+data class GarminLink(val privateKey: String, val publicKey: String, val token: String, val since: String)
+
 /** Versión del formato guardado: al cambiarlo, `migrate` adapta los datos antiguos (sin servidor no hay migraciones). */
 const val SCHEMA = 4
 
@@ -97,6 +105,7 @@ data class AppData(
     val intervalsAthlete: String? = null,  // ID del atleta (no es secreto); la clave va en el almacén seguro
     val health: HealthSnapshot? = null,  // Health Connect o Apple Salud, leídos en el propio móvil
     val garmin: HealthSnapshot? = null,  // Garmin Connect, por el relevo cifrado (se acumula: cada envío trae una parte)
+    val garminLink: GarminLink? = null,  // conexión con Garmin, compartida por la sincronización
     val lifts: List<LiftLog> = emptyList(),  // formato v2 (un resumen por ejercicio y día): `migrate` lo pasa a `sets`
     val sets: List<SetLog> = emptyList(),  // registro de fuerza, serie a serie
     val reminderHour: Int? = null,  // recordatorio diario a esa hora; null = apagado (se activa a propósito)

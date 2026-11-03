@@ -75,8 +75,7 @@ class GarminRelayTest {
     @Test
     fun connectPullAndDisconnect() = runTest {
         val relay = FakeRelay()
-        val secrets = MemoryStore()
-        val app = BrivelApp(MemoryStore(), secrets, { LocalDate(2026, 11, 3) }, relay.engine)
+        val app = BrivelApp(MemoryStore(), MemoryStore(), { LocalDate(2026, 11, 3) }, relay.engine)
         assertFalse(app.garminConnected)
         assertTrue(app.startGarmin().startsWith("https://connect.garmin.com/"))
         assertEquals(32, relay.publicKey!!.size)
@@ -90,8 +89,19 @@ class GarminRelayTest {
         assertTrue(relay.inbox.isEmpty())  // descargado: el servidor lo borra
         assertEquals(0, app.pullGarmin())
 
+        // Otro dispositivo de la misma sesión recibe la conexión por la sincronización y abre el buzón
+        val other = BrivelApp(MemoryStore(), MemoryStore(), { LocalDate(2026, 11, 3) }, relay.engine)
+        val link = Json.decodeFromString<GarminLink>(app.garminLinkJson()!!)
+        other.setGarminLink(link.privateKey, link.publicKey, link.token)
+        relay.inbox += 3L to seal(relay.publicKey!!, """{"v":1,"days":[{"date":"2026-11-04","steps":5000.0}]}""")
+        assertEquals(1, other.pullGarmin())
+        assertEquals(5000.0, other.data.garmin!!.days.single().steps)
+        assertFalse("garminLink\": {" in app.exportJson())  // el token y la clave no salen al exportar
+
         app.disconnectGarmin()
         assertFalse(app.garminConnected)
+        assertEquals(401, assertFailsWith<GarminException> { other.pullGarmin() }.status)  // desconectado para todos
+        assertFalse(other.garminConnected)
         assertEquals(1, app.data.garmin!!.workouts.size)  // lo descargado se queda
         assertEquals(0, app.pullGarmin())
     }

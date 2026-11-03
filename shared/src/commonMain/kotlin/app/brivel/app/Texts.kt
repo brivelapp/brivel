@@ -128,15 +128,17 @@ const val SYNC_NO_RECOVERY = "Nadie puede recuperar el código. Si lo pierdes y 
 const val SYNC_JOIN_NOTE = "Se juntan los datos de este móvil con los de la copia."
 
 // Garmin Connect (política de privacidad, apartado 5): los mismos textos que web/src/Garmin.tsx
-const val GARMIN_POLICY_VERSION = "2026-11-03.3"
+const val GARMIN_POLICY_VERSION = "2026-11-03.4"
 const val GARMIN_TITLE = "Garmin Connect™"
 const val GARMIN_INTRO = "Opcional y en pruebas. Tus actividades, sueño, pasos, pulso en reposo y variabilidad cardiaca del reloj, " +
     "para adaptar tu plan."
-const val GARMIN_HOW = "Garmin manda tus datos al servidor de Brivel, que los cifra al llegar para este móvil y los borra en cuanto " +
-    "los descarga (o a los 30 días). Brivel no puede leerlos ni los vende."
+const val GARMIN_HOW = "Garmin manda tus datos al servidor de Brivel, que los cifra al llegar para tus dispositivos y los borra en " +
+    "cuanto uno los descarga (o a los 30 días). Brivel no puede leerlos ni los vende. Si sincronizas, la conexión vale para " +
+    "todos tus dispositivos."
 const val GARMIN_CONSENT = "Acepto que Brivel reciba mis datos de Garmin, también los de salud, para adaptar mi plan. Puedo retirarlo " +
     "cuando quiera desconectando. Detalles en brivel.app/privacidad."
-const val GARMIN_DISCONNECT = "El servidor borra al momento lo pendiente y deja de recibir tus datos. Lo ya descargado sigue en este móvil."
+const val GARMIN_DISCONNECT = "Se desconecta en todos tus dispositivos: el servidor borra al momento lo pendiente y deja de recibir tus datos. " +
+    "Lo ya descargado se queda."
 
 /** Lo que enseña la tarjeta de Garmin conectada: los datos llegan solos al abrir la app o al deslizar hacia abajo. */
 fun garminStatus(syncedAt: String?): String =

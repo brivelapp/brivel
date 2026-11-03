@@ -12,7 +12,7 @@
 <main>
   <nav><a href="./">Brivel</a><a href="terminos.html">Términos de uso</a></nav>
   <h1>Política de privacidad</h1>
-  <p class="muted">Última actualización: 3 de noviembre de 2026 (versión 3: conexión con Garmin Connect) · <a href="#english">Summary in English</a></p>
+  <p class="muted">Última actualización: 3 de noviembre de 2026 (versión 4: la conexión con Garmin se comparte entre tus dispositivos) · <a href="#english">Summary in English</a></p>
 
   <div class="box">
     <p><strong>En resumen:</strong> la web y las apps de Brivel guardan tus datos en tu dispositivo. Si activas
@@ -105,7 +105,10 @@
     <li><strong>Cómo llegan:</strong> Garmin no deja que el móvil los pida directamente: los manda al servidor de Brivel.
       El servidor hace solo de relevo. Al conectar, tu dispositivo crea una pareja de claves y solo da al servidor la
       parte pública. Cada envío de Garmin se cifra con ella en cuanto llega (en la memoria del servidor, sin guardarlo
-      antes sin cifrar). Después, solo tu dispositivo puede leerlo: Brivel no.</li>
+      antes sin cifrar). Después, solo tu dispositivo puede leerlo: Brivel no. Si usas la sincronización del apartado 4,
+      la clave privada y el acceso al buzón viajan dentro de tu copia cifrada a tus otros dispositivos, que también pueden
+      descargarlos y abrirlos; el servidor sigue sin poder leerlos. Al exportar tus datos, la clave y el acceso no se
+      incluyen.</li>
     <li><strong>Qué guarda el servidor:</strong> el identificador de usuario que da Garmin (sin nombre ni email), las
       claves de acceso a tu cuenta de Garmin (cifradas, para pedirle datos y mandar sesiones a tu reloj), la parte
       pública de la clave de tu dispositivo y los envíos cifrados pendientes, con su fecha y su tamaño.</li>
@@ -115,8 +118,8 @@
       lo descarga, a los 30 días. El historial de recuperación de la base de datos (Time Travel de Cloudflare D1) lo puede
       conservar hasta 7 días más. Lo descargado queda en tu dispositivo como el resto del apartado 2 y, si sincronizas,
       en tu copia cifrada del apartado 4.</li>
-    <li><strong>Desconectar y borrar:</strong> en Perfil → «Desconectar Garmin», o en Garmin Connect quitando el permiso a
-      Brivel. En los dos casos el servidor borra al momento las claves de acceso y los envíos pendientes y deja de
+    <li><strong>Desconectar y borrar:</strong> en Perfil → «Desconectar Garmin» desde cualquiera de tus dispositivos (se
+      desconectan todos), o en Garmin Connect quitando el permiso a Brivel. En los dos casos el servidor borra al momento las claves de acceso y los envíos pendientes y deja de
       recibir datos. Lo que ya está en tu dispositivo lo ves, lo exportas y lo borras como en el apartado 2.</li>
     <li><strong>Base legal:</strong> tu consentimiento explícito, que das al conectar y que es aparte de estas condiciones
       (arts. 6.1.a y 9.2.a del RGPD). Lo retiras desconectando.</li>
@@ -180,7 +183,7 @@
         summaries, sleep and HRV are used only to show you your own data, adapt your own training plan and send your
         planned workouts to your Garmin device. Garmin pushes the data to our server, which acts only as a relay: each
         delivery is encrypted on arrival with a public key from your device and deleted once your device downloads it,
-        or after 30 days. The server stores your Garmin user ID, your encrypted Garmin access tokens and pending
+        or after 30 days. With the optional sync, the private key travels end-to-end encrypted to your other devices. The server stores your Garmin user ID, your encrypted Garmin access tokens and pending
         encrypted deliveries.</li>
       <li><strong>Third parties:</strong> only Cloudflare, Inc. (hosting and database, EU jurisdiction) as data processor.
         Garmin data is never sold or shared. No advertising, analytics, cookies or AI: Garmin data is not used to train,

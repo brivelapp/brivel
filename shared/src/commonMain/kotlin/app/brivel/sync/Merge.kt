@@ -55,6 +55,7 @@ fun merge(base: AppData, local: AppData, remote: AppData): Merged {
         intervalsAthlete = pick("intervalsAthlete", base.intervalsAthlete, local.intervalsAthlete, remote.intervalsAthlete),
         health = pick(null, base.health, local.health, remote.health),
         garmin = pick(null, base.garmin, local.garmin, remote.garmin),
+        garminLink = pick(null, base.garminLink, local.garminLink, remote.garminLink),
         lifts = items(base.lifts, local.lifts, remote.lifts),
         sets = items(base.sets, local.sets, remote.sets),
         reminderHour = pick("reminderHour", base.reminderHour, local.reminderHour, remote.reminderHour),

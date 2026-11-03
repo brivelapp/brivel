@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import type { WebApp } from "brivel-shared"
-import { disconnectGarmin, finishGarmin, garminConnected, pullGarmin, startGarmin } from "./garmin"
+import { disconnectGarmin, finishGarmin, pullGarmin, startGarmin } from "./garmin"
 
 const errorText = (e: unknown) => (e instanceof Error && e.message ? e.message : "No se pudo conectar con Garmin")
 
@@ -9,7 +9,6 @@ const errorText = (e: unknown) => (e instanceof Error && e.message ? e.message :
  * explícito para datos de salud (RGPD art. 9.2.a) y la edad mínima, sin marcar, como la sincronización.
  */
 export function GarminCard({ core, onDone }: { core: WebApp; onDone: (message: string | null) => void }) {
-  const [connected, setConnected] = useState(false)
   const [asking, setAsking] = useState(false)
   const [consent, setConsent] = useState(false)
   const [adult, setAdult] = useState(false)
@@ -22,26 +21,25 @@ export function GarminCard({ core, onDone }: { core: WebApp; onDone: (message: s
     } catch (e) {
       onDone(errorText(e))
     }
-    setConnected(await garminConnected())
     setBusy(false)
   }
   useEffect(() => {
     // De vuelta de la pantalla de permisos de Garmin
     if (location.hash === "#garmin") {
       history.replaceState(null, "", location.pathname)
-      run(async () => { await finishGarmin(); await pullGarmin(core); return "Garmin conectado: los datos llegan cuando sincronices el reloj" })
-    } else garminConnected().then(setConnected)
+      run(async () => { await finishGarmin(core); await pullGarmin(core); return "Garmin conectado: los datos llegan cuando sincronices el reloj" })
+    }
   }, [])
 
   const since = core.garminSyncedAt()
-  if (connected) {
+  if (core.garminConnected) {
     return (
       <section className="module">
         <h3>Garmin Connect™</h3>
         <p className="muted">Conectado. {since ? `Último envío: ${core.dateLabel(since)}.` : "Aún no ha llegado nada: sincroniza el reloj."}
           {" "}Se actualiza solo al abrir Brivel y al volver a esta pestaña.</p>
-        <button className="link" disabled={busy} onClick={() => confirm("¿Desconectar Garmin? El servidor borra al momento lo pendiente y deja de recibir tus datos. Lo ya descargado sigue en este navegador.")
-          && run(async () => { await disconnectGarmin(); return "Garmin desconectado" })}>Desconectar Garmin</button>
+        <button className="link" disabled={busy} onClick={() => confirm("¿Desconectar Garmin? Se desconecta en todos tus dispositivos: el servidor borra al momento lo pendiente y deja de recibir tus datos. Lo ya descargado se queda.")
+          && run(async () => { await disconnectGarmin(core); return "Garmin desconectado" })}>Desconectar Garmin</button>
       </section>
     )
   }
@@ -58,8 +56,9 @@ export function GarminCard({ core, onDone }: { core: WebApp; onDone: (message: s
   return (
     <section className="module">
       <h3>Conectar Garmin Connect™</h3>
-      <p className="muted small">Garmin manda tus datos al servidor de Brivel, que los cifra al llegar para este navegador
-        y los borra en cuanto los descarga (o a los 30 días). Brivel no puede leerlos ni los vende.</p>
+      <p className="muted small">Garmin manda tus datos al servidor de Brivel, que los cifra al llegar para tus dispositivos
+        y los borra en cuanto uno los descarga (o a los 30 días). Brivel no puede leerlos ni los vende. Si sincronizas, la
+        conexión vale para todos tus dispositivos.</p>
       <label className="check">
         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
         <span>Acepto que Brivel reciba mis datos de Garmin, también los de salud, para adaptar mi plan. Puedo retirarlo

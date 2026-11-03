@@ -185,6 +185,10 @@ class WebApp {
     fun importGarmin(delivery: String) = app.importGarmin(delivery)
     fun clearGarmin() = app.clearGarmin()
     fun garminSyncedAt(): String? = app.garminSyncedAt()
+    val garminConnected: Boolean get() = app.garminConnected
+    fun garminLinkJson(): String? = app.garminLinkJson()
+    fun setGarminLink(privateKey: String, publicKey: String, token: String) = app.setGarminLink(privateKey, publicKey, token)
+    fun clearGarminLink() = app.clearGarminLink()
 }
 
 /** El código, para enseñarlo una sola vez, y las llaves, para guardarlas en IndexedDB. */

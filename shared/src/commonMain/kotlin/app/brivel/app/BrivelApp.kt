@@ -27,10 +27,9 @@ private const val SYNC_CODE_KEY = "sync.code"  // en el almacén seguro, como la
 private const val SYNC_CONSENT_KEY = "brivel.syncConsent"  // fecha y versión de la política aceptadas (CUMPLIMIENTO #6)
 private const val SYNC_URL = "https://brivel.app/api/boveda"
 private const val GARMIN_URL = "https://brivel.app/api/garmin"
-private const val GARMIN_KEY = "garmin.key"  // en el almacén seguro: clave privada X25519, pública y token del buzón
+private const val GARMIN_KEY = "garmin.key"  // en el almacén seguro mientras se conecta; después, en AppData.garminLink
 private const val GARMIN_PUB = "garmin.pub"
 private const val GARMIN_STATE = "garmin.state"
-private const val GARMIN_TOKEN = "garmin.token"
 private const val GARMIN_CONSENT_KEY = "brivel.garminConsent"  // fecha y versión de la política aceptadas (CUMPLIMIENTO #6)
 
 /**
@@ -333,8 +332,23 @@ class BrivelApp(
     // Una función y no una propiedad: así la web (que tiene su propio cliente) no arrastra ktor en su paquete
     private val garminClient: GarminClient get() = GarminClient(GARMIN_URL, httpEngine)
 
-    /** Conectado a Garmin en este dispositivo (tiene el token de su buzón). */
-    val garminConnected: Boolean get() = secrets.read(GARMIN_TOKEN) != null
+    /** Conectado a Garmin en este dispositivo o en otro de la misma sesión de sincronización. */
+    val garminConnected: Boolean get() = data.garminLink != null
+
+    /** La conexión en JSON para la web, que descifra con WebCrypto (web/src/garmin.ts); null sin conexión. */
+    fun garminLinkJson(): String? = data.garminLink?.let { json.encodeToString(it) }
+
+    /** Guarda la conexión recién hecha (la web, tras recoger el buzón); la sincronización la lleva a los demás. */
+    fun setGarminLink(privateKey: String, publicKey: String, token: String) {
+        save(data.copy(garminLink = GarminLink(privateKey, publicKey, token, today().toString())))
+        store.write(GARMIN_CONSENT_KEY, "${today()} $GARMIN_POLICY_VERSION")
+    }
+
+    /** Sin conexión con Garmin (desconectada aquí o desde Garmin Connect); lo descargado se queda. */
+    fun clearGarminLink() {
+        save(data.copy(garminLink = null))
+        store.write(GARMIN_CONSENT_KEY, null)
+    }
 
     /**
      * Primer paso de conectar: crea las claves y devuelve la dirección de Garmin que la app abre en el navegador; al
@@ -347,7 +361,6 @@ class BrivelApp(
         secrets.write(GARMIN_KEY, encodeKey(keys.privateKey))
         secrets.write(GARMIN_PUB, encodeKey(keys.publicKey))
         secrets.write(GARMIN_STATE, state)
-        store.write(GARMIN_CONSENT_KEY, "${today()} $GARMIN_POLICY_VERSION")
         return url
     }
 
@@ -355,49 +368,42 @@ class BrivelApp(
     @Throws(Exception::class)
     suspend fun finishGarmin(): Int {
         val state = secrets.read(GARMIN_STATE) ?: throw GarminException(0, "La conexión con Garmin caducó: vuelve a empezar")
-        val token = try {
-            garminClient.claimWithRetry(state)
-        } catch (e: GarminException) {
-            forgetGarmin()
-            throw e
+        try {
+            val token = garminClient.claimWithRetry(state)
+            setGarminLink(secrets.read(GARMIN_KEY)!!, secrets.read(GARMIN_PUB)!!, token)
+        } finally {
+            for (k in listOf(GARMIN_KEY, GARMIN_PUB, GARMIN_STATE)) secrets.write(k, null)
         }
-        secrets.write(GARMIN_STATE, null)
-        secrets.write(GARMIN_TOKEN, token)
         return pullGarmin()
     }
 
     /** Descarga lo pendiente, lo abre aquí y lo guarda; después el servidor lo borra. Sin conexión con Garmin, 0. */
     @Throws(Exception::class)
     suspend fun pullGarmin(): Int {
-        val token = secrets.read(GARMIN_TOKEN) ?: return 0
-        val keys = GarminKeys(decodeKey(secrets.read(GARMIN_KEY)!!), decodeKey(secrets.read(GARMIN_PUB)!!))
+        val link = data.garminLink ?: return 0
+        val keys = GarminKeys(decodeKey(link.privateKey), decodeKey(link.publicKey))
         var count = 0
         while (true) {
             val (items, more) = try {
-                garminClient.inbox(token)
+                garminClient.inbox(link.token)
             } catch (e: GarminException) {
-                // Desconectado desde Garmin Connect: el servidor ya lo borró todo
-                if (e.status == 401) forgetGarmin()
+                // Desconectado desde Garmin Connect o desde otro dispositivo: el servidor ya lo borró todo
+                if (e.status == 401) clearGarminLink()
                 throw e
             }
             if (items.isEmpty()) return count
             for ((_, sealed) in items) importGarmin(openGarmin(sealed, keys))
-            garminClient.ack(token, items.last().first)
+            garminClient.ack(link.token, items.last().first)
             count += items.size
             if (!more) return count
         }
     }
 
-    /** Desconecta en Garmin y en el servidor; lo ya descargado se queda en este dispositivo. */
+    /** Desconecta en Garmin y en el servidor, para todos los dispositivos de la sesión; lo descargado se queda. */
     @Throws(Exception::class)
     suspend fun disconnectGarmin() {
-        secrets.read(GARMIN_TOKEN)?.let { garminClient.disconnect(it) }
-        forgetGarmin()
-    }
-
-    private fun forgetGarmin() {
-        for (k in listOf(GARMIN_KEY, GARMIN_PUB, GARMIN_STATE, GARMIN_TOKEN)) secrets.write(k, null)
-        store.write(GARMIN_CONSENT_KEY, null)
+        data.garminLink?.let { garminClient.disconnect(it.token) }
+        clearGarminLink()
     }
 
     /** Límites de las zonas de FC para repartir los pulsos de cada entrenamiento al leerlos del móvil. */
@@ -484,7 +490,7 @@ class BrivelApp(
     // ------------------------------------------------------------ tus datos
 
     /** Todo lo guardado, en JSON (portabilidad, RGPD art. 20). La clave de intervals.icu no se incluye. */
-    fun exportJson(): String = Json { prettyPrint = true; encodeDefaults = true }.encodeToString(data)
+    fun exportJson(): String = Json { prettyPrint = true; encodeDefaults = true }.encodeToString(data.copy(garminLink = null))
 
     /** Borra todo del móvil, clave incluida, y deja de sincronizar: si no, la próxima sincronización lo borraría también en el servidor. */
     fun deleteAll() {
