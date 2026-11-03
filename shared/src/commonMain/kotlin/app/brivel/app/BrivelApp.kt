@@ -272,6 +272,9 @@ class BrivelApp(
     fun strengthScreen(date: String): StrengthScreen? =
         day(date).items.firstOrNull { it.isStrength }?.let { strengthScreen(it, date, data.sets) }
 
+    /** El día más reciente de la última semana (hoy incluido) con sesión de fuerza, o null. */
+    fun lastStrengthDate(): String? = (0..6).map { today().plusDays(-it).toString() }.firstOrNull { strengthScreen(it) != null }
+
     /** Apunta o corrige la serie `set` (desde 1) de un ejercicio; `reps` son segundos en los ejercicios por tiempo. */
     @Throws(Exception::class)
     fun logSet(date: String, exercise: String, set: Int, weightKg: Double?, reps: Int) {

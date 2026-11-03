@@ -102,7 +102,13 @@ private struct SessionItem: View {
         let done = day.doneSports.contains(item.slot) || day.doneSports.contains(item.sport)
         SessionCard(item: item, done: done) {
             HStack(spacing: 10) {
-                if !done && (day.isPast || today) {
+                if item.isStrength && (day.isPast || today) {
+                    // Apuntar las series ya la cuenta como hecha
+                    Button { model.strengthDate = day.date } label: {
+                        Text(done ? "Ver las series" : "Empezar").frame(maxWidth: .infinity)
+                    }.buttonStyle(PrimaryStyle())
+                    if !done { Button("La he hecho") { model.run { try core.markDone(date: day.date, sport: item.sport) } }.buttonStyle(SecondaryStyle()) }
+                } else if !done && (day.isPast || today) {
                     Button { model.run { try core.markDone(date: day.date, sport: item.sport) } } label: {
                         Text("La he hecho").frame(maxWidth: .infinity)
                     }.buttonStyle(PrimaryStyle())
@@ -132,7 +138,6 @@ private struct SessionItem: View {
                     HStack(spacing: 6) { Glyph(name: "watch", size: 18, color: Palette.ok); Text("Enviar al reloj") }
                 }.font(.ui(14, .bold))
             }
-            if item.isStrength && (day.isPast || today) { LiftRows(date: day.date, exercises: item.exercises) }
             if item.chosen { Button("Volver a la planificada") { model.run { core.clearChoice(date: day.date) } }.font(.ui(14, .bold)) }
         }
     }
@@ -158,53 +163,6 @@ private struct ReadinessCard: View {
             Button("Ajustar hoy") {
                 model.run { try model.core.answerReadiness(sleep: Int32(sleep), energy: Int32(energy), soreness: Int32(soreness)) }
             }.buttonStyle(PrimaryStyle())
-        }
-    }
-}
-
-/// Cada ejercicio de fuerza: lo apuntado la última vez, la sugerencia de hoy y apuntar peso y repeticiones.
-struct LiftRows: View {
-    @EnvironmentObject var model: AppModel
-    let date: String
-    let exercises: [String]
-
-    var body: some View {
-        ForEach(exercises.filter { LiftsKt.repRange(line: $0) != nil }, id: \.self) { line in LiftRow(date: date, line: line) }
-    }
-}
-
-private struct LiftRow: View {
-    @EnvironmentObject var model: AppModel
-    let date: String
-    let line: String
-    @State private var open = false
-    @State private var weight = ""
-    @State private var reps = ""
-
-    var body: some View {
-        let _ = model.version
-        let hint = model.core.liftHint(exerciseLine: line)
-        VStack(alignment: .leading, spacing: 4) {
-            Text(hint.exercise).font(.ui(14, .semibold, relativeTo: .subheadline))
-            if let last = hint.last {
-                Secondary("La última vez: \(last.weightKg.map { LiftsKt.kg(v: $0.doubleValue) } ?? "tu peso") × \(last.reps) (\(last.sets) series)")
-            }
-            if let s = hint.suggestion { Text(s).font(.ui(13, relativeTo: .footnote)).foregroundStyle(Palette.ok) }
-            if open {
-                HStack {
-                    TextField("kg", text: $weight).keyboardType(.decimalPad).textFieldStyle(.roundedBorder).frame(width: 80)
-                    TextField("reps", text: $reps).keyboardType(.numberPad).textFieldStyle(.roundedBorder).frame(width: 80)
-                    Button("Guardar") {
-                        let sets = Int32(line.split(separator: " ").first { Int($0) != nil }.flatMap { Int($0) } ?? 1)
-                        let kgValue = Double(weight.replacingOccurrences(of: ",", with: ".")).map { KotlinDouble(double: $0) }
-                        let r = Int32(reps) ?? 0
-                        model.run("Apuntado") { try model.core.logLift(date: date, exercise: line, weightKg: kgValue, reps: r, sets: sets) }
-                        open = false
-                    }
-                }
-            } else {
-                Button("Apuntar") { weight = hint.last?.weightKg.map { String($0.doubleValue) } ?? ""; open = true }.font(.ui(13, .bold, relativeTo: .footnote))
-            }
         }
     }
 }

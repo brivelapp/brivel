@@ -7,6 +7,7 @@ final class AppModel: ObservableObject {
     let core: Shared.BrivelApp
     @Published var version = 0
     @Published var message: String?
+    @Published var strengthDate: String?  // sesión de fuerza abierta, a pantalla completa
 
     init() {
         core = Shared.BrivelApp(store: DefaultsStore(), secrets: KeychainStore(),
@@ -123,6 +124,17 @@ struct RootView: View {
             // Otros dispositivos, si está activado: lo que cambiaron mientras tanto
             if let conflict = try? await model.core.syncDevices() { model.message = conflict }
             model.refresh()
+        }
+        .fullScreenCover(isPresented: Binding(get: { model.strengthDate != nil }, set: { if !$0 { model.strengthDate = nil } })) {
+            if let date = model.strengthDate {
+                StrengthSessionView(date: date) { model.strengthDate = nil }.environmentObject(model)
+            }
+        }
+        .onAppear {
+            // `-strength auto` al lanzar: la última sesión de fuerza de esta semana abierta, para las capturas del CI
+            if UserDefaults.standard.string(forKey: "strength") == "auto" {
+                model.strengthDate = model.core.lastStrengthDate()
+            }
         }
         .alert(model.message ?? "", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {
             Button("Vale", role: .cancel) {}

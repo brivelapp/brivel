@@ -58,6 +58,11 @@ jobs:
               xcrun simctl io "$DEVICE" screenshot screenshots/pestana-$t-$mode.png
               xcrun simctl terminate "$DEVICE" app.brivel
             done
+            # La sesión de fuerza más reciente, abierta
+            xcrun simctl launch "$DEVICE" app.brivel -strength auto
+            sleep 6
+            xcrun simctl io "$DEVICE" screenshot screenshots/fuerza-$mode.png
+            xcrun simctl terminate "$DEVICE" app.brivel
           done
       - uses: actions/upload-artifact@v7
         with:
