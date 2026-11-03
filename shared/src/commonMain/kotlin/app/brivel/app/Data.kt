@@ -79,7 +79,7 @@ data class IntervalsCache(
 )
 
 /** Versión del formato guardado: al cambiarlo, `migrate` adapta los datos antiguos (sin servidor no hay migraciones). */
-const val SCHEMA = 3
+const val SCHEMA = 4
 
 /** Campo nuevo: añádelo también a `merge` (sync/Merge.kt), o un cambio de otro dispositivo pisará el de este. */
 @Serializable
@@ -105,6 +105,8 @@ data class AppData(
 /**
  * Adapta datos guardados con un formato anterior. v1 → v2: añade los datos de salud del móvil (vacíos). v2 → v3: cada
  * resumen de `lifts` pasa a una serie por cada una que apuntó. También con v3: un móvil sin actualizar aún sincroniza lifts.
+ * v3 → v4: añade `garmin` (vacío). Sube para que un dispositivo sin actualizar no sincronice: descartaría `garmin` al
+ * leerlo (ignoreUnknownKeys) y lo borraría también en los demás al subir su copia.
  */
 fun migrate(data: AppData): AppData = when {
     data.schema >= SCHEMA && data.lifts.isEmpty() -> data
