@@ -4,6 +4,10 @@ import app.brivel.app.GoalKind
 import app.brivel.app.KeyValueStore
 import app.brivel.app.BrivelApp
 import app.brivel.app.UserProfile
+import app.brivel.app.DailyHealth
+import app.brivel.app.HealthSnapshot
+import app.brivel.app.Workout
+import app.brivel.engine.plusDays
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -14,7 +18,7 @@ import kotlin.test.assertEquals
 
 private val fs: dynamic = js("process.getBuiltinModule('fs')")
 
-/** web/src/types.ts está escrito a mano: cada campo que declara tiene que salir en el JSON de Hoy o de liftJson. */
+/** web/src/types.ts está escrito a mano: cada campo que declara tiene que salir en el JSON de Hoy, liftJson, el mes o el progreso. */
 class WebTypesTest {
     private class MemoryStore : KeyValueStore {
         private val map = mutableMapOf<String, String>()
@@ -43,8 +47,15 @@ class WebTypesTest {
             val lifts = screen.day.items.flatMap { it.exercises }.mapNotNull { liftJson(app, it) }
             (listOf(json.encodeToString(screen)) + lifts).flatMap { keys(Json.parseToJsonElement(it)) }
         }.toSet()
+        // Calendario y Progreso, con datos de Salud (días, entrenamientos con pulso, zonas y distancia)
+        app.importHealth(HealthSnapshot("Apple Salud",
+            (1..40).map { n -> DailyHealth(today.plusDays(-n).toString(), 420.0 + n % 7, 50.0 + n % 9, 50.0 + n % 4, 72.0, 8000.0 + 100 * n) },
+            (1..20).map { n -> Workout("w$n", if (n % 2 == 0) "running" else "cycling", "${today.plusDays(-2 * n)}T08:00:00", 50.0,
+                145.0, 170.0, listOf(300.0, 1200.0, 900.0, 300.0, 200.0, 100.0, 0.0), 9000.0) }, today.toString()))
+        val screens = listOf(json.encodeToString(app.month(2026, 10)), json.encodeToString(app.progress()))
+        val all = sent + screens.flatMap { keys(Json.parseToJsonElement(it)) }
         val types = fs.readFileSync(js("process.env.WEB_TYPES"), "utf8") as String
         val declared = Regex("""(\w+)\??:\s""").findAll(types.substringAfter("export type Tone")).map { it.groupValues[1] }.toSet()
-        assertEquals(emptySet(), declared - sent, "campos de web/src/types.ts que el núcleo ya no manda")
+        assertEquals(emptySet(), declared - all, "campos de web/src/types.ts que el núcleo ya no manda")
     }
 }
