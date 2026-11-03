@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { WebApp } from "brivel-shared"
 import type { DayView, LiftHint, PlanItem, Reason, TodayScreen, Tone } from "./types"
 import { SyncCard } from "./Sync"
-import { clearKeys, loadKeys } from "./sync"
+import { clearKeys } from "./sync"
+import { Segmented } from "./ProfileParts"
 import running from "../../iosApp/iosApp/Assets.xcassets/sport_running.imageset/sport_running.svg"
 import cycling from "../../iosApp/iosApp/Assets.xcassets/sport_cycling.imageset/sport_cycling.svg"
 import swimming from "../../iosApp/iosApp/Assets.xcassets/sport_swimming.imageset/sport_swimming.svg"
@@ -13,11 +14,11 @@ import stateCaution from "../../iosApp/iosApp/Assets.xcassets/state_caution.imag
 import stateRest from "../../iosApp/iosApp/Assets.xcassets/state_rest.imageset/state_rest.svg"
 import check from "../../iosApp/iosApp/Assets.xcassets/check.imageset/check.svg"
 
-const SPORT_ICON: Record<string, string> = { running, cycling, swimming_pool: swimming, swimming_open: swimming, walking }
+export const SPORT_ICON: Record<string, string> = { running, cycling, swimming_pool: swimming, swimming_open: swimming, walking }
 const STATE: Record<Tone, [string, string]> = { OK: ["ok", stateOk], CAUTION: ["caution", stateCaution], REST: ["rest", stateRest] }
 
 /** Si la pantalla es de ordenador (el mismo corte que styles.css). */
-function useWide() {
+export function useWide() {
   const query = "(min-width: 900px)"
   const [wide, setWide] = useState(() => matchMedia(query).matches)
   useEffect(() => {
@@ -30,10 +31,10 @@ function useWide() {
 }
 
 /** Ejecuta una acción del núcleo y vuelve a pintar; si falla, enseña su texto (como el aviso de las apps). */
-type Act = (f: () => void, success?: string) => void
+export type Act = (f: () => void, success?: string) => void
 
 // Los SVG de iOS son plantillas en negro: como máscara toman el color del texto
-const Icon = ({ src, label, size = 20 }: { src: string; label?: string; size?: number }) => (
+export const Icon = ({ src, label, size = 20 }: { src: string; label?: string; size?: number }) => (
   <span className="icon" role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}
     style={{ width: size, height: size, maskImage: `url("${src}")`, WebkitMaskImage: `url("${src}")` }} />
 )
@@ -59,6 +60,9 @@ function ReasonRow({ core, reason, tone = "caution" }: { core: WebApp; reason: R
   )
 }
 
+// Del 1 al 5, con el mismo selector que el Perfil
+const RATINGS: [string, string][] = [1, 2, 3, 4, 5].map((n) => [String(n), n === 1 ? "1 mal" : n === 5 ? "5 bien" : String(n)])
+
 /** Sin reloj vinculado: sueño, energía y agujetas de 1 (mal) a 5 (bien) ajustan la sesión de hoy. */
 function ReadinessCard({ core, act }: { core: WebApp; act: Act }) {
   const [answers, setAnswers] = useState({ sleep: 3, energy: 3, soreness: 3 })
@@ -68,15 +72,11 @@ function ReadinessCard({ core, act }: { core: WebApp; act: Act }) {
       <h3>¿Cómo estás hoy?</h3>
       <p className="muted">Sin reloj vinculado, tus respuestas ajustan la sesión de hoy: si dormiste mal o estás cargado, será más suave.</p>
       {questions.map(([key, label]) => (
-        <fieldset key={key}>
-          <legend>{label}</legend>
-          <div className="chips">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} className="chip" aria-pressed={answers[key] === n}
-                onClick={() => setAnswers({ ...answers, [key]: n })}>{n === 1 ? "1 mal" : n === 5 ? "5 bien" : n}</button>
-            ))}
-          </div>
-        </fieldset>
+        <div key={key} className="stack tight">
+          <span>{label}</span>
+          <Segmented options={RATINGS} selected={String(answers[key])} label={label}
+            onSelect={(v) => setAnswers({ ...answers, [key]: Number(v) })} />
+        </div>
       ))}
       <button className="primary" onClick={() => act(() => core.answerReadiness(answers.sleep, answers.energy, answers.soreness))}>
         Ajustar hoy
@@ -188,7 +188,7 @@ function DayContent({ core, day, act }: { core: WebApp; day: DayView; act: Act }
 }
 
 /** Privacidad, términos y código fuente (AGPL), y borrar lo guardado en este navegador, como en Perfil de las apps. */
-function Footer({ core, act }: { core: WebApp; act: Act }) {
+export function Footer({ core, act }: { core: WebApp; act: Act }) {
   const erase = () => {
     if (!confirm("¿Borrar todos tus datos de este navegador? Si sincronizas, la copia del servidor se queda.")) return
     act(() => core.deleteAll(), "Datos borrados")
@@ -204,63 +204,9 @@ function Footer({ core, act }: { core: WebApp; act: Act }) {
   )
 }
 
-export function Today() {
-  const core = useMemo(() => new WebApp(), [])
+/** Hoy: el estado, la sesión y la semana. La portada, la bienvenida y el pie van en App.tsx. */
+export function Today({ core, act, synced }: { core: WebApp; act: Act; synced: (m: string | null) => void }) {
   const wide = useWide()
-  const [, setVersion] = useState(0)
-  const [message, setMessage] = useState<string | null>(null)
-  // Con la sincronización activada, cada cambio se sube poco después (varios seguidos, de una vez)
-  const syncTimer = useRef<number | undefined>(undefined)
-  const syncSoon = () => {
-    if (!core.syncActive) return
-    clearTimeout(syncTimer.current)
-    syncTimer.current = window.setTimeout(() => core.syncNow().then(
-      (conflict) => { if (conflict) setMessage(conflict); setVersion((v) => v + 1) },
-      (e) => setMessage(e instanceof Error && e.message ? e.message : "No se pudo sincronizar"),
-    ), 1500)
-  }
-  useEffect(() => {
-    loadKeys().then((keys) => {
-      if (!keys) return
-      core.useSync(keys)
-      setVersion((v) => v + 1)
-      syncSoon()
-    })
-  }, [core])
-  const act: Act = (f, success) => {
-    try {
-      f()
-      setMessage(success ?? null)
-      syncSoon()
-    } catch (e) {
-      setMessage(e instanceof Error && e.message ? e.message : "No se pudo completar")
-    }
-    setVersion((v) => v + 1)
-  }
-  const synced = (m: string | null) => {
-    setMessage(m)
-    setVersion((v) => v + 1)
-  }
-  const status = <p className="status" role="status">{message}</p>
-
-  if (core.needsOnboarding) {
-    return (
-      <main>
-        <h1>Hoy</h1>
-        <section className="module">
-          <p>La versión web aún no tiene bienvenida. Prueba Hoy con un perfil de ejemplo: guardado solo en este navegador.</p>
-        </section>
-        <section className="state caution">
-          <p>{core.healthNotice}</p>
-        </section>
-        <button className="primary" onClick={() => act(() => core.startDemo())}>Usar datos de prueba</button>
-        <SyncCard core={core} onDone={synced} />
-        {status}
-        <Footer core={core} act={act} />
-      </main>
-    )
-  }
-
   const screen: TodayScreen = JSON.parse(core.todayJson())
   const [tone, stateIcon] = STATE[screen.tone]
   return (
@@ -277,7 +223,7 @@ export function Today() {
       {screen.goalFinished && (
         <section className="module">
           <h3>Tu carrera ya pasó</h3>
-          <p className="muted">¿Qué quieres ahora? Otra carrera, mantener la forma o descansar unos días. En la web aún no se puede elegir objetivo: hazlo desde la app.</p>
+          <p className="muted">¿Qué quieres ahora? Otra carrera, mantener la forma o descansar unos días. Elígelo en Perfil → Cambiar objetivo.</p>
         </section>
       )}
       <section className={`state ${tone}`}>
@@ -315,8 +261,6 @@ export function Today() {
       <SyncCard core={core} onDone={synced} />
       </aside>
       </div>
-      {status}
-      <Footer core={core} act={act} />
     </main>
   )
 }

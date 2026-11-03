@@ -12,6 +12,14 @@ import app.brivel.app.KeyValueStore
 import app.brivel.app.SPORT_LABEL
 import app.brivel.app.BrivelApp
 import app.brivel.app.UserProfile
+import app.brivel.app.MAX_DAY_MINUTES
+import app.brivel.app.MIN_AGE
+import app.brivel.app.PICKABLE_CARDIO
+import app.brivel.app.RaceInfo
+import app.brivel.app.weekTimeText
+import app.brivel.app.ageAllowed as ageAllowedCore
+import app.brivel.app.goalLabel as labelOf
+import app.brivel.app.toggleCardio as toggleCardioCore
 import app.brivel.app.kg
 import app.brivel.app.conflictMessage
 import app.brivel.app.repRange
@@ -115,12 +123,32 @@ class WebApp {
 
     fun todayJson(): String = json.encodeToString(app.todayScreen())
 
-    /** Datos de prueba: el perfil de los tests de la app y un objetivo de forma física. */
-    fun startDemo() {
-        app.saveProfile(UserProfile(birthYear = 1990, level = "intermediate", strength = "gym",
-            cardio = listOf("running", "cycling"), days = mapOf("MON" to 60, "TUE" to 60, "THU" to 75, "SAT" to 90, "SUN" to 60)))
-        app.setGoal(GoalKind.FITNESS)
-    }
+    // ------------------------------------------------------------ bienvenida y Perfil (en JSON, como las pantallas)
+
+    private val read = Json { ignoreUnknownKeys = true }
+
+    val hasProfile: Boolean get() = app.data.profile != null
+
+    /** El perfil guardado o, en la bienvenida, el de partida. */
+    fun profileJson(): String = json.encodeToString(app.data.profile ?: UserProfile())
+
+    fun saveProfileJson(text: String) = app.saveProfile(read.decodeFromString<UserProfile>(text))
+
+    /** `kind`: RACE, FITNESS, STRENGTH o HEALTH; `raceJson`, solo para una carrera. Los errores llegan con su texto. */
+    fun setGoal(kind: String, raceJson: String?) =
+        app.setGoal(GoalKind.valueOf(kind), raceJson?.let { read.decodeFromString<RaceInfo>(it) })
+
+    val goalLabel: String? get() = app.data.goal?.let { labelOf(it) }
+
+    fun abandonGoal() = app.abandonGoal()
+
+    // Las mismas reglas que las apps (Texts.kt)
+    fun toggleCardio(cardio: Array<String>, sport: String): Array<String> = toggleCardioCore(cardio.toList(), sport).toTypedArray()
+    fun weekTime(daysJson: String): String = weekTimeText(read.decodeFromString<Map<String, Int>>(daysJson))
+    fun ageOk(year: Int): Boolean = ageAllowedCore(year, browserToday().year)
+    val pickableCardio: Array<String> get() = PICKABLE_CARDIO.toTypedArray()
+    val maxDayMinutes: Int get() = MAX_DAY_MINUTES
+    val minAge: Int get() = MIN_AGE
 
     fun sportLabel(sport: String): String = SPORT_LABEL[sport] ?: sport
 

@@ -10,8 +10,10 @@ const errorText = (e: unknown) => (e instanceof Error && e.message ? e.message :
  * Copia cifrada y otros dispositivos (docs/SINCRONIZACION.md). Opcional: sin activarla, todo sigue en este navegador.
  * Activar pide el consentimiento explícito para datos de salud (RGPD art. 9.2.a) y la edad mínima, sin marcar.
  */
-export function SyncCard({ core, onDone }: { core: WebApp; onDone: (message: string | null) => void }) {
-  const [view, setView] = useState<View>("idle")
+export function SyncCard({ core, onDone, joinOnly = false }:
+  { core: WebApp; onDone: (message: string | null) => void; joinOnly?: boolean }) {
+  // joinOnly: «Iniciar sesión» de la portada, directo a escribir el código
+  const [view, setView] = useState<View>(joinOnly ? "join" : "idle")
   const [consent, setConsent] = useState(false)
   const [adult, setAdult] = useState(false)
   const [typed, setTyped] = useState("")
