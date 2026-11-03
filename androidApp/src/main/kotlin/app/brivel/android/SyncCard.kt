@@ -1,6 +1,8 @@
 package app.brivel.android
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -39,9 +41,10 @@ private enum class SyncView { IDLE, CREATE, JOIN }
 private fun grouped(code: String) = code.chunked(3).joinToString(" ")
 
 @Composable
-private fun Consent(text: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(verticalAlignment = Alignment.Top) {
-        Checkbox(checked, onChange, colors = CheckboxDefaults.colors(checkedColor = Palette.ok))
+internal fun Consent(text: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    // Toda la fila marca la casilla: el texto es largo y tocar solo el cuadro cuesta
+    Row(Modifier.toggleable(checked, role = Role.Checkbox, onValueChange = onChange), verticalAlignment = Alignment.Top) {
+        Checkbox(checked, null, colors = CheckboxDefaults.colors(checkedColor = Palette.ok), modifier = Modifier.padding(12.dp))
         Text(text, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp))
     }
 }

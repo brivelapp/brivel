@@ -123,6 +123,7 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, changeGoal: () -> Unit) {
         HealthCard(app, act, version)
         IntervalsCard(app, act, version)
         SyncCard(app, act, version)
+        GarminCard(app, act, version)
         Module {
             SectionTitle("Tus datos")
             Secondary(PRIVACY_NOTE)

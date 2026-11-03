@@ -1,11 +1,14 @@
 package app.brivel.android
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -30,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import app.brivel.app.BrivelApp
+import app.brivel.app.GarminException
 import app.brivel.app.systemToday
 import app.brivel.sync.SyncException
 import kotlinx.coroutines.CoroutineScope
@@ -38,13 +42,26 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    /** Sube cada vez que vuelve de Garmin (brivel://garmin): Root recoge entonces la conexión. */
+    private val garminReturns = mutableIntStateOf(0)
+
+    private fun fromGarmin(intent: Intent?) {
+        if (intent?.data?.let { it.scheme == "brivel" && it.host == "garmin" } == true) garminReturns.intValue += 1
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        fromGarmin(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) fromGarmin(intent)
         // Iconos de la barra de estado claros u oscuros según el modo del sistema
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT))
         val app = BrivelApp(PrefsStore(this), KeystoreStore(this), { systemToday() })
-        setContent { BrivelTheme { Root(app) } }
+        setContent { BrivelTheme { Root(app, garminReturns.intValue) } }
     }
 }
 
@@ -110,8 +127,9 @@ class Act(val app: BrivelApp, private val scope: CoroutineScope, private val sna
 private val TABS = listOf("Hoy" to R.drawable.ic_tab_today, "Calendario" to R.drawable.ic_tab_calendar,
     "Progreso" to R.drawable.ic_tab_progress, "Perfil" to R.drawable.ic_tab_profile)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Root(app: BrivelApp) {
+fun Root(app: BrivelApp, garminReturns: Int = 0) {
     var version by remember { mutableIntStateOf(0) }
     var tab by remember { mutableIntStateOf(0) }
     var strengthDate by rememberSaveable { mutableStateOf<String?>(null) }  // sesión de fuerza abierta, a pantalla completa
@@ -120,15 +138,26 @@ fun Root(app: BrivelApp) {
     val act = remember { Act(app, scope, snackbar, { version += 1 }) { strengthDate = it } }
     val context = LocalContext.current
 
-    // Al abrir, datos frescos de intervals.icu si está vinculado; sin red, la copia guardada
-    LaunchedEffect(Unit) {
-        scheduleReminder(context, app.data.reminderHour)  // por si el sistema quitó la alarma (actualización, forzar cierre)
+    // Datos frescos sin pulsar nada: intervals.icu, Health Connect y Garmin si están conectados, y después lo que
+    // cambiaron los otros dispositivos (también sube lo recién llegado). Sin red, la copia guardada
+    var refreshing by remember { mutableStateOf(false) }
+    suspend fun refreshAll() {
         if (app.linkedAthlete != null) runCatching { app.sync() }
-        // Health Connect, si ya dio permiso: datos frescos sin pulsar nada
         if (app.data.health != null) runCatching { HealthConnectReader(context).sync(app) }
-        // Otros dispositivos, si está activado: lo que cambiaron mientras tanto
+        // Solo lo que responde el relevo (desconectado desde Garmin Connect); sin conexión, en la próxima vez
+        (runCatching { app.pullGarmin() }.exceptionOrNull() as? GarminException)?.message?.let { scope.launch { snackbar.showSnackbar(it) } }
         runCatching { app.syncDevices() }.getOrNull()?.let { scope.launch { snackbar.showSnackbar(it) } }
         version += 1
+    }
+    LaunchedEffect(Unit) { scheduleReminder(context, app.data.reminderHour) }  // por si el sistema quitó la alarma
+    // Al abrir y cada vez que se vuelve a la app
+    LifecycleResumeEffect(Unit) {
+        val job = scope.launch { refreshAll() }
+        onPauseOrDispose { job.cancel() }
+    }
+    // De vuelta de la pantalla de permisos de Garmin
+    LaunchedEffect(garminReturns) {
+        if (garminReturns > 0) act.suspend("Garmin conectado: los datos llegan cuando sincronices el reloj") { app.finishGarmin() }
     }
 
     val onboarding = version >= 0 && app.needsOnboarding  // version: se recalcula tras cada acción
@@ -148,7 +177,9 @@ fun Root(app: BrivelApp) {
             }
         },
     ) { padding ->
-        Box(Modifier.padding(padding)) {
+        PullToRefreshBox(refreshing, onRefresh = {
+            scope.launch { refreshing = true; refreshAll(); refreshing = false }
+        }, Modifier.padding(padding)) {
             if (onboarding) {
                 Onboarding(app, act)
             } else if (strengthDate != null) {

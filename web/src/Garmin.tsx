@@ -25,11 +25,6 @@ export function GarminCard({ core, onDone }: { core: WebApp; onDone: (message: s
     setConnected(await garminConnected())
     setBusy(false)
   }
-  const pull = async () => {
-    const n = await pullGarmin(core)
-    return n ? `Datos de Garmin al día (${n} ${n === 1 ? "envío" : "envíos"})` : "No hay datos nuevos de Garmin"
-  }
-
   useEffect(() => {
     // De vuelta de la pantalla de permisos de Garmin
     if (location.hash === "#garmin") {
@@ -43,8 +38,8 @@ export function GarminCard({ core, onDone }: { core: WebApp; onDone: (message: s
     return (
       <section className="module">
         <h3>Garmin Connect™</h3>
-        <p className="muted">Conectado. {since ? `Último envío: ${core.dateLabel(since)}.` : "Aún no ha llegado nada: sincroniza el reloj."}</p>
-        <button className="primary" disabled={busy} onClick={() => run(pull)}>Descargar ahora</button>
+        <p className="muted">Conectado. {since ? `Último envío: ${core.dateLabel(since)}.` : "Aún no ha llegado nada: sincroniza el reloj."}
+          {" "}Se actualiza solo al abrir Brivel y al volver a esta pestaña.</p>
         <button className="link" disabled={busy} onClick={() => confirm("¿Desconectar Garmin? El servidor borra al momento lo pendiente y deja de recibir tus datos. Lo ya descargado sigue en este navegador.")
           && run(async () => { await disconnectGarmin(); return "Garmin desconectado" })}>Desconectar Garmin</button>
       </section>

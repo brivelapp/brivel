@@ -26,6 +26,12 @@ internal const val SYNC_STATE_KEY = "brivel.sync"  // sync/Syncer.kt
 private const val SYNC_CODE_KEY = "sync.code"  // en el almacén seguro, como la clave de intervals.icu
 private const val SYNC_CONSENT_KEY = "brivel.syncConsent"  // fecha y versión de la política aceptadas (CUMPLIMIENTO #6)
 private const val SYNC_URL = "https://brivel.app/api/boveda"
+private const val GARMIN_URL = "https://brivel.app/api/garmin"
+private const val GARMIN_KEY = "garmin.key"  // en el almacén seguro: clave privada X25519, pública y token del buzón
+private const val GARMIN_PUB = "garmin.pub"
+private const val GARMIN_STATE = "garmin.state"
+private const val GARMIN_TOKEN = "garmin.token"
+private const val GARMIN_CONSENT_KEY = "brivel.garminConsent"  // fecha y versión de la política aceptadas (CUMPLIMIENTO #6)
 
 /**
  * store: datos de la app; secrets: almacén seguro del sistema (solo la clave de intervals.icu).
@@ -323,6 +329,75 @@ class BrivelApp(
 
     /** Cuándo llegó el último envío de Garmin, o null sin datos de Garmin. */
     fun garminSyncedAt(): String? = data.garmin?.syncedAt
+
+    private val garminClient by lazy { GarminClient(GARMIN_URL, httpEngine) }
+
+    /** Conectado a Garmin en este dispositivo (tiene el token de su buzón). */
+    val garminConnected: Boolean get() = secrets.read(GARMIN_TOKEN) != null
+
+    /**
+     * Primer paso de conectar: crea las claves y devuelve la dirección de Garmin que la app abre en el navegador; al
+     * volver (brivel://garmin), `finishGarmin`. Requiere el consentimiento en la pantalla.
+     */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    suspend fun startGarmin(): String {
+        val keys = newGarminKeys()
+        val (url, state) = garminClient.start(keys.publicKey)
+        secrets.write(GARMIN_KEY, encodeKey(keys.privateKey))
+        secrets.write(GARMIN_PUB, encodeKey(keys.publicKey))
+        secrets.write(GARMIN_STATE, state)
+        store.write(GARMIN_CONSENT_KEY, "${today()} $GARMIN_POLICY_VERSION")
+        return url
+    }
+
+    /** De vuelta de Garmin: recoge el token del buzón y descarga lo que haya. Cuántos envíos llegaron. */
+    @Throws(Exception::class)
+    suspend fun finishGarmin(): Int {
+        val state = secrets.read(GARMIN_STATE) ?: throw GarminException(0, "La conexión con Garmin caducó: vuelve a empezar")
+        val token = try {
+            garminClient.claimWithRetry(state)
+        } catch (e: GarminException) {
+            forgetGarmin()
+            throw e
+        }
+        secrets.write(GARMIN_STATE, null)
+        secrets.write(GARMIN_TOKEN, token)
+        return pullGarmin()
+    }
+
+    /** Descarga lo pendiente, lo abre aquí y lo guarda; después el servidor lo borra. Sin conexión con Garmin, 0. */
+    @Throws(Exception::class)
+    suspend fun pullGarmin(): Int {
+        val token = secrets.read(GARMIN_TOKEN) ?: return 0
+        val keys = GarminKeys(decodeKey(secrets.read(GARMIN_KEY)!!), decodeKey(secrets.read(GARMIN_PUB)!!))
+        var count = 0
+        while (true) {
+            val (items, more) = try {
+                garminClient.inbox(token)
+            } catch (e: GarminException) {
+                // Desconectado desde Garmin Connect: el servidor ya lo borró todo
+                if (e.status == 401) forgetGarmin()
+                throw e
+            }
+            if (items.isEmpty()) return count
+            for ((_, sealed) in items) importGarmin(openGarmin(sealed, keys))
+            garminClient.ack(token, items.last().first)
+            count += items.size
+            if (!more) return count
+        }
+    }
+
+    /** Desconecta en Garmin y en el servidor; lo ya descargado se queda en este dispositivo. */
+    @Throws(Exception::class)
+    suspend fun disconnectGarmin() {
+        secrets.read(GARMIN_TOKEN)?.let { garminClient.disconnect(it) }
+        forgetGarmin()
+    }
+
+    private fun forgetGarmin() {
+        for (k in listOf(GARMIN_KEY, GARMIN_PUB, GARMIN_STATE, GARMIN_TOKEN)) secrets.write(k, null)
+        store.write(GARMIN_CONSENT_KEY, null)
+    }
 
     /** Límites de las zonas de FC para repartir los pulsos de cada entrenamiento al leerlos del móvil. */
     fun zoneBounds(measuredMaxHr: Double?): List<Double> =

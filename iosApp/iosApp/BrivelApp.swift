@@ -63,6 +63,19 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Datos frescos sin pulsar nada: intervals.icu, Apple Salud y Garmin si están conectados, y después lo que cambiaron
+    /// los otros dispositivos (también sube lo recién llegado). Sin red, la copia guardada.
+    func refreshAll() async {
+        if core.linkedAthlete != nil { try? await core.sync() }
+        if core.data.health != nil { try? await HealthKitReader.shared.sync(core) }
+        do { _ = try await core.pullGarmin() } catch {
+            // Solo lo que responde el relevo (desconectado desde Garmin Connect); sin conexión, en la próxima vez
+            if (error as NSError).userInfo["KotlinException"] is GarminException { message = error.localizedDescription }
+        }
+        if let conflict = try? await core.syncDevices() { message = conflict }
+        refresh()
+    }
+
     func syncNow() {
         pending?.cancel()
         Task {
@@ -96,6 +109,7 @@ struct BrivelMain: App {
 struct RootView: View {
     @EnvironmentObject var model: AppModel
     @State private var tab = UserDefaults.standard.integer(forKey: "tab")  // `-tab N` al lanzar: capturas del CI
+    @Environment(\.scenePhase) private var phase
 
     var body: some View {
         let _ = model.version
@@ -116,15 +130,10 @@ struct RootView: View {
             }
         }
         .background(Palette.bg.ignoresSafeArea())
-        .task {
-            // Al abrir, datos frescos de intervals.icu si está vinculado; sin red, la copia guardada
-            if model.core.linkedAthlete != nil { try? await model.core.sync() }
-            // Apple Salud, si ya dio permiso: datos frescos sin pulsar nada
-            if model.core.data.health != nil { try? await HealthKitReader.shared.sync(model.core) }
-            // Otros dispositivos, si está activado: lo que cambiaron mientras tanto
-            if let conflict = try? await model.core.syncDevices() { model.message = conflict }
-            model.refresh()
-        }
+        // Al abrir, al volver a la app y al deslizar hacia abajo en cualquier pantalla
+        .task { await model.refreshAll() }
+        .onChange(of: phase) { _, now in if now == .active { Task { await model.refreshAll() } } }
+        .refreshable { await model.refreshAll() }
         .fullScreenCover(isPresented: Binding(get: { model.strengthDate != nil }, set: { if !$0 { model.strengthDate = nil } })) {
             if let date = model.strengthDate {
                 StrengthSessionView(date: date) { model.strengthDate = nil }.environmentObject(model)

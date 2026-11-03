@@ -43,8 +43,12 @@ export function App() {
       refresh()
       syncSoon()
     })
-    // Lo que Garmin dejó en el buzón desde la última visita; sin conexión no hace nada
-    if (location.hash !== "#garmin") pullGarmin(core).then((n) => { if (n) { refresh(); syncSoon() } }, () => {})
+    // Lo que Garmin dejó en el buzón: al abrir y cada vez que se vuelve a la pestaña; sin conexión no hace nada
+    const pull = () => pullGarmin(core).then((n) => { if (n) { refresh(); syncSoon() } }, () => {})
+    if (location.hash !== "#garmin") pull()
+    const onVisible = () => { if (document.visibilityState === "visible") pull() }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => document.removeEventListener("visibilitychange", onVisible)
   }, [core])
   const act: Act = (f, success) => {
     try {

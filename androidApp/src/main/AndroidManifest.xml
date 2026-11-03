@@ -26,10 +26,19 @@
         android:allowBackup="false"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
-        <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize">
+        <!-- singleTask: la vuelta desde Garmin (brivel://garmin) llega a la app abierta, no a otra copia encima -->
+        <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Vuelta desde la pantalla de permisos de Garmin Connect (el relevo redirige a brivel://garmin) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="brivel" android:host="garmin" />
             </intent-filter>
             <!-- Health Connect enseña por qué la app pide permisos (Android 13 o anterior) -->
             <intent-filter>
