@@ -12,13 +12,15 @@
 <main>
   <nav><a href="./">Brivel</a><a href="terminos.html">Términos de uso</a></nav>
   <h1>Política de privacidad</h1>
-  <p class="muted">Última actualización: 2 de noviembre de 2026 (versión 2: sincronización entre dispositivos)</p>
+  <p class="muted">Última actualización: 3 de noviembre de 2026 (versión 3: conexión con Garmin Connect) · <a href="#english">Summary in English</a></p>
 
   <div class="box">
     <p><strong>En resumen:</strong> la web y las apps de Brivel guardan tus datos en tu dispositivo. Si activas
       «Usar en otros dispositivos», Brivel guarda además una copia <strong>cifrada</strong> que solo tus dispositivos
       pueden leer: Brivel no tiene la clave. No hay cuentas con email ni contraseña. Para mostrarte la web, Cloudflare
-      trata tu dirección IP. No hay cookies, analítica, publicidad ni rastreadores.</p>
+      trata tu dirección IP. Si conectas Garmin Connect, el servidor recibe tus datos de Garmin, los cifra al llegar
+      para tu dispositivo y los borra cuando tu dispositivo los descarga. No vendemos datos. No hay cookies, analítica,
+      publicidad, inteligencia artificial ni rastreadores.</p>
   </div>
 
   <h2>1. Responsable</h2>
@@ -27,7 +29,7 @@
 
   <h2>2. Datos que se quedan en tu dispositivo</h2>
   <p>Se guardan y se procesan en tu móvil o en tu navegador, y el plan de entrenamiento se calcula ahí mismo. Brivel no
-    los recibe, salvo cifrados si activas la sincronización (apartado 4).</p>
+    los recibe, salvo cifrados si activas la sincronización (apartado 4) o si conectas Garmin Connect (apartado 5).</p>
   <ul>
     <li><strong>Lo que introduces:</strong> año de nacimiento, nivel, deportes, días y minutos disponibles, objetivo,
       sesiones hechas, pesos levantados y tus respuestas sobre sueño, energía y agujetas.</li>
@@ -89,46 +91,106 @@
     <li><strong>Edad:</strong> solo para mayores de 14 años (art. 7 de la LOPDGDD).</li>
   </ul>
 
-  <h2>5. Si nos escribes</h2>
+  <h2 id="garmin">5. Garmin Connect (opcional)</h2>
+  <p>Solo si la conectas en Perfil → «Conectar Garmin» y das permiso en la pantalla de Garmin. Sin conectarla, nada de
+    esto ocurre. Está en pruebas y todavía no está abierta a todo el mundo.</p>
+  <ul>
+    <li><strong>Qué datos llegan:</strong> los que permitas en la pantalla de Garmin, que puedes cambiar cuando quieras
+      en Garmin Connect: actividades (deporte, fecha, duración, distancia, pulso, ritmo, potencia y vueltas), resúmenes
+      diarios (pasos, pulso en reposo, estrés), sueño y variabilidad de la frecuencia cardiaca. Son datos de salud.</li>
+    <li><strong>Para qué:</strong> solo para enseñarte tus propios datos y adaptar tu propio plan (por ejemplo, la sesión
+      de hoy según tu variabilidad cardiaca y tu sueño), y para mandar las sesiones que planifiques a tu reloj Garmin.
+      No se usan para publicidad, para perfilarte, para entrenar ni evaluar modelos de inteligencia artificial, ni
+      para ningún otro fin.</li>
+    <li><strong>Cómo llegan:</strong> Garmin no deja que el móvil los pida directamente: los manda al servidor de Brivel.
+      El servidor hace solo de relevo. Al conectar, tu dispositivo crea una pareja de claves y solo da al servidor la
+      parte pública. Cada envío de Garmin se cifra con ella en cuanto llega (en la memoria del servidor, sin guardarlo
+      antes sin cifrar). Después, solo tu dispositivo puede leerlo: Brivel no.</li>
+    <li><strong>Qué guarda el servidor:</strong> el identificador de usuario que da Garmin (sin nombre ni email), las
+      claves de acceso a tu cuenta de Garmin (cifradas, para pedirle datos y mandar sesiones a tu reloj), la parte
+      pública de la clave de tu dispositivo y los envíos cifrados pendientes, con su fecha y su tamaño.</li>
+    <li><strong>Sesiones al reloj:</strong> cuando mandas una sesión a tu reloj, el servidor la pasa a Garmin (nombre,
+      deporte, fecha, pasos y objetivos de cada paso) y no la guarda.</li>
+    <li><strong>Cuánto tiempo:</strong> cada envío se borra en cuanto tu dispositivo lo descarga y, si ningún dispositivo
+      lo descarga, a los 30 días. El historial de recuperación de la base de datos (Time Travel de Cloudflare D1) lo puede
+      conservar hasta 7 días más. Lo descargado queda en tu dispositivo como el resto del apartado 2 y, si sincronizas,
+      en tu copia cifrada del apartado 4.</li>
+    <li><strong>Desconectar y borrar:</strong> en Perfil → «Desconectar Garmin», o en Garmin Connect quitando el permiso a
+      Brivel. En los dos casos el servidor borra al momento las claves de acceso y los envíos pendientes y deja de
+      recibir datos. Lo que ya está en tu dispositivo lo ves, lo exportas y lo borras como en el apartado 2.</li>
+    <li><strong>Base legal:</strong> tu consentimiento explícito, que das al conectar y que es aparte de estas condiciones
+      (arts. 6.1.a y 9.2.a del RGPD). Lo retiras desconectando.</li>
+    <li><strong>Quién más los trata:</strong> solo Cloudflare, Inc., como encargado del tratamiento, en las mismas
+      condiciones y lugares que en el apartado 4 (base de datos en la UE). Brivel no vende ni cede tus datos a nadie.
+      Garmin trata tus datos en su propio servicio según su política de privacidad, como responsable independiente.</li>
+    <li><strong>Edad:</strong> solo para mayores de 14 años (art. 7 de la LOPDGDD).</li>
+  </ul>
+
+  <h2>6. Si nos escribes</h2>
   <p>Si escribes a <a href="mailto:hola@brivel.app">hola@brivel.app</a>, usamos tu dirección y tu mensaje solo para
     responderte o atender tu petición, y los borramos cuando ya no hacen falta. Base legal: atender tu petición
     (art. 6.1.f del RGPD) o, si ejerces tus derechos, cumplir la ley (art. 6.1.c).</p>
 
-  <h2>6. Descargas de las apps</h2>
+  <h2>7. Descargas de las apps</h2>
   <p>Las versiones de prueba se descargan desde GitHub, que trata tus datos de acceso según su propia política de
     privacidad.</p>
 
-  <h2>7. Cookies</h2>
+  <h2>8. Cookies</h2>
   <p>Brivel no usa cookies. El almacenamiento local del navegador solo guarda lo que tú introduces para que la web
     funcione: es estrictamente necesario y no se usa para seguirte.</p>
 
-  <h2>8. Edad mínima</h2>
+  <h2>9. Edad mínima</h2>
   <p>Brivel es para mayores de 14 años. Los menores de 14 solo pueden usarla con el consentimiento de sus padres o
     tutores (art. 7 de la LOPDGDD).</p>
 
-  <h2>9. Plan automático</h2>
+  <h2>10. Plan automático</h2>
   <p>El plan de entrenamiento se calcula de forma automática en tu dispositivo. Es una sugerencia: no produce efectos
     jurídicos y tú decides si lo sigues.</p>
 
-  <h2>10. Tus derechos</h2>
+  <h2>11. Tus derechos</h2>
   <p>Tienes derecho a acceder a tus datos, rectificarlos, suprimirlos, oponerte a su tratamiento, limitarlo y llevarlos
-    a otro servicio (arts. 15 a 22 del RGPD). Los datos del apartado 2 los gestionas tú directamente en tu dispositivo, y la copia del apartado 4 la borras desde
-    cualquiera de tus dispositivos.
+    a otro servicio (arts. 15 a 22 del RGPD). Los datos del apartado 2 los gestionas tú directamente en tu dispositivo, la copia del apartado 4 la borras desde
+    cualquiera de tus dispositivos y la conexión con Garmin del apartado 5 la quitas desconectándola.
     Para el resto, escribe a <a href="mailto:hola@brivel.app">hola@brivel.app</a>; respondemos en un mes como máximo.
     Ten en cuenta que, sin cuentas, Brivel no puede saber qué datos técnicos son tuyos si no nos das la información
     necesaria para identificarlos (art. 11 del RGPD).</p>
   <p>Si crees que no tratamos bien tus datos, puedes reclamar ante la Agencia Española de Protección de Datos
     (<a href="https://www.aepd.es">www.aepd.es</a>).</p>
 
-  <h2>11. Seguridad</h2>
+  <h2>12. Seguridad</h2>
   <p>La web solo funciona por HTTPS y una política de seguridad de contenidos impide cargar scripts ajenos. En las
     apps, la clave de intervals.icu y el código de sincronización se guardan cifrados en el almacén seguro del sistema;
     en la web, la clave de la sincronización se guarda de forma que ningún script puede leerla, y el código no se guarda.
-    Si alguna vez se filtraran copias cifradas sin sus claves, nadie podría leerlas.</p>
+    Si alguna vez se filtraran copias cifradas sin sus claves, nadie podría leerlas. Las claves de acceso a Garmin se
+    guardan cifradas en el servidor, y los datos de Garmin, cifrados para tu dispositivo (apartado 5).</p>
 
-  <h2>12. Cambios</h2>
+  <h2>13. Cambios</h2>
   <p>Si esta política cambia, publicaremos aquí la nueva versión con su fecha. Si un cambio afecta a lo que se guarda
     al sincronizar, te pediremos de nuevo el consentimiento.</p>
+
+  <section id="english" lang="en">
+    <h2>Summary in English</h2>
+    <p>This summary is for convenience; the Spanish text above is the binding version.</p>
+    <ul>
+      <li><strong>Controller:</strong> Gabriel Miralles Alvarez, an individual developing Brivel as a free, non-profit
+        personal project. Contact: <a href="mailto:hola@brivel.app">hola@brivel.app</a>.</li>
+      <li><strong>On your device:</strong> your profile, plan and health data stay on your phone or browser, where the
+        plan is calculated. Optional end-to-end encrypted sync between your devices (section 4).</li>
+      <li><strong>Garmin data (section 5, optional):</strong> only if you connect Garmin Connect. Activities, daily
+        summaries, sleep and HRV are used only to show you your own data, adapt your own training plan and send your
+        planned workouts to your Garmin device. Garmin pushes the data to our server, which acts only as a relay: each
+        delivery is encrypted on arrival with a public key from your device and deleted once your device downloads it,
+        or after 30 days. The server stores your Garmin user ID, your encrypted Garmin access tokens and pending
+        encrypted deliveries.</li>
+      <li><strong>Third parties:</strong> only Cloudflare, Inc. (hosting and database, EU jurisdiction) as data processor.
+        Garmin data is never sold or shared. No advertising, analytics, cookies or AI: Garmin data is not used to train,
+        evaluate or improve AI models.</li>
+      <li><strong>Your rights:</strong> view, export and delete your data in the app (Profile → Export / Delete); disconnect
+        Garmin in Profile or in Garmin Connect, which immediately deletes the tokens and pending data on our server and
+        withdraws your consent. You can also write to us or complain to the Spanish Data Protection Agency
+        (<a href="https://www.aepd.es">www.aepd.es</a>).</li>
+    </ul>
+  </section>
 </main>
 </body>
 </html>
