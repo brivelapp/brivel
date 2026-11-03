@@ -1,6 +1,18 @@
 package app.brivel.android
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +48,8 @@ import app.brivel.app.GoalKind
 import app.brivel.app.HEALTH_NOTICE
 import app.brivel.app.MIN_AGE
 import app.brivel.app.PRIVACY_NOTE
+import app.brivel.app.PRIVACY_URL
+import androidx.compose.ui.platform.LocalUriHandler
 import app.brivel.app.RaceInfo
 import app.brivel.app.BrivelApp
 import app.brivel.app.UserProfile
@@ -52,7 +66,39 @@ private val GOALS = listOf(
 private val RACE_SPORTS = listOf("running" to "Carrera a pie", "cycling" to "Bici", "swimming_pool" to "Natación",
     "triathlon" to "Triatlón", "duathlon" to "Duatlón")
 
-/** Primera vez: bienvenida, objetivo (como Garmin), tus datos y el aviso de salud. Con perfil, solo el objetivo. */
+private const val QUESTIONS = 7  // objetivo, deportes, semana, fuerza, nivel, año y aviso de salud
+
+/** Una pregunta por pantalla (lienzo de Pulso, 2026-11-03): atrás, progreso, la pregunta y «Siguiente» abajo. Sin atajos. */
+@Composable
+private fun Question(
+    number: Int, title: String, subtitle: String?, onBack: (() -> Unit)?, next: String, nextEnabled: Boolean,
+    onNext: () -> Unit, content: @Composable ColumnScope.() -> Unit,
+) {
+    // imePadding: con el teclado abierto, «Siguiente» sube por encima
+    Column(Modifier.fillMaxSize().imePadding().padding(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (onBack != null) IconButton(onClick = onBack, modifier = Modifier.size(44.dp).clip(CircleShape).background(Palette.surface)) {
+                Glyph(R.drawable.ic_chevron_left, label = "Atrás")
+            }
+            if (number > 0) Row(Modifier.weight(1f).semantics { contentDescription = "Paso $number de $QUESTIONS" },
+                horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                repeat(QUESTIONS) { i ->
+                    Box(Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(if (i < number) Palette.ok else Palette.chip))
+                }
+            }
+        }
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text(title, fontSize = 30.sp, lineHeight = 34.sp, fontWeight = FontWeight.ExtraBold)
+            subtitle?.let { Secondary(it) }
+            content()
+        }
+        Button(onClick = onNext, enabled = nextEnabled, modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)) {
+            Text(next, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+/** Primera vez: bienvenida y una pregunta por pantalla hasta el aviso de salud. Con perfil, solo el objetivo. */
 @Composable
 fun Onboarding(app: BrivelApp, act: Act) {
     val hasProfile = app.data.profile != null
@@ -61,59 +107,64 @@ fun Onboarding(app: BrivelApp, act: Act) {
     var race by remember { mutableStateOf(RaceInfo("", "running", "")) }
     var profile by remember { mutableStateOf(app.data.profile ?: UserProfile()) }
     var accepted by remember { mutableStateOf(false) }
+    val links = LocalUriHandler.current
+    val raceOk = goal != GoalKind.RACE || (race.name.isNotBlank() && runCatching { LocalDate.parse(race.date) }
+        .getOrNull()?.let { it > systemToday() } == true)
+    val year = profile.birthYear
+    val ageOk = year != null && ageAllowed(year, systemToday().year)
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Spacer(Modifier.height(24.dp))
-        when (step) {
-            0 -> {
-                Text("Brivel", fontSize = 36.sp, fontWeight = FontWeight.ExtraBold)
-                Text("El sistema operativo de tu cuerpo", fontSize = 18.sp, color = Palette.ok)
-                Secondary("Te dice qué hacer hoy y por qué, con tus datos y según la evidencia. Gratis, sin anuncios y de código abierto.")
-                Secondary(PRIVACY_NOTE)
-                Button(onClick = { step = 1 }, modifier = Modifier.fillMaxWidth()) { Text("Empezar") }
-                SyncCard(app, act, 0, allowCreate = false)
-            }
-            1 -> {
-                Text("¿Qué quieres conseguir?", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-                Secondary("Podrás cambiarlo o abandonarlo cuando quieras.")
-                GOALS.forEach { (kind, texts) ->
-                    Module(Modifier.clickable { goal = kind }, accent = if (goal == kind) Palette.ok else null, background = if (goal == kind) Palette.okSoft else Palette.surface) {
-                        Text(texts.first, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                        Secondary(texts.second)
-                    }
+    when (step) {
+        0 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Spacer(Modifier.height(24.dp))
+            Text("Brivel", fontSize = 36.sp, fontWeight = FontWeight.ExtraBold)
+            Text("El sistema operativo de tu cuerpo", fontSize = 18.sp, color = Palette.ok)
+            Secondary("Te dice qué hacer hoy y por qué, con tus datos y según la evidencia. Gratis, sin anuncios y de código abierto.")
+            Secondary(PRIVACY_NOTE)
+            TextButton(onClick = { links.openUri(PRIVACY_URL) }) { Text("Política de privacidad") }
+            Button(onClick = { step = 1 }, modifier = Modifier.fillMaxWidth()) { Text("Empezar") }
+            SyncCard(app, act, 0, allowCreate = false)
+        }
+        1 -> Question(if (hasProfile) 0 else 1, "¿Qué quieres conseguir?", "Podrás cambiarlo o abandonarlo cuando quieras.",
+            if (hasProfile) null else ({ step = 0 }), if (hasProfile) "Guardar objetivo" else "Siguiente", goal != null && raceOk,
+            { if (hasProfile) act.run { app.setGoal(goal!!, race.takeIf { goal == GoalKind.RACE }) } else step = 2 }) {
+            GOALS.forEach { (kind, texts) ->
+                Module(Modifier.selectable(goal == kind, role = Role.RadioButton) { goal = kind },
+                    accent = if (goal == kind) Palette.ok else null, background = if (goal == kind) Palette.okSoft else Palette.surface) {
+                    Text(texts.first, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                    Secondary(texts.second)
                 }
-                if (goal == GoalKind.RACE) RaceForm(race) { race = it }
-                val raceOk = goal != GoalKind.RACE || (race.name.isNotBlank() && runCatching { LocalDate.parse(race.date) }
-                    .getOrNull()?.let { it > systemToday() } == true)
-                Button(enabled = goal != null && raceOk, modifier = Modifier.fillMaxWidth(), onClick = {
-                    if (hasProfile) act.run { app.setGoal(goal!!, race.takeIf { goal == GoalKind.RACE }) } else step = 2
-                }) { Text(if (hasProfile) "Guardar objetivo" else "Siguiente") }
             }
-            2 -> {
-                Text("Tu semana", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-                Secondary("Con esto el plan cabe en tu vida: solo los días y minutos que tienes.")
-                ProfileForm(profile) { profile = it }
-                val year = profile.birthYear
-                val ageOk = year != null && ageAllowed(year, systemToday().year)
-                if (year != null && !ageOk) Secondary("Hace falta tener al menos $MIN_AGE años.", Palette.caution)
-                Button(enabled = ageOk && profile.days.values.any { it > 0 }, modifier = Modifier.fillMaxWidth(),
-                    onClick = { step = 3 }) { Text("Siguiente") }
-                TextButton(onClick = { step = 1 }) { Text("Atrás") }
+            if (goal == GoalKind.RACE) RaceForm(race) { race = it }
+        }
+        2 -> Question(2, "¿Qué haces además de caminar?", "Si no marcas nada, el plan es de caminar.", { step = 1 }, "Siguiente", true,
+            { step = 3 }) {
+            SportPicker(profile.cardio) { profile = profile.copy(cardio = it) }
+        }
+        3 -> Question(3, "¿Cuánto tiempo tienes cada día?", "Lo podrás cambiar cuando quieras.", { step = 2 }, "Siguiente",
+            profile.days.values.any { it > 0 }, { step = 4 }) {
+            Module { WeekBars(profile.days) { profile = profile.copy(days = it) } }
+        }
+        4 -> Question(4, "¿Dónde haces fuerza?", "La fuerza ayuda a cualquier deporte y a la salud.", { step = 3 }, "Siguiente", true,
+            { step = 5 }) {
+            ChoiceCards(STRENGTH_CHOICES, profile.strength) { profile = profile.copy(strength = it) }
+        }
+        5 -> Question(5, "¿Cuánto entrenas ahora?", "Para empezar a tu medida.", { step = 4 }, "Siguiente", true, { step = 6 }) {
+            ChoiceCards(LEVEL_CHOICES, profile.level) { profile = profile.copy(level = it) }
+        }
+        6 -> Question(6, "¿En qué año naciste?", "Para calcular tus zonas de pulso.", { step = 5 }, "Siguiente", ageOk, { step = 7 }) {
+            BirthYearField(year) { profile = profile.copy(birthYear = it) }
+            if (year != null && year >= 1000 && !ageOk) Secondary("Hace falta tener al menos $MIN_AGE años.", Palette.caution)
+        }
+        else -> Question(7, "Antes de empezar", null, { step = 6 }, "Ver mi plan", accepted, {
+            act.run {
+                app.saveProfile(profile)
+                app.setGoal(goal!!, race.takeIf { goal == GoalKind.RACE })
             }
-            else -> {
-                Text("Antes de empezar", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-                Module(background = Palette.cautionSoft) { Secondary(HEALTH_NOTICE, Palette.text) }
-                Row(Modifier.toggleable(accepted, role = Role.Checkbox) { accepted = it }, verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(accepted, null)
-                    Text("Lo he leído y entreno bajo mi responsabilidad", fontSize = 14.sp)
-                }
-                Button(enabled = accepted, modifier = Modifier.fillMaxWidth(), onClick = {
-                    act.run {
-                        app.saveProfile(profile)
-                        app.setGoal(goal!!, race.takeIf { goal == GoalKind.RACE })
-                    }
-                }) { Text("Ver mi plan") }
-                TextButton(onClick = { step = 2 }) { Text("Atrás") }
+        }) {
+            Module(background = Palette.cautionSoft) { Secondary(HEALTH_NOTICE, Palette.text) }
+            Row(Modifier.toggleable(accepted, role = Role.Checkbox) { accepted = it }, verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(accepted, null)
+                Text("Lo he leído y entreno bajo mi responsabilidad", fontSize = 14.sp)
             }
         }
     }

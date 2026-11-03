@@ -98,7 +98,8 @@ const val HEALTH_NOTICE = "Brivel no es un servicio médico ni sustituye el cons
 
 const val MIN_AGE = 14  // LOPDGDD art. 7: edad mínima para consentir en España (CUMPLIMIENTO #17)
 
-fun ageAllowed(birthYear: Int, currentYear: Int): Boolean = currentYear - birthYear >= MIN_AGE
+// Desde 1900: un año a medio teclear («19») no es una edad
+fun ageAllowed(birthYear: Int, currentYear: Int): Boolean = birthYear >= 1900 && currentYear - birthYear >= MIN_AGE
 
 const val PRIVACY_NOTE = "Tus datos se guardan en este móvil. Solo si activas «Usar en otros dispositivos», Brivel guarda " +
     "además una copia cifrada que solo tus dispositivos pueden leer. Si vinculas intervals.icu, la app habla directamente " +
@@ -125,3 +126,28 @@ const val SYNC_AGE = "Tengo 14 años o más"
 const val SYNC_NO_RECOVERY = "Nadie puede recuperar el código. Si lo pierdes y no te queda ningún dispositivo con Brivel, la copia " +
     "se pierde; los datos de cada dispositivo siguen en él."
 const val SYNC_JOIN_NOTE = "Se juntan los datos de este móvil con los de la copia."
+
+// Enlaces que la app tiene que tener a mano (CUMPLIMIENTO #1, #2 y #19: la AGPL pide ofrecer el código)
+const val PRIVACY_URL = "https://brivel.app/privacidad"
+const val TERMS_URL = "https://brivel.app/terminos"
+const val SOURCE_URL = "https://github.com/brivelapp/brivel"
+
+// Perfil (lienzo de Pulso, opción B, 2026-11-03): caminar no se elige; siempre cuenta y es el plan si no hay otro deporte
+val PICKABLE_CARDIO = listOf("running", "cycling", "swimming_pool")
+const val MAX_DAY_MINUTES = 240
+
+/** Marca o desmarca un deporte. Sin ninguno queda caminar: el plan necesita al menos uno (Planner.kt). */
+fun toggleCardio(cardio: List<String>, sport: String): List<String> {
+    val picked = cardio.filter { it in PICKABLE_CARDIO }
+    return (if (sport in picked) picked - sport else picked + sport).ifEmpty { listOf("walking") }
+}
+
+/** El tiempo de la semana: «45 min», «2 h», «4 h 45 min». */
+fun weekTimeText(days: Map<String, Int>): String {
+    val m = days.values.sum()
+    return when {
+        m < 60 -> "$m min"
+        m % 60 == 0 -> "${m / 60} h"
+        else -> "${m / 60} h ${m % 60} min"
+    }
+}

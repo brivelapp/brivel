@@ -42,66 +42,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.brivel.app.HEALTH_NOTICE
 import app.brivel.app.PRIVACY_NOTE
+import app.brivel.app.PRIVACY_URL
+import app.brivel.app.SOURCE_URL
+import app.brivel.app.TERMS_URL
+import androidx.compose.ui.platform.LocalUriHandler
 import app.brivel.app.BrivelApp
 import app.brivel.app.UserProfile
-import app.brivel.app.WEEKDAY_LABEL
+import app.brivel.app.MIN_AGE
+import app.brivel.app.ageAllowed
+import app.brivel.app.systemToday
 import app.brivel.app.goalLabel
 import app.brivel.app.GoalKind
 import app.brivel.app.RaceInfo
 import app.brivel.app.dateLabel
-
-private val CARDIO_OPTIONS = listOf("walking" to "Caminar", "running" to "Correr", "cycling" to "Bici", "swimming_pool" to "Nadar")
-private val STRENGTH_OPTIONS = listOf("gym" to "Gimnasio", "bodyweight" to "Con tu peso", "none" to "Sin fuerza")
-private val LEVEL_OPTIONS = listOf("beginner" to "Empiezo", "intermediate" to "Entreno a veces", "advanced" to "Entreno a menudo")
-private val DAYS = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
-
-/** Datos para el plan: actividades, días y minutos, material y nivel. El objetivo no vive aquí (VISION §5). */
-@Composable
-fun ProfileForm(initial: UserProfile, onChange: (UserProfile) -> Unit) {
-    var p by remember { mutableStateOf(initial) }
-    fun set(new: UserProfile) { p = new; onChange(new) }
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionTitle("Qué actividades haces")
-        ChipRow {
-            CARDIO_OPTIONS.forEach { (key, label) ->
-                FilterChip(selected = key in p.cardio, label = { Text(label) }, onClick = {
-                    val next = if (key in p.cardio) p.cardio - key else p.cardio + key
-                    if (next.isNotEmpty()) set(p.copy(cardio = next))
-                })
-            }
-        }
-        SectionTitle("Fuerza")
-        ChipRow {
-            STRENGTH_OPTIONS.forEach { (key, label) ->
-                FilterChip(selected = p.strength == key, label = { Text(label) }, onClick = { set(p.copy(strength = key)) })
-            }
-        }
-        SectionTitle("Tu nivel")
-        ChipRow {
-            LEVEL_OPTIONS.forEach { (key, label) ->
-                FilterChip(selected = p.level == key, label = { Text(label) }, onClick = { set(p.copy(level = key)) })
-            }
-        }
-        SectionTitle("Qué días puedes entrenar y cuánto tiempo")
-        DAYS.forEach { d ->
-            val minutes = p.days[d] ?: 0
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                FilterChip(selected = minutes > 0, label = { Text(WEEKDAY_LABEL[d]!!) }, onClick = {
-                    set(p.copy(days = p.days + (d to if (minutes > 0) 0 else 45)))
-                }, modifier = Modifier.width(120.dp))
-                if (minutes > 0) {
-                    TextButton(onClick = { set(p.copy(days = p.days + (d to maxOf(15, minutes - 15)))) }) { Text("−") }
-                    Text("$minutes min", fontFamily = Mono)
-                    TextButton(onClick = { set(p.copy(days = p.days + (d to minOf(240, minutes + 15)))) }) { Text("+") }
-                }
-            }
-        }
-        SectionTitle("Año de nacimiento")
-        OutlinedTextField(value = p.birthYear?.toString() ?: "", singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            onValueChange = { v -> set(p.copy(birthYear = v.filter { it.isDigit() }.take(4).toIntOrNull())) })
-    }
-}
 
 @Composable
 fun ProfileTab(app: BrivelApp, version: Int, act: Act, changeGoal: () -> Unit) {
@@ -117,9 +70,34 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, changeGoal: () -> Unit) {
             OutlinedButton(onClick = changeGoal) { Text("Cambiar objetivo") }
             OtherRaces(app, act)
         }
+        // Se guarda solo: cada cambio rehace el plan al momento (lienzo de Pulso, opción B)
+        fun save(p: UserProfile) {
+            draft = p
+            act.run { app.saveProfile(p) }
+        }
         Module {
-            ProfileForm(draft) { draft = it }
-            Button(onClick = { act.run("Perfil guardado") { app.saveProfile(draft) } }) { Text("Guardar") }
+            SectionTitle("Qué haces además de caminar")
+            SportPicker(draft.cardio) { save(draft.copy(cardio = it)) }
+        }
+        Module {
+            SectionTitle("Tu semana")
+            WeekBars(draft.days) { save(draft.copy(days = it)) }
+        }
+        Module {
+            SectionTitle("Fuerza")
+            Segmented(STRENGTH_CHOICES.map { it.first to it.second }, draft.strength) { save(draft.copy(strength = it)) }
+        }
+        Module {
+            SectionTitle("Tu nivel")
+            Segmented(LEVEL_CHOICES.map { it.first to it.second }, draft.level) { save(draft.copy(level = it)) }
+        }
+        Module {
+            var year by remember(version) { mutableStateOf(draft.birthYear) }
+            BirthYearField(year) { y ->
+                year = y
+                if (y != null && ageAllowed(y, systemToday().year)) save(draft.copy(birthYear = y))
+            }
+            if (year != null && year!! >= 1000 && !ageAllowed(year!!, systemToday().year)) Secondary("Hace falta tener al menos $MIN_AGE años.", Palette.caution)
         }
         ReminderCard(app, act, version)
         HealthCard(app, act, version)
@@ -148,6 +126,12 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, changeGoal: () -> Unit) {
             Secondary(HEALTH_NOTICE)
         }
         Secondary("Brivel es gratis y de código abierto (AGPL-3.0). Sin niveles de pago, sin anuncios y sin notificaciones comerciales.")
+        val links = LocalUriHandler.current
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(onClick = { links.openUri(PRIVACY_URL) }) { Text("Privacidad") }
+            TextButton(onClick = { links.openUri(TERMS_URL) }) { Text("Términos") }
+            TextButton(onClick = { links.openUri(SOURCE_URL) }) { Text("Código fuente") }
+        }
         Spacer(Modifier.height(24.dp))
     }
     if (confirmDelete) {

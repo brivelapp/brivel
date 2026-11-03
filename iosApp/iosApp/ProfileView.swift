@@ -1,10 +1,6 @@
 import SwiftUI
 import Shared
 
-private let cardioOptions = [("walking", "Caminar"), ("running", "Correr"), ("cycling", "Bici"), ("swimming_pool", "Nadar")]
-private let strengthOptions = [("gym", "Gimnasio"), ("bodyweight", "Con tu peso"), ("none", "Sin fuerza")]
-private let levelOptions = [("beginner", "Empiezo"), ("intermediate", "Entreno a veces"), ("advanced", "Entreno a menudo")]
-private let weekdays = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
 
 enum ReminderError: LocalizedError {
     case denied
@@ -36,40 +32,6 @@ struct ProfileDraft {
         UserProfile(birthYear: birthYear.map { KotlinInt(int: Int32($0)) }, level: level, strength: strength, cardio: cardio,
                     days: days.mapValues { KotlinInt(int: Int32($0)) }, renameActivities: renameActivities,
                     screening: screening)
-    }
-}
-
-/// Datos para el plan: actividades, días y minutos, material y nivel. El objetivo no vive aquí (VISION §5).
-struct ProfileForm: View {
-    @Binding var draft: ProfileDraft
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Secondary("Qué actividades haces")
-            FlowChips(options: cardioOptions, isSelected: { draft.cardio.contains($0) }) { key in
-                if draft.cardio.contains(key) { if draft.cardio.count > 1 { draft.cardio.removeAll { $0 == key } } } else { draft.cardio.append(key) }
-            }
-            Secondary("Fuerza")
-            FlowChips(options: strengthOptions, isSelected: { draft.strength == $0 }) { draft.strength = $0 }
-            Secondary("Tu nivel")
-            FlowChips(options: levelOptions, isSelected: { draft.level == $0 }) { draft.level = $0 }
-            Secondary("Qué días puedes entrenar y cuánto tiempo")
-            ForEach(weekdays, id: \.self) { d in
-                let minutes = draft.days[d] ?? 0
-                HStack {
-                    Chip(label: TextsKt.WEEKDAY_LABEL[d] ?? d, selected: minutes > 0) { draft.days[d] = minutes > 0 ? 0 : 45 }
-                        .frame(width: 130, alignment: .leading)
-                    if minutes > 0 {
-                        Stepper("\(minutes) min", value: Binding(get: { draft.days[d] ?? 45 }, set: { draft.days[d] = $0 }), in: 15...240, step: 15)
-                            .font(.mono(16))
-                    }
-                }
-            }
-            Secondary("Año de nacimiento")
-            TextField("1990", text: Binding(get: { draft.birthYear.map(String.init) ?? "" },
-                                            set: { draft.birthYear = Int($0.filter(\.isNumber).prefix(4)) }))
-                .keyboardType(.numberPad).textFieldStyle(.roundedBorder)
-        }
     }
 }
 
@@ -143,6 +105,11 @@ struct ProfileView: View {
     @State private var apiKey = ""
     @State private var confirmDelete = false
 
+    private func save() {
+        let p = draft.core
+        model.run { model.core.saveProfile(profile: p) }
+    }
+
     var body: some View {
         let _ = model.version
         let core = model.core
@@ -156,9 +123,32 @@ struct ProfileView: View {
                     Button("Cambiar objetivo") { model.run { core.abandonGoal() } }.buttonStyle(SecondaryStyle())
                     OtherRacesView()
                 }
+                // Se guarda solo: cada cambio rehace el plan al momento (lienzo de Pulso, opción B)
                 Module {
-                    ProfileForm(draft: $draft)
-                    Button("Guardar") { model.run("Perfil guardado") { core.saveProfile(profile: draft.core) } }.buttonStyle(PrimaryStyle())
+                    Text("Qué haces además de caminar").font(.section)
+                    SportPicker(cardio: draft.cardio) { draft.cardio = $0; save() }
+                }
+                Module {
+                    Text("Tu semana").font(.section)
+                    WeekBars(days: draft.days) { draft.days = $0; save() }
+                }
+                Module {
+                    Text("Fuerza").font(.section)
+                    Segmented(options: strengthChoices.map { ($0.0, $0.1) }, selected: draft.strength) { draft.strength = $0; save() }
+                }
+                Module {
+                    Text("Tu nivel").font(.section)
+                    Segmented(options: levelChoices.map { ($0.0, $0.1) }, selected: draft.level) { draft.level = $0; save() }
+                }
+                Module {
+                    Text("Año de nacimiento").font(.section)
+                    TextField("1990", text: Binding(get: { draft.birthYear.map(String.init) ?? "" }, set: { v in
+                        draft.birthYear = Int(v.filter(\.isNumber).prefix(4))
+                        if ageOk(draft.birthYear) { save() }
+                    })).keyboardType(.numberPad).textFieldStyle(.roundedBorder)
+                    if (draft.birthYear ?? 0) >= 1000 && !ageOk(draft.birthYear) {
+                        Secondary("Hace falta tener al menos \(TextsKt.MIN_AGE) años.", color: Palette.caution)
+                    }
                 }
                 Module {
                     Toggle(isOn: Binding(get: { core.data.reminderHour != nil }, set: { on in
@@ -244,6 +234,11 @@ struct ProfileView: View {
                     Secondary(TextsKt.HEALTH_NOTICE)
                 }
                 Secondary("Brivel es gratis y de código abierto (AGPL-3.0). Sin niveles de pago, sin anuncios y sin notificaciones comerciales.")
+                HStack(spacing: 16) {
+                    Link("Privacidad", destination: URL(string: TextsKt.PRIVACY_URL)!)
+                    Link("Términos", destination: URL(string: TextsKt.TERMS_URL)!)
+                    Link("Código fuente", destination: URL(string: TextsKt.SOURCE_URL)!)
+                }.font(.small)
             }.padding(16)
         }
         .background(Palette.bg)
