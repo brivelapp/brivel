@@ -256,17 +256,43 @@ class BrivelApp(
 
     // ------------------------------------------------------------ registro de fuerza
 
-    /** Apunta un ejercicio hecho (sustituye lo apuntado ese día en ese ejercicio). */
+    /** Apunta un ejercicio hecho de una vez: `sets` series iguales (sustituye lo apuntado ese día en ese ejercicio). */
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
     fun logLift(date: String, exercise: String, weightKg: Double?, reps: Int, sets: Int) {
         require(date <= today().toString()) { "No se puede apuntar una sesión futura" }
         require(reps in 1..100 && sets in 1..20 && (weightKg == null || weightKg in 0.0..500.0)) { "Revisa el peso y las repeticiones" }
         val name = exerciseName(exercise)
-        save(data.copy(lifts = data.lifts.filterNot { it.date == date && it.exercise == name } +
-            LiftLog(date, name, weightKg, reps, sets)))
+        save(data.copy(sets = data.sets.filterNot { it.date == date && it.exercise == name } +
+            (1..sets).map { SetLog(date, name, it, weightKg, reps) }))
     }
 
-    fun liftHint(exerciseLine: String): LiftHint = liftHint(data.lifts, exerciseLine)
+    fun liftHint(exerciseLine: String): LiftHint = liftHint(daySummaries(data.sets), exerciseLine)
+
+    /** La sesión de fuerza de ese día serie a serie, o null si ese día no tiene fuerza. */
+    fun strengthScreen(date: String): StrengthScreen? =
+        day(date).items.firstOrNull { it.isStrength }?.let { strengthScreen(it, date, data.sets) }
+
+    /** Apunta o corrige la serie `set` (desde 1) de un ejercicio; `reps` son segundos en los ejercicios por tiempo. */
+    @Throws(Exception::class)
+    fun logSet(date: String, exercise: String, set: Int, weightKg: Double?, reps: Int) {
+        require(date <= today().toString()) { "No se puede apuntar una sesión futura" }
+        require(exercise.isNotBlank() && set in 1..20 && reps in 1..600 && (weightKg == null || weightKg in 0.0..500.0)) {
+            "Revisa el peso y las repeticiones"
+        }
+        save(data.copy(sets = data.sets.filterNot { it.date == date && it.exercise == exercise && it.set == set } +
+            SetLog(date, exercise, set, weightKg, reps)))
+    }
+
+    /** Borra una serie; las siguientes de ese ejercicio y día bajan un número para que no queden huecos. */
+    fun deleteSet(date: String, exercise: String, set: Int) {
+        save(data.copy(sets = data.sets.mapNotNull {
+            when {
+                it.date != date || it.exercise != exercise || it.set < set -> it
+                it.set == set -> null
+                else -> it.copy(set = it.set - 1)
+            }
+        }))
+    }
 
     // ------------------------------------------------------------ datos de salud del móvil
 

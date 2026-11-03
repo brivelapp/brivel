@@ -144,7 +144,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             .toMutableMap()
         for (m in data.manualDone) all.getOrPut(m.date) { mutableListOf() } += Done(m.sport, "manual")
         // Apuntar lo levantado también cuenta como fuerza hecha ese día, aunque no se pulse "hecha"
-        for (date in data.lifts.map { it.date }.toSet()) {
+        for (date in data.sets.map { it.date }.toSet()) {
             val day = all.getOrPut(date) { mutableListOf() }
             if (day.none { it.sport == "strength" }) day += Done("strength", "manual")
         }

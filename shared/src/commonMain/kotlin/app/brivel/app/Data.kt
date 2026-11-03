@@ -47,9 +47,13 @@ data class UserProfile(
 @Serializable
 data class ManualDone(val date: String, val sport: String)
 
-/** Lo levantado en un ejercicio un día: peso (null con tu peso corporal), repeticiones por serie y series. */
+/** Lo levantado en un ejercicio un día: peso (null con tu peso corporal), repeticiones por serie y series. Formato v2. */
 @Serializable
 data class LiftLog(val date: String, val exercise: String, val weightKg: Double?, val reps: Int, val sets: Int)
+
+/** Una serie de fuerza: peso (null con tu peso corporal) y repeticiones, o segundos en los ejercicios por tiempo. */
+@Serializable
+data class SetLog(val date: String, val exercise: String, val set: Int, val weightKg: Double?, val reps: Int)
 
 /** Cambios de una semana (acumulados) desde `since`; `earlier`: los anteriores de esa semana, para que lo pasado no cambie. */
 @Serializable
@@ -71,7 +75,7 @@ data class IntervalsCache(
 )
 
 /** Versión del formato guardado: al cambiarlo, `migrate` adapta los datos antiguos (sin servidor no hay migraciones). */
-const val SCHEMA = 2
+const val SCHEMA = 3
 
 /** Campo nuevo: añádelo también a `merge` (sync/Merge.kt), o un cambio de otro dispositivo pisará el de este. */
 @Serializable
@@ -88,12 +92,21 @@ data class AppData(
     val cache: IntervalsCache? = null,
     val intervalsAthlete: String? = null,  // ID del atleta (no es secreto); la clave va en el almacén seguro
     val health: HealthSnapshot? = null,  // Health Connect o Apple Salud, leídos en el propio móvil
-    val lifts: List<LiftLog> = emptyList(),  // registro de fuerza (punto 8 del roast)
+    val lifts: List<LiftLog> = emptyList(),  // formato v2 (un resumen por ejercicio y día): `migrate` lo pasa a `sets`
+    val sets: List<SetLog> = emptyList(),  // registro de fuerza, serie a serie
     val reminderHour: Int? = null,  // recordatorio diario a esa hora; null = apagado (se activa a propósito)
 )
 
-/** Adapta datos guardados con un formato anterior. v1 → v2: añade los datos de salud del móvil (vacíos). */
+/**
+ * Adapta datos guardados con un formato anterior. v1 → v2: añade los datos de salud del móvil (vacíos). v2 → v3: cada
+ * resumen de `lifts` pasa a una serie por cada una que apuntó. También con v3: un móvil sin actualizar aún sincroniza lifts.
+ */
 fun migrate(data: AppData): AppData = when {
-    data.schema >= SCHEMA -> data
-    else -> data.copy(schema = SCHEMA)
+    data.schema >= SCHEMA && data.lifts.isEmpty() -> data
+    else -> {
+        val logged = data.sets.map { it.date to it.exercise }.toSet()
+        val converted = data.lifts.filter { (it.date to it.exercise) !in logged }
+            .flatMap { l -> (1..l.sets).map { SetLog(l.date, l.exercise, it, l.weightKg, l.reps) } }
+        data.copy(schema = SCHEMA, lifts = emptyList(), sets = data.sets + converted)
+    }
 }

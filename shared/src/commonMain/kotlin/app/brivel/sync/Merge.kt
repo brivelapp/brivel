@@ -55,6 +55,7 @@ fun merge(base: AppData, local: AppData, remote: AppData): Merged {
         intervalsAthlete = pick("intervalsAthlete", base.intervalsAthlete, local.intervalsAthlete, remote.intervalsAthlete),
         health = pick(null, base.health, local.health, remote.health),
         lifts = items(base.lifts, local.lifts, remote.lifts),
+        sets = items(base.sets, local.sets, remote.sets),
         reminderHour = pick("reminderHour", base.reminderHour, local.reminderHour, remote.reminderHour),
     )
     return Merged(data, conflicts)

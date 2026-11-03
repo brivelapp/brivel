@@ -5,6 +5,7 @@ import app.brivel.app.GoalKind
 import app.brivel.app.HealthSnapshot
 import app.brivel.app.IntervalsCache
 import app.brivel.app.LiftLog
+import app.brivel.app.SetLog
 import app.brivel.app.ManualDone
 import app.brivel.app.Readiness
 import app.brivel.app.SCHEMA
@@ -36,6 +37,7 @@ class MergeTest {
         intervalsAthlete = "i123",
         health = HealthSnapshot("Apple Salud", emptyList(), emptyList(), "2026-11-02T08:00"),
         lifts = listOf(LiftLog("2026-11-02", "Sentadilla", 60.0, 8, 3)),
+        sets = listOf(SetLog("2026-11-02", "Sentadilla", 1, 60.0, 8)),
         reminderHour = 8,
     )
 
