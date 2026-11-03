@@ -103,7 +103,7 @@ final class HealthKitReader {
             return Shared.Workout(id: w.uuid.uuidString, sport: sport, start: local.string(from: w.startDate),
                                   minutes: w.duration / 60, avgHr: k(avg), maxHr: k(inside.map { $0.1 }.max()),
                                   zoneSeconds: zones.reduce(0, +) > 0 ? zones.map { KotlinDouble(double: $0) } : nil,
-                                  distanceMeters: k(w.totalDistance?.doubleValue(for: .meter())))
+                                  distanceMeters: k(w.totalDistance?.doubleValue(for: .meter())), device: nil)
         }
         core.importHealth(snapshot: HealthSnapshot(source: "Apple Salud", days: dailies, workouts: converted,
                                                    syncedAt: dayKey(Date())))

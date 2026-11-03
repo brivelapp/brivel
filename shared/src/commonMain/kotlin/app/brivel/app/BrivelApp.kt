@@ -330,7 +330,8 @@ class BrivelApp(
     /** Cuándo llegó el último envío de Garmin, o null sin datos de Garmin. */
     fun garminSyncedAt(): String? = data.garmin?.syncedAt
 
-    private val garminClient by lazy { GarminClient(GARMIN_URL, httpEngine) }
+    // Una función y no una propiedad: así la web (que tiene su propio cliente) no arrastra ktor en su paquete
+    private val garminClient: GarminClient get() = GarminClient(GARMIN_URL, httpEngine)
 
     /** Conectado a Garmin en este dispositivo (tiene el token de su buzón). */
     val garminConnected: Boolean get() = secrets.read(GARMIN_TOKEN) != null
