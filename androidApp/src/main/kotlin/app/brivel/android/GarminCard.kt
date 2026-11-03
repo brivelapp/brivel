@@ -2,7 +2,14 @@ package app.brivel.android
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -39,7 +46,12 @@ fun GarminCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: 
     val context = LocalContext.current
 
     Module {
-        SectionTitle(GARMIN_TITLE)
+        // Nombre completo de la app y su icono, como piden las normas de marca de Garmin al conectar
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Image(painterResource(R.drawable.garmin_connect), contentDescription = null,
+                modifier = Modifier.size(28.dp).clip(RoundedCornerShape(7.dp)))
+            SectionTitle(GARMIN_TITLE)
+        }
         when {
             app.garminConnected -> {
                 Secondary(garminStatus(app.garminSyncedAt()))

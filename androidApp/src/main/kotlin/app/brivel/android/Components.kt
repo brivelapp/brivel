@@ -133,7 +133,7 @@ fun SecondaryButton(text: String, modifier: Modifier = Modifier, onClick: () -> 
 
 /** Cómo estás hoy: el color y el icono dicen bien, con cuidado o descanso; debajo, el porqué. */
 @Composable
-fun StateCard(tone: Tone, title: String, detail: List<Reason>) {
+fun StateCard(tone: Tone, title: String, detail: List<Reason>, source: String? = null) {
     val (bg, fg, icon) = when (tone) {
         Tone.OK -> Triple(Palette.okSoft, Palette.ok, R.drawable.ic_state_ok)
         Tone.CAUTION -> Triple(Palette.cautionSoft, Palette.caution, R.drawable.ic_state_caution)
@@ -147,6 +147,7 @@ fun StateCard(tone: Tone, title: String, detail: List<Reason>) {
         }
         Column(Modifier.weight(1f).padding(top = if (detail.isEmpty()) 0.dp else 2.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            source?.let { Source(it) }
             detail.forEach { ReasonRow(it, fg) }
         }
     }
@@ -272,3 +273,7 @@ fun minutesText(m: Double): String = when {
 @Composable
 fun ChipRow(content: @Composable () -> Unit) =
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
+
+/** De dónde sale un dato («Garmin Forerunner 965»): las normas de marca de Garmin lo piden bajo el título, siempre a la vista. */
+@Composable
+fun Source(text: String) = Text(text, fontSize = 12.sp, color = Palette.muted)

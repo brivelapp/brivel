@@ -281,3 +281,5 @@ main.wide ~ .legal { padding-block: 8px 32px; }
 .rir legend { padding: 0; margin-bottom: 8px; }
 .rir button { min-height: 44px; border-radius: 999px; border: 0; background: var(--surface); color: var(--text); font-weight: 600; font-size: 16px; }
 .rir button.on { background: var(--ok); color: var(--on-ok); }
+.garmin-title { gap: 10px; align-items: center; }
+.garmin-title img { border-radius: 7px; }

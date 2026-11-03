@@ -2,6 +2,11 @@ import { useEffect, useState } from "react"
 import type { WebApp } from "brivel-shared"
 import { disconnectGarmin, finishGarmin, pullGarmin, startGarmin } from "./garmin"
 
+// Nombre completo de la app y su icono, como piden las normas de marca de Garmin al conectar
+const GarminTitle = ({ text = "Garmin Connect™" }: { text?: string }) => (
+  <h3 className="row garmin-title"><img src="garmin-connect.png" alt="" width={28} height={28} />{text}</h3>
+)
+
 const errorText = (e: unknown) => (e instanceof Error && e.message ? e.message : "No se pudo conectar con Garmin")
 
 /**
@@ -35,7 +40,7 @@ export function GarminCard({ core, onDone }: { core: WebApp; onDone: (message: s
   if (core.garminConnected) {
     return (
       <section className="module">
-        <h3>Garmin Connect™</h3>
+        <GarminTitle />
         <p className="muted">Conectado. {since ? `Último envío: ${core.dateLabel(since)}.` : "Aún no ha llegado nada: sincroniza el reloj."}
           {" "}Se actualiza solo al abrir Brivel y al volver a esta pestaña.</p>
         <button className="link" disabled={busy} onClick={() => confirm("¿Desconectar Garmin? Se desconecta en todos tus dispositivos: el servidor borra al momento lo pendiente y deja de recibir tus datos. Lo ya descargado se queda.")
@@ -46,7 +51,7 @@ export function GarminCard({ core, onDone }: { core: WebApp; onDone: (message: s
   if (!asking) {
     return (
       <section className="module">
-        <h3>Garmin Connect™</h3>
+        <GarminTitle />
         <p className="muted">Opcional y en pruebas. Tus actividades, sueño, pasos, pulso en reposo y variabilidad cardiaca
           del reloj, para adaptar tu plan.</p>
         <button className="secondary" onClick={() => setAsking(true)}>Conectar Garmin Connect™</button>
@@ -55,7 +60,7 @@ export function GarminCard({ core, onDone }: { core: WebApp; onDone: (message: s
   }
   return (
     <section className="module">
-      <h3>Conectar Garmin Connect™</h3>
+      <GarminTitle text="Conectar Garmin Connect™" />
       <p className="muted small">Garmin manda tus datos al servidor de Brivel, que los cifra al llegar para tus dispositivos
         y los borra en cuanto uno los descarga (o a los 30 días). Brivel no puede leerlos ni los vende. Si sincronizas, la
         conexión vale para todos tus dispositivos.</p>

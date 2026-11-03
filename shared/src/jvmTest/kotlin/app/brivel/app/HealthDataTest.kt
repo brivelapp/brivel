@@ -187,6 +187,20 @@ class HealthDataTest {
         assertEquals(listOf("garmin-1", "hk-2"), both.workouts.map { it.id })
         assertEquals("Apple Salud y Garmin", both.source)
         assertTrue(app.data.deviceData(today) != null)
+
+        // Atribución (Garmin API Brand Guidelines): bajo cada dato suyo y en lo calculado con ellos
+        val progress = buildProgress(app.data, today)
+        assertEquals("Garmin", progress.metrics.first { it.key == "hrv" }.source)
+        assertEquals("Garmin Forerunner 965", progress.recent.single().source)
+        assertEquals(GARMIN_DERIVED, progress.garminNote)
+        assertEquals(GARMIN_DERIVED, buildToday(app.data, today).garminNote)
+        assertEquals("Garmin Forerunner 965", buildMonth(app.data, today, 2026, 10).weeks.flatten()
+            .first { it.date == "2026-10-21" }.done.single().source)
+        assertEquals("Garmin fenix 8", garminSource("Garmin fenix 8"))
+        // El móvil aporta el pulso en reposo de un día que Garmin no tiene: las dos fuentes
+        val mixed = phone.copy(days = phone.days + DailyHealth("2026-10-20", restingHr = 54.0))
+        assertEquals("Garmin y Apple Salud", buildProgress(app.data.copy(health = mixed), today).metrics.first { it.key == "restingHR" }.source)
+        assertEquals(null, buildProgress(app.data.copy(garmin = null, health = phone), today).metrics.first().source)
         app.clearGarmin()
         assertEquals(null, app.data.garmin)
     }

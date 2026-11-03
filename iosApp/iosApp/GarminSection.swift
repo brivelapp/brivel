@@ -17,7 +17,12 @@ struct GarminSection: View {
         let _ = model.version
         let core = model.core
         Module {
-            Text(TextsKt.GARMIN_TITLE).font(.section)
+            // Nombre completo de la app y su icono, como piden las normas de marca de Garmin al conectar
+            HStack(spacing: 10) {
+                Image("garmin_connect").resizable().frame(width: 28, height: 28)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous)).accessibilityHidden(true)
+                Text(TextsKt.GARMIN_TITLE).font(.section)
+            }
             if core.garminConnected {
                 Secondary(TextsKt.garminStatus(syncedAt: core.garminSyncedAt()))
                 Button("Desconectar Garmin", role: .destructive) { confirm = true }.font(.small)

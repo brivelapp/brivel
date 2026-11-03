@@ -21,7 +21,7 @@ struct TodayView: View {
                     }
                 }
                 // Tu cuerpo hoy en una frase: sale de la misma decisión que la sesión
-                StateCard(tone: screen.tone, title: screen.stateTitle, detail: screen.stateDetail)
+                StateCard(tone: screen.tone, title: screen.stateTitle, detail: screen.stateDetail, source: screen.garminNote)
                 if screen.askReadiness { ReadinessCard() }
                 DayContent(day: day, linked: screen.linked, today: true)
                 Module {

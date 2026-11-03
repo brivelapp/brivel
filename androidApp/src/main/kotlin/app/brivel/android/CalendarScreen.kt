@@ -74,6 +74,7 @@ fun CalendarTab(app: BrivelApp, version: Int, act: Act) {
         screen.weeks.flatten().firstOrNull { it.date == selected }?.done?.forEach { a ->
             Module(background = Palette.okSoft) {
                 SectionTitle(a.title)
+                a.source?.let { Source(it) }
                 Secondary(listOfNotNull("${a.minutes} min", a.start?.let { "a las $it" }).joinToString(" "))
             }
         }

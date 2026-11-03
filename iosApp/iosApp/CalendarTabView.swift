@@ -93,6 +93,7 @@ private struct DayDetail: View {
             ForEach(Array((cell?.done ?? []).enumerated()), id: \.offset) { _, a in
                 Module(background: Palette.okSoft) {
                     Text(a.title).font(.section)
+                    if let source = a.source { Source(text: source) }
                     Secondary("\(a.minutes) min" + (a.start.map { " a las \($0)" } ?? ""))
                 }
             }

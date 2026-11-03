@@ -76,6 +76,7 @@ fun ProgressTab(app: BrivelApp, version: Int, openProfile: () -> Unit) {
             screen.status?.let { st ->
                 val warn = st.label == "Sobrecarga" || st.label == "Perdiendo forma"
                 SectionTitle("Forma: ${st.label.lowercase()}")
+                screen.garminNote?.let { Source(it) }
                 screen.metrics.firstOrNull { it.key == "ctl" }?.let { Sparkline(it.points, null, null, if (warn) Palette.caution else Palette.ok) }
                 Secondary(st.text)
             }
@@ -94,6 +95,7 @@ fun ProgressTab(app: BrivelApp, version: Int, openProfile: () -> Unit) {
         }
         if (screen.predictions.isNotEmpty()) Module {
             SectionTitle("Tiempos previstos")
+            screen.garminNote?.let { Source(it) }
             screen.predictions.forEach { p ->
                 Row {
                     Text(p.distance, fontSize = 15.sp, modifier = Modifier.weight(1f))
@@ -120,6 +122,7 @@ private fun RecentRow(r: RecentActivity) {
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(r.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                r.source?.let { Source(it) }
                 Text(dateLabel(r.date), fontSize = 12.sp, color = Palette.muted)
             }
             Text("${r.minutes}′", fontFamily = Mono, fontSize = 15.sp)
@@ -151,6 +154,7 @@ private fun MetricRow(m: Metric, first: Boolean) {
             Text(m.label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             Text(format(latest) + if (m.unit.isNotEmpty()) " ${m.unit}" else "", fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
+        m.source?.let { Source(it) }
         if (low != null && high != null && latest != null && format(high) != format(low)) {
             val values = m.points.map { it.value }
             val lo = minOf(low, values.min())

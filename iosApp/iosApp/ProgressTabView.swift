@@ -37,6 +37,7 @@ struct ProgressTabView: View {
                             if let st = screen.status {
                                 let warn = st.label == "Sobrecarga" || st.label == "Perdiendo forma"
                                 Text("Forma: \(st.label.lowercased())").font(.section)
+                                if let note = screen.garminNote { Source(text: note) }
                                 if let ctl = screen.metrics.first(where: { $0.key == "ctl" }) {
                                     Sparkline(values: ctl.points.map { $0.value }, low: nil, high: nil, color: warn ? Palette.caution : Palette.ok)
                                         .frame(height: 56)
@@ -62,6 +63,7 @@ struct ProgressTabView: View {
                     if !screen.predictions.isEmpty {
                         Module {
                             Text("Tiempos previstos").font(.section)
+                            if let note = screen.garminNote { Source(text: note) }
                             ForEach(screen.predictions, id: \.distance) { p in
                                 HStack {
                                     Text(p.distance).font(.body15)
@@ -101,6 +103,7 @@ private struct RecentRow: View {
                 SportBadge(sport: activity.sport, size: 32)
                 VStack(alignment: .leading) {
                     Text(activity.title).font(.ui(15, .semibold, relativeTo: .subheadline))
+                    if let source = activity.source { Source(text: source) }
                     Text(ScreensKt.dateLabel(date: activity.date)).font(.caption12).foregroundStyle(Palette.muted)
                 }
                 Spacer()
@@ -143,6 +146,7 @@ private struct MetricRow: View {
                 Spacer()
                 Text(format(latest) + (metric.unit.isEmpty ? "" : " \(metric.unit)")).font(.mono(15, .semibold))
             }
+            if let source = metric.source { Source(text: source) }
             if let low, let high, let latest, format(low) != format(high) {
                 let values = metric.points.map { $0.value }
                 let lo = min(low, values.min() ?? low)

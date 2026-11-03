@@ -9,7 +9,7 @@ export interface WeekDot { letter: string; date: string; isToday: boolean; plann
 export interface TodayScreen {
   dateLabel: string; goalLine: string | null; stateTitle: string; stateDetail: Reason[]; tone: Tone; day: DayView
   meetsWho: boolean; weekMinutes: number; strengthDays: number; weekDots: WeekDot[]; warnings: string[]; info: string[]
-  askReadiness: boolean; goalFinished: boolean
+  askReadiness: boolean; goalFinished: boolean; garminNote: string | null
 }
 // Sesión de fuerza serie a serie (Workout.kt) y figura de su movimiento (Figures.kt); reps son segundos si timed
 export interface LoggedSet { set: number; weightKg: number | null; reps: number; rir: number | null }
@@ -19,12 +19,12 @@ export interface StrengthScreen { date: string; title: string; exercises: Streng
 export interface FigureLines { head: [number, number]; body: number[][]; work: number[][] }
 
 // Calendario y Progreso (Screens.kt): solo lo que pinta la web
-export interface DoneActivity { title: string; sport: string; minutes: number; start: string | null }
+export interface DoneActivity { title: string; sport: string; minutes: number; start: string | null; source: string | null }
 export interface CalendarDay { date: string; dayOfMonth: number; inMonth: boolean; isToday: boolean; planned: PlanItem[]; done: DoneActivity[]; manual: string[] }
 export interface MonthScreen { title: string; year: number; month: number; weeks: CalendarDay[][] }
 export interface Point { date: string; value: number }
 export interface Metric { key: string; label: string; unit: string; explanation: string; points: Point[]; latest: number | null
-  normalLow: number | null; normalHigh: number | null; higherIsBetter: boolean | null }
-export interface RecentActivity { date: string; title: string; sport: string; minutes: number; detail: string | null; zoneMinutes: number[] }
+  normalLow: number | null; normalHigh: number | null; higherIsBetter: boolean | null; source: string | null }
+export interface RecentActivity { date: string; title: string; sport: string; minutes: number; detail: string | null; zoneMinutes: number[]; source: string | null }
 export interface ProgressScreen { linked: boolean; metrics: Metric[]; weeklyMinutes: Point[]; status: { label: string; text: string } | null
-  predictions: { distance: string; time: string }[]; predictionSource: string | null; recent: RecentActivity[] }
+  predictions: { distance: string; time: string }[]; predictionSource: string | null; recent: RecentActivity[]; garminNote: string | null }

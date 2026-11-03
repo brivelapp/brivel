@@ -49,7 +49,7 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openGoal: () -> Unit) {
             }
         }
         // Tu cuerpo hoy en una frase: sale de la misma decisión que la sesión
-        StateCard(screen.tone, screen.stateTitle, screen.stateDetail)
+        StateCard(screen.tone, screen.stateTitle, screen.stateDetail, screen.garminNote)
         if (screen.askReadiness) ReadinessCard(act)
         DayContent(app, day, screen.linked, act, today = true)
         Module {

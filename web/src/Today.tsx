@@ -213,6 +213,7 @@ export function Today({ core, act, synced, openStrength }:
         <span className="state-icon"><Icon src={stateIcon} size={22} /></span>
         <div>
           <p className="state-title">{screen.stateTitle}</p>
+          {screen.garminNote && <p className="muted small source">{screen.garminNote}</p>}
           {screen.stateDetail.map((r, i) => <ReasonRow key={i} core={core} reason={r} tone={tone} />)}
         </div>
       </section>

@@ -159,6 +159,7 @@ struct StateCard: View {
     let tone: Tone
     let title: String
     let detail: [Reason]
+    var source: String? = nil
 
     var body: some View {
         let (bg, fg, icon): (Color, Color, String) =
@@ -170,6 +171,7 @@ struct StateCard: View {
                 .frame(width: 44, height: 44).background(fg).clipShape(Circle())
             VStack(alignment: .leading, spacing: 6) {
                 Text(title).font(.ui(16, .bold, relativeTo: .headline))
+                if let source { Source(text: source) }
                 ForEach(Array(detail.enumerated()), id: \.offset) { _, r in ReasonRow(reason: r, color: fg) }
             }
             Spacer(minLength: 0)
@@ -321,4 +323,10 @@ struct Chip: View {
                 .overlay(Capsule().stroke(selected ? Palette.ok : .clear, lineWidth: 1.5))
         }.buttonStyle(.plain)
     }
+}
+
+/// De dónde sale un dato («Garmin Forerunner 965»): las normas de marca de Garmin lo piden bajo el título, siempre a la vista.
+struct Source: View {
+    let text: String
+    var body: some View { Text(text).font(.caption12).foregroundStyle(Palette.muted) }
 }

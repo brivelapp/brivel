@@ -53,7 +53,7 @@ export function Calendar({ core, act, openStrength }: { core: WebApp; act: Act; 
           <h2>{core.dateLabel(selected)}</h2>
           {done.map((a, i) => (
             <section key={i} className="state ok">
-              <div><p className="state-title">{a.title}</p><p className="muted">{a.minutes} min{a.start ? ` a las ${a.start}` : ""}</p></div>
+              <div><p className="state-title">{a.title}</p>{a.source && <p className="muted small source">{a.source}</p>}<p className="muted">{a.minutes} min{a.start ? ` a las ${a.start}` : ""}</p></div>
             </section>
           ))}
           <DayContent key={selected} core={core} day={day} act={act} openStrength={openStrength} />

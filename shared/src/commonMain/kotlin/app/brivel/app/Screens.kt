@@ -56,6 +56,7 @@ data class TodayScreen(
     val askReadiness: Boolean,  // sin reloj vinculado: tres preguntas para ajustar el día
     val linked: Boolean,
     val goalFinished: Boolean,  // la carrera ya pasó: toca elegir objetivo otra vez
+    val garminNote: String? = null,  // el plan se adapta en parte con datos de Garmin (atribución obligatoria)
 )
 
 fun buildToday(data: AppData, today: LocalDate): TodayScreen {
@@ -100,6 +101,7 @@ fun buildToday(data: AppData, today: LocalDate): TodayScreen {
         warnings = week.warnings, info = week.info,
         askReadiness = !planner.hasRecoverySignals && data.readiness[today.toString()] == null && day.items.isNotEmpty(),
         linked = data.cache != null, goalFinished = goalFinished,
+        garminNote = GARMIN_DERIVED.takeIf { data.usesGarmin() },
     )
 }
 
@@ -132,7 +134,8 @@ private fun headline(day: DayView, planner: Planner): Pair<String, List<Reason>>
 // ---------------------------------------------------------------- Calendario
 
 @Serializable
-data class DoneActivity(val title: String, val sport: String, val minutes: Int, val start: String?)
+data class DoneActivity(val title: String, val sport: String, val minutes: Int, val start: String?,
+    val source: String? = null)  // «Garmin [modelo]» si llegó de Garmin
 
 @Serializable
 data class CalendarDay(
@@ -168,7 +171,7 @@ fun buildMonth(data: AppData, today: LocalDate, year: Int, month: Int): MonthScr
                         DoneActivity(title = activityTitle(a) ?: a["name"].str() ?: "Actividad",
                             sport = HEALTH_ACTIVITY_SPORTS[a["type"].str()]!!,
                             minutes = ((a["moving_time"].num() ?: 0.0) / 60).toInt(),
-                            start = a["start_date_local"].str()?.drop(11)?.take(5))
+                            start = a["start_date_local"].str()?.drop(11)?.take(5), source = a["brivel_source"].str())
                     },
                 manual = data.manualDone.filter { it.date == d.date }.map { it.sport },
             )
@@ -194,6 +197,7 @@ data class Metric(
     val normalLow: Double?,  // tu rango normal: media ± 1 DT de los últimos 60 días con dato
     val normalHigh: Double?,
     val higherIsBetter: Boolean?,
+    val source: String? = null,  // «Garmin» o «Garmin y Apple Salud» si sus datos salen de ahí (atribución obligatoria)
 )
 
 /** Estado de entrenamiento: una palabra y qué significa. */
@@ -213,6 +217,7 @@ data class RecentActivity(
     val load: Int?,
     val detail: String? = null,  // "10,2 km · 5:12 /km · 148 ppm · carga 62"
     val zoneMinutes: List<Int> = emptyList(),  // minutos en Z1–Z7 (de intervals.icu o del móvil)
+    val source: String? = null,  // «Garmin [modelo]» si llegó de Garmin
 )
 
 /** Una línea con lo medido: distancia, ritmo (a pie, /km) o velocidad (bici, km/h), pulso medio y carga. */
@@ -240,6 +245,7 @@ data class ProgressScreen(
     val predictions: List<Prediction> = emptyList(),
     val predictionSource: String? = null,  // "tu VO2max (52)" o "tu mejor carrera de entrenamiento"
     val recent: List<RecentActivity> = emptyList(),
+    val garminNote: String? = null,  // forma, estado y tiempos previstos calculados en parte con datos de Garmin
 )
 
 /** h:mm:ss o mm:ss. */
@@ -262,7 +268,7 @@ fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScre
         val mean = recent.average()
         val sd = if (recent.size > 1) sqrt(recent.sumOf { (it - mean) * (it - mean) } / (recent.size - 1)) else 0.0
         return Metric(key, label, unit, explanation, points, points.last().value,
-            if (recent.size >= 7) mean - sd else null, if (recent.size >= 7) mean + sd else null, better)
+            if (recent.size >= 7) mean - sd else null, if (recent.size >= 7) mean + sd else null, better, data.sourceOf(key, since))
     }
     val metrics = listOfNotNull(
         series("sleep", "Sueño", "h", "Horas dormidas cada noche, según tu reloj.", true) { w -> w["sleepSecs"].num()?.let { it / 3600 } },
@@ -322,7 +328,27 @@ fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScre
             RecentActivity(a.date(), a["name"].str()?.takeIf { it.isNotBlank() } ?: activityTitle(a) ?: (SPORT_LABEL[sport] ?: "Entrenamiento"),
                 sport, pyRound((a["moving_time"].num() ?: 0.0) / 60), a["icu_training_load"].num()?.let { pyRound(it) },
                 activityDetail(sport, a["distance"].num(), a["moving_time"].num(), a["average_heartrate"].num(), a["icu_training_load"].num()),
-                a["icu_hr_zone_times"].nums().takeIf { it.sum() > 0 }?.map { pyRound(it / 60) } ?: emptyList())
+                a["icu_hr_zone_times"].nums().takeIf { it.sum() > 0 }?.map { pyRound(it / 60) } ?: emptyList(),
+                a["brivel_source"].str())
         }
-    return ProgressScreen(true, metrics, weekly, status, predictions, source, recent)
+    return ProgressScreen(true, metrics, weekly, status, predictions, source, recent, GARMIN_DERIVED.takeIf { data.usesGarmin() })
+}
+
+/** De dónde salen los puntos de una métrica: Garmin, sola o con el móvil; null si Garmin no aporta ninguno. */
+private fun AppData.sourceOf(key: String, since: String): String? {
+    if (!usesGarmin()) return null
+    val pick: (DailyHealth) -> Double? = when (key) {
+        "sleep" -> { d -> d.sleepMinutes }
+        "hrv" -> { d -> d.hrv }
+        "restingHR" -> { d -> d.restingHr }
+        "vo2max" -> { d -> d.vo2max }
+        "weight" -> { d -> d.weightKg }
+        "steps" -> { d -> d.steps }
+        // La forma y la forma física salen de las actividades: Garmin contribuye si alguna es suya
+        else -> return if (garmin!!.workouts.any { it.start >= since }) "En parte con datos de Garmin" else null
+    }
+    val fromGarmin = garmin!!.days.filter { it.date >= since && pick(it) != null }.map { it.date }.toSet()
+    if (fromGarmin.isEmpty()) return null
+    val fromPhone = health?.days?.any { it.date >= since && it.date !in fromGarmin && pick(it) != null } == true
+    return if (fromPhone) "Garmin y ${health!!.source}" else "Garmin"
 }

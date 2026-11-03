@@ -44,6 +44,7 @@ function MetricRow({ m }: { m: Metric }) {
     <button className="metric" aria-expanded={open} onClick={() => setOpen(!open)}>
       <span className="row between"><span className="metric-label">{m.label}</span>
         <span className="mono metric-value">{fmt(latest)}{m.unit && ` ${m.unit}`}</span></span>
+      {m.source && <span className="muted small source">{m.source}</span>}
       {ranged && (
         <>
           <span className="range" aria-hidden="true">
@@ -65,7 +66,7 @@ function Recent({ r, core }: { r: RecentActivity; core: WebApp }) {
     <button className="metric" aria-expanded={open} onClick={() => setOpen(!open)}>
       <span className="row">
         <span className="badge"><Icon src={SPORT_ICON[r.sport] ?? SPORT_ICON.running} size={18} /></span>
-        <span className="grow"><span className="metric-label">{r.title}</span><br /><span className="muted small">{core.dateLabel(r.date)}</span></span>
+        <span className="grow"><span className="metric-label">{r.title}</span><br />{r.source && <><span className="muted small source">{r.source}</span><br /></>}<span className="muted small">{core.dateLabel(r.date)}</span></span>
         <span className="mono">{r.minutes}′</span>
       </span>
       {open && r.detail && <span className="muted small-text">{r.detail}</span>}
@@ -108,6 +109,7 @@ export function Progress({ core, openProfile }: { core: WebApp; openProfile: () 
               {screen.status && (
                 <>
                   <h3>Forma: {screen.status.label.toLowerCase()}</h3>
+                  {screen.garminNote && <p className="muted small source">{screen.garminNote}</p>}
                   {(() => { const ctl = screen.metrics.find((m) => m.key === "ctl"); return ctl && <Sparkline points={ctl.points} low={null} high={null} warn={warn} /> })()}
                   <p className="muted">{screen.status.text}</p>
                 </>
@@ -126,6 +128,7 @@ export function Progress({ core, openProfile }: { core: WebApp; openProfile: () 
           {screen.predictions.length > 0 && (
             <section className="module">
               <h3>Tiempos previstos</h3>
+              {screen.garminNote && <p className="muted small source">{screen.garminNote}</p>}
               {screen.predictions.map((p) => <p key={p.distance} className="row between"><span>{p.distance}</span><span className="mono">{p.time}</span></p>)}
               {screen.predictionSource && <p className="muted small-text">Calculado con {screen.predictionSource} (fórmula de Daniels).</p>}
             </section>

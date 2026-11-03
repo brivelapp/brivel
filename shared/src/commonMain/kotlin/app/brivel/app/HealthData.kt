@@ -130,6 +130,7 @@ fun healthCache(snapshot: HealthSnapshot, profile: UserProfile?, today: LocalDat
             put("icu_training_load", load(w))
             w.avgHr?.let { put("average_heartrate", it) }
             w.distanceMeters?.takeIf { it > 0 }?.let { put("distance", it) }
+            if (w.id.startsWith(GARMIN_ID)) put("brivel_source", garminSource(w.device))
             w.zoneSeconds?.let { z -> put("icu_hr_zone_times", JsonArray(z.map { JsonPrimitive(it) })) }
         }
     }
@@ -155,6 +156,23 @@ fun heartRateZoneBounds(profile: UserProfile?, today: LocalDate, measuredMaxHr: 
 
 /** Los datos del reloj o del móvil, sea cual sea la fuente: intervals.icu primero (es más completo), si no el móvil y Garmin. */
 fun AppData.deviceData(today: LocalDate): IntervalsCache? = cache ?: combinedHealth(health, garmin)?.let { healthCache(it, profile, today) }
+
+// ---------------------------------------------------------------- atribución de Garmin (Garmin API Brand Guidelines)
+
+internal const val GARMIN_ID = "garmin-"  // id de las actividades que llegan por el relevo (brivel-garmin/src/convert.ts)
+
+/** «Garmin [modelo]» bajo cada dato de Garmin; sin modelo, «Garmin». El modelo a veces ya empieza por «Garmin». */
+fun garminSource(device: String?): String = when {
+    device.isNullOrBlank() -> "Garmin"
+    device.startsWith("Garmin", ignoreCase = true) -> device
+    else -> "Garmin $device"
+}
+
+/** Para lo calculado con sus datos (el plan, la forma, los tiempos previstos): las normas piden decir que contribuyen. */
+const val GARMIN_DERIVED = "Calculado en parte con datos de dispositivos Garmin."
+
+/** Si lo que usa el motor viene en parte de Garmin (sin intervals.icu, que manda si está vinculado). */
+internal fun AppData.usesGarmin(): Boolean = cache == null && garmin != null && (garmin.days.isNotEmpty() || garmin.workouts.isNotEmpty())
 
 /** Un envío de Garmin ya descifrado en el dispositivo: el relevo lo prepara con el formato de Brivel. */
 @Serializable
