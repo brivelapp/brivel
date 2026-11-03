@@ -262,7 +262,8 @@ fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScre
         series("restingHR", "FC en reposo", "ppm", GLOSSARY["FC en reposo"]!!, false) { it["restingHR"].num() },
         series("vo2max", "VO2max", "", GLOSSARY["VO2max"]!!, true) { it["vo2max"].num() },
         series("weight", "Peso", "kg", "Tu peso, de la báscula o del reloj.", null) { it["weight"].num() },
-        series("steps", "Pasos", "", "Pasos al día.", true) { it["steps"].num() },
+        // Hoy no ha terminado: sus pasos van por debajo de cualquier día completo
+        series("steps", "Pasos", "", "Pasos al día.", true) { w -> w["steps"].num().takeIf { w["id"].str() != today.toString() } },
         series("ctl", "Forma física", "", GLOSSARY["Forma física"]!!, true) { it["ctl"].num() },
         series("tsb", "Forma", "", GLOSSARY["Forma"]!!, null) { w ->
             val ctl = w["ctl"].num(); val atl = w["atl"].num()

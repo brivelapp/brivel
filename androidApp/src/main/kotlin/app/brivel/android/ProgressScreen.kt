@@ -163,9 +163,9 @@ private fun MetricRow(m: Metric, first: Boolean) {
             val range = if (low < 0) "${format(low)} a ${format(high)}" else "${format(low)}–${format(high)}"
             Text(
                 when {
-                    inRange -> "Dentro de tu rango ($range)"
-                    latest > high -> "Por encima de lo tuyo ($range)"
-                    else -> "Por debajo de lo tuyo ($range)"
+                    inRange -> "Dentro de tu rango habitual ($range)"
+                    latest > high -> "Por encima de tu rango habitual ($range)"
+                    else -> "Por debajo de tu rango habitual ($range)"
                 },
                 fontSize = 12.sp, color = if (good) Palette.muted else Palette.caution,
             )

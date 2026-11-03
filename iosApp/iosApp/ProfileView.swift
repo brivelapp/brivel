@@ -104,6 +104,7 @@ struct ProfileView: View {
     @State private var athlete = ""
     @State private var apiKey = ""
     @State private var confirmDelete = false
+    @State private var editingWeek = false
 
     private func save() {
         let p = draft.core
@@ -130,7 +131,20 @@ struct ProfileView: View {
                 }
                 Module {
                     Text("Tu semana").font(.section)
-                    WeekBars(days: draft.days) { draft.days = $0; save() }
+                    WeekBars(days: draft.days, editable: false).contentShape(Rectangle()).onTapGesture { editingWeek = true }
+                    Button("Cambiar tu semana") { editingWeek = true }.buttonStyle(SecondaryStyle())
+                }
+                // En una hoja aparte: dentro del Perfil, desplazar la pantalla movería las barras
+                .sheet(isPresented: $editingWeek) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Tu semana").font(.screenTitle)
+                        WeekBars(days: draft.days) { draft.days = $0; save() }
+                        Button("Hecho") { editingWeek = false }.buttonStyle(PrimaryStyle()).frame(maxWidth: .infinity)
+                    }
+                    .padding(20)
+                    .presentationDetents([.large])
+                    .interactiveDismissDisabled()
+                    .background(Palette.surface)
                 }
                 Module {
                     Text("Fuerza").font(.section)

@@ -18,7 +18,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
@@ -56,11 +62,13 @@ import app.brivel.app.GoalKind
 import app.brivel.app.RaceInfo
 import app.brivel.app.dateLabel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileTab(app: BrivelApp, version: Int, act: Act, changeGoal: () -> Unit) {
     val context = LocalContext.current
     var draft by remember(version) { mutableStateOf(app.data.profile ?: UserProfile()) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var editingWeek by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Perfil", fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Module {
@@ -81,7 +89,18 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, changeGoal: () -> Unit) {
         }
         Module {
             SectionTitle("Tu semana")
-            WeekBars(draft.days) { save(draft.copy(days = it)) }
+            Box(Modifier.clickable(onClickLabel = "Cambiar tu semana") { editingWeek = true }) { WeekBars(draft.days, editable = false) }
+            OutlinedButton(onClick = { editingWeek = true }) { Text("Cambiar tu semana") }
+        }
+        // En una hoja aparte: dentro del Perfil, desplazar la pantalla movería las barras
+        if (editingWeek) ModalBottomSheet(onDismissRequest = { editingWeek = false }, sheetGesturesEnabled = false,
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = Palette.surface) {
+            Column(Modifier.navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("Tu semana", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                WeekBars(draft.days) { save(draft.copy(days = it)) }
+                Button(onClick = { editingWeek = false }, modifier = Modifier.fillMaxWidth()) { Text("Hecho") }
+            }
         }
         Module {
             SectionTitle("Fuerza")
@@ -93,7 +112,8 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, changeGoal: () -> Unit) {
         }
         Module {
             var year by remember(version) { mutableStateOf(draft.birthYear) }
-            BirthYearField(year) { y ->
+            SectionTitle("Año de nacimiento")
+            BirthYearField(year, label = null) { y ->
                 year = y
                 if (y != null && ageAllowed(y, systemToday().year)) save(draft.copy(birthYear = y))
             }

@@ -4,8 +4,9 @@ package app.brivel.android
 // «Caminar» (siempre cuenta), la semana como barras que se suben y bajan con el dedo, fuerza, nivel y año de nacimiento.
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,7 +37,9 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -98,62 +101,69 @@ fun SportPicker(cardio: List<String>, onChange: (List<String>) -> Unit) {
  * al soltar, no en cada movimiento. Con TalkBack cada barra se sube y baja como un deslizador.
  */
 @Composable
-fun WeekBars(days: Map<String, Int>, onCommit: (Map<String, Int>) -> Unit) {
+fun WeekBars(days: Map<String, Int>, editable: Boolean = true, onCommit: (Map<String, Int>) -> Unit = {}) {
     var live by remember(days) { mutableStateOf(days) }
     val commit by rememberUpdatedState(onCommit)
-    val area = 160.dp  // la barra más alta; encima van los minutos
+    val area = 240.dp  // la barra más alta (5 h: cada paso de 15 son 12 dp); encima van los minutos
+    val haptic = LocalHapticFeedback.current
+    // Un toque suave en cada paso de 15 minutos, para notarlos sin mirar
+    fun set(d: String, v: Int) {
+        if ((live[d] ?: 0) == v) return
+        live = live + (d to v)
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+    }
     val empty = Palette.chip
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
             Secondary(if (live.values.count { it > 0 } == 1) "1 día" else "${live.values.count { it > 0 }} días")
             Text(weekTimeText(live), fontFamily = Mono, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Palette.ok)
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            DAYS.forEach { d ->
-                val m = live[d] ?: 0
-                val color = if (m == 0) Palette.muted else Palette.text
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Box(
-                        Modifier.fillMaxWidth().height(area + 22.dp)
-                            // Tocar pone esos minutos; arrastrar, solo tras mantener pulsado: deslizar la pantalla no cambia nada
-                            .pointerInput(d) {
-                                detectTapGestures { live = live + (d to minutesAt(it.y, size.height)); commit(live) }
+        run {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                DAYS.forEach { d ->
+                    val m = live[d] ?: 0
+                    val color = if (m == 0) Palette.muted else Palette.text
+                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Box(
+                            Modifier.fillMaxWidth().height(area + 22.dp)
+                                // Toda la columna responde al dedo. Solo donde no hay que desplazar la pantalla (hoja y bienvenida)
+                                .then(if (!editable) Modifier else Modifier.pointerInput(d) {
+                                    awaitEachGesture {
+                                        val down = awaitFirstDown()
+                                        set(d, minutesAt(down.position.y, size.height))
+                                        down.consume()
+                                        drag(down.id) { set(d, minutesAt(it.position.y, size.height)); it.consume() }
+                                        commit(live)
+                                    }
+                                })
+                                .semantics {
+                                    contentDescription = WEEKDAY_LABEL[d]!!
+                                    stateDescription = if (m == 0) "libre" else "$m minutos"
+                                    progressBarRangeInfo = ProgressBarRangeInfo(m.toFloat(), 0f..MAX_DAY_MINUTES.toFloat(), MAX_DAY_MINUTES / 15 - 1)
+                                    if (editable) setProgress { v ->
+                                        live = live + (d to ((v / 15).roundToInt() * 15).coerceIn(0, MAX_DAY_MINUTES))
+                                        commit(live)
+                                        true
+                                    }
+                                },
+                            contentAlignment = Alignment.BottomCenter,
+                        ) {
+                            // Los minutos, justo encima de la barra
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(if (m == 0) "—" else "$m", fontFamily = Mono, fontSize = 12.sp, color = color)
+                                if (m == 0) Box(Modifier.fillMaxWidth().height(12.dp).drawBehind {
+                                    drawRoundRect(empty, cornerRadius = CornerRadius(10.dp.toPx()),
+                                        style = Stroke(2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))))
+                                })
+                                else Box(Modifier.fillMaxWidth().height(area * m / MAX_DAY_MINUTES).clip(RoundedCornerShape(10.dp)).background(Palette.ok))
                             }
-                            .pointerInput(d) {
-                                detectDragGesturesAfterLongPress(
-                                    onDragStart = { live = live + (d to minutesAt(it.y, size.height)) },
-                                    onDrag = { change, _ -> live = live + (d to minutesAt(change.position.y, size.height)); change.consume() },
-                                    onDragEnd = { commit(live) },
-                                    onDragCancel = { commit(live) },
-                                )
-                            }
-                            .semantics {
-                                contentDescription = WEEKDAY_LABEL[d]!!
-                                stateDescription = if (m == 0) "libre" else "$m minutos"
-                                progressBarRangeInfo = ProgressBarRangeInfo(m.toFloat(), 0f..MAX_DAY_MINUTES.toFloat(), MAX_DAY_MINUTES / 15 - 1)
-                                setProgress { v ->
-                                    live = live + (d to ((v / 15).roundToInt() * 15).coerceIn(0, MAX_DAY_MINUTES))
-                                    commit(live)
-                                    true
-                                }
-                            },
-                        contentAlignment = Alignment.BottomCenter,
-                    ) {
-                        // Los minutos, justo encima de la barra
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(if (m == 0) "—" else "$m", fontFamily = Mono, fontSize = 12.sp, color = color)
-                            if (m == 0) Box(Modifier.fillMaxWidth().height(12.dp).drawBehind {
-                                drawRoundRect(empty, cornerRadius = CornerRadius(10.dp.toPx()),
-                                    style = Stroke(2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))))
-                            })
-                            else Box(Modifier.fillMaxWidth().height(area * m / MAX_DAY_MINUTES).clip(RoundedCornerShape(10.dp)).background(Palette.ok))
                         }
+                        Text(WEEKDAY_SHORT[d]!!, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = color)
                     }
-                    Text(WEEKDAY_SHORT[d]!!, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = color)
                 }
             }
         }
-        Secondary("Toca a la altura que quieras, o mantén pulsada la barra y arrástrala. Abajo del todo, ese día queda libre.")
+        if (editable) Secondary("Toca o arrastra cada barra hasta los minutos que tienes, hasta 5 h. Abajo del todo, ese día queda libre.")
     }
 }
 
@@ -198,8 +208,8 @@ fun ChoiceCards(options: List<Triple<String, String, String>>, selected: String,
 }
 
 @Composable
-fun BirthYearField(year: Int?, onChange: (Int?) -> Unit) {
+fun BirthYearField(year: Int?, label: String? = "Año de nacimiento", onChange: (Int?) -> Unit) {
     OutlinedTextField(year?.toString() ?: "", { v -> onChange(v.filter { it.isDigit() }.take(4).toIntOrNull()) },
-        label = { Text("Año de nacimiento") }, singleLine = true,
+        label = label?.let { { Text(it) } }, singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
 }

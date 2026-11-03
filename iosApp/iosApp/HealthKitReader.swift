@@ -43,6 +43,19 @@ final class HealthKitReader {
         return Dictionary(grouping: list) { dayKey($0.endDate) }.mapValues { reduce($0.map { $0.quantity.doubleValue(for: unit) }) }
     }
 
+    /// El total de cada día que calcula Salud: sumar las muestras contaría dos veces lo del iPhone y el reloj.
+    private func dailySum(_ id: HKQuantityTypeIdentifier, unit: HKUnit, from: Date, to: Date) async throws -> [String: Double] {
+        let start = Calendar.current.startOfDay(for: from)
+        let descriptor = HKStatisticsCollectionQueryDescriptor(
+            predicate: .quantitySample(type: HKQuantityType(id), predicate: HKQuery.predicateForSamples(withStart: start, end: to)),
+            options: .cumulativeSum, anchorDate: start, intervalComponents: DateComponents(day: 1))
+        var out: [String: Double] = [:]
+        try await descriptor.result(for: store).enumerateStatistics(from: start, to: to) { s, _ in
+            if let v = s.sumQuantity()?.doubleValue(for: unit) { out[self.dayKey(s.startDate)] = v }
+        }
+        return out
+    }
+
     /// Lee los últimos `days` días y los guarda en la app. Lo que no tenga permiso llega vacío.
     func sync(_ core: Shared.BrivelApp, days: Int = 365) async throws {
         let to = Date()
@@ -57,7 +70,7 @@ final class HealthKitReader {
         let hrv = try await daily(.heartRateVariabilitySDNN, unit: .secondUnit(with: .milli), from: from, to: to) { $0.reduce(0, +) / Double($0.count) }
         let resting = try await daily(.restingHeartRate, unit: bpm, from: from, to: to) { $0.min() ?? 0 }
         let weight = try await daily(.bodyMass, unit: .gramUnit(with: .kilo), from: from, to: to) { $0.last ?? 0 }
-        let steps = try await daily(.stepCount, unit: .count(), from: from, to: to) { $0.reduce(0, +) }
+        let steps = try await dailySum(.stepCount, unit: .count(), from: from, to: to)
         let vo2 = try await daily(.vo2Max, unit: HKUnit(from: "ml/kg*min"), from: from, to: to) { $0.last ?? 0 }
 
         let keys = Set(sleep.keys).union(hrv.keys).union(resting.keys).union(weight.keys).union(steps.keys).union(vo2.keys).sorted()

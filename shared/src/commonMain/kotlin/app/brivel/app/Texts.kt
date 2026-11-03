@@ -134,7 +134,7 @@ const val SOURCE_URL = "https://github.com/brivelapp/brivel"
 
 // Perfil (lienzo de Pulso, opción B, 2026-11-03): caminar no se elige; siempre cuenta y es el plan si no hay otro deporte
 val PICKABLE_CARDIO = listOf("running", "cycling", "swimming_pool")
-const val MAX_DAY_MINUTES = 240
+const val MAX_DAY_MINUTES = 300  // 5 h: las tiradas largas de bici del domingo
 
 /** Marca o desmarca un deporte. Sin ninguno queda caminar: el plan necesita al menos uno (Planner.kt). */
 fun toggleCardio(cardio: List<String>, sport: String): List<String> {

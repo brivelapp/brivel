@@ -154,7 +154,7 @@ private struct MetricRow: View {
                 let good = inRange || (better == true && latest > high) || (better == false && latest < low)
                 let range = low < 0 ? "\(format(low)) a \(format(high))" : "\(format(low))–\(format(high))"
                 RangeBar(value: latest, low: low, high: high, domainMin: lo - pad, domainMax: hi + pad, good: good)
-                Text(inRange ? "Dentro de tu rango (\(range))" : latest > high ? "Por encima de lo tuyo (\(range))" : "Por debajo de lo tuyo (\(range))")
+                Text(inRange ? "Dentro de tu rango habitual (\(range))" : latest > high ? "Por encima de tu rango habitual (\(range))" : "Por debajo de tu rango habitual (\(range))")
                     .font(.caption12).foregroundStyle(good ? Palette.muted : Palette.caution)
             }
             if open {

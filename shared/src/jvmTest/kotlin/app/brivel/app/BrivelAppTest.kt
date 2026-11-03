@@ -278,6 +278,13 @@ class BrivelAppTest {
     }
 
     @Test
+    fun todaysUnfinishedStepsAreNotTheLatest() {
+        val days = (0..9).map { n -> buildJsonObject { put("id", today.plusDays(-n).toString()); put("steps", if (n == 0) 800 else 9000) } }
+        val p = buildProgress(AppData(cache = IntervalsCache(JsonObject(emptyMap()), days, emptyList(), today.toString())), today)
+        assertEquals(9000.0, p.metrics.first { it.key == "steps" }.latest)
+    }
+
+    @Test
     fun linkSyncRenameSendAndForget() = runBlocking {
         val calls = mutableListOf<String>()
         val sent = mutableListOf<JsonObject>()

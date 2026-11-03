@@ -46,7 +46,8 @@ struct SportPicker: View {
 /// soltar. Con VoiceOver cada barra se ajusta deslizando arriba o abajo.
 struct WeekBars: View {
     let days: [String: Int]
-    let onCommit: ([String: Int]) -> Void
+    var editable = true  // en el Perfil, solo se ve: se cambia en una hoja (si no, desplazar la pantalla movería las barras)
+    var onCommit: ([String: Int]) -> Void = { _ in }
     @State private var live: [String: Int]?
     private let top = Int(TextsKt.MAX_DAY_MINUTES)
 
@@ -60,7 +61,7 @@ struct WeekBars: View {
                 Text(TextsKt.weekTimeText(days: shown.mapValues { KotlinInt(int: Int32($0)) }))
                     .font(.mono(17, .semibold)).foregroundStyle(Palette.ok)
             }
-            HStack(alignment: .bottom, spacing: 8) {
+            HStack(alignment: .bottom, spacing: 4) {
                 ForEach(weekDays, id: \.self) { d in
                     let m = shown[d] ?? 0
                     VStack(spacing: 6) {
@@ -78,25 +79,23 @@ struct WeekBars: View {
                                             .frame(height: (geo.size.height - 22) * CGFloat(m) / CGFloat(top))
                                     }
                                 }
-                            }
-                            .contentShape(Rectangle())
-                            // Tocar pone esos minutos; arrastrar, solo tras mantener pulsado: deslizar la pantalla no cambia nada
-                            .gesture(LongPressGesture(minimumDuration: 0.25)
-                                .sequenced(before: DragGesture(minimumDistance: 0))
-                                .onChanged { value in
-                                    if case .second(true, let drag?) = value { set(d, minutes(at: drag.location.y, height: geo.size.height)) }
+                                // Toda la columna responde al dedo
+                                if editable {
+                                    Color.clear.contentShape(Rectangle())
+                                        .highPriorityGesture(DragGesture(minimumDistance: 0, coordinateSpace: .named(d))
+                                            .onChanged { set(d, minutes(at: $0.location.y, height: geo.size.height)) }
+                                            .onEnded { _ in commit() })
                                 }
-                                .onEnded { _ in commit() }
-                                .exclusively(before: SpatialTapGesture().onEnded { tap in
-                                    set(d, minutes(at: tap.location.y, height: geo.size.height))
-                                    commit()
-                                }))
+                            }
+                            .coordinateSpace(name: d)
                         }
-                        .frame(height: 182)
+                        .frame(height: 262)  // 240 de barra (5 h: cada paso de 15 son 12 pt) y 22 de minutos
+                        .sensoryFeedback(.selection, trigger: m)  // un toque suave en cada paso de 15 minutos
                         .accessibilityElement()
                         .accessibilityLabel(TextsKt.WEEKDAY_LABEL[d] ?? d)
                         .accessibilityValue(m == 0 ? "libre" : "\(m) minutos")
                         .accessibilityAdjustableAction { direction in
+                            guard editable else { return }
                             set(d, min(top, max(0, m + (direction == .increment ? 15 : -15))))
                             commit()
                         }
@@ -105,7 +104,7 @@ struct WeekBars: View {
                     .frame(maxWidth: .infinity)
                 }
             }
-            Secondary("Toca a la altura que quieras, o mantén pulsada la barra y arrástrala. Abajo del todo, ese día queda libre.")
+            if editable { Secondary("Toca o arrastra cada barra hasta los minutos que tienes, hasta 5 h. Abajo del todo, ese día queda libre.") }
         }
     }
 

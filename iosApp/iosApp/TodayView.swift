@@ -138,6 +138,8 @@ private struct SessionItem: View {
     }
 }
 
+private let ratings = (1...5).map { n in ("\(n)", n == 1 ? "1 mal" : n == 5 ? "5 bien" : "\(n)") }
+
 private struct ReadinessCard: View {
     @EnvironmentObject var model: AppModel
     @State private var sleep = 3
@@ -148,10 +150,11 @@ private struct ReadinessCard: View {
         Module {
             Text("¿Cómo estás hoy?").font(.section)
             Secondary("Sin reloj vinculado, tus respuestas ajustan la sesión de hoy: si dormiste mal o estás cargado, será más suave.")
-            Picker("Sueño", selection: $sleep) { ForEach(1...5, id: \.self) { Text("\($0)") } }.pickerStyle(.segmented)
-            Picker("Energía", selection: $energy) { ForEach(1...5, id: \.self) { Text("\($0)") } }.pickerStyle(.segmented)
-            Picker("Agujetas", selection: $soreness) { ForEach(1...5, id: \.self) { Text("\($0)") } }.pickerStyle(.segmented)
-            Secondary("1 = mal · 5 = bien. Por orden: sueño, energía, agujetas o molestias.")
+            // Del 1 al 5, con el mismo selector que el Perfil
+            ForEach([("Sueño", $sleep), ("Energía", $energy), ("Agujetas o molestias", $soreness)], id: \.0) { label, value in
+                Text(label).font(.small)
+                Segmented(options: ratings, selected: "\(value.wrappedValue)") { value.wrappedValue = Int($0) ?? 3 }
+            }
             Button("Ajustar hoy") {
                 model.run { try model.core.answerReadiness(sleep: Int32(sleep), energy: Int32(energy), soreness: Int32(soreness)) }
             }.buttonStyle(PrimaryStyle())

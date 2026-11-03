@@ -13,6 +13,7 @@ import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.Vo2MaxRecord
 import androidx.health.connect.client.records.WeightRecord
+import androidx.health.connect.client.request.AggregateGroupByPeriodRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import app.brivel.app.DailyHealth
@@ -22,6 +23,8 @@ import app.brivel.app.Workout
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.Period
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.reflect.KClass
@@ -71,8 +74,11 @@ class HealthConnectReader(private val context: Context) {
             .mapValues { (_, r) -> r.minOf { it.beatsPerMinute }.toDouble() }
         val weight = maybe(WeightRecord::class).groupBy { date(it.time) }
             .mapValues { (_, r) -> r.maxBy { it.time }.weight.inKilograms }
-        val steps = maybe(StepsRecord::class).groupBy { date(it.endTime) }
-            .mapValues { (_, r) -> r.sumOf { it.count }.toDouble() }
+        // El total del día que calcula Health Connect: sumar registros contaría dos veces lo del móvil y el reloj
+        val steps = if (HealthPermission.getReadPermission(StepsRecord::class) !in granted) emptyMap() else client.aggregateGroupByPeriod(
+            AggregateGroupByPeriodRequest(setOf(StepsRecord.COUNT_TOTAL),
+                TimeRangeFilter.between(LocalDateTime.ofInstant(from, zone), LocalDateTime.ofInstant(to, zone)), Period.ofDays(1)),
+        ).mapNotNull { r -> r.result[StepsRecord.COUNT_TOTAL]?.let { r.startTime.toLocalDate().toString() to it.toDouble() } }.toMap()
         val vo2 = maybe(Vo2MaxRecord::class).groupBy { date(it.time) }
             .mapValues { (_, r) -> r.maxBy { it.time }.vo2MillilitersPerMinuteKilogram }
         val dates = (sleep.keys + hrv.keys + resting.keys + weight.keys + steps.keys + vo2.keys).sorted()

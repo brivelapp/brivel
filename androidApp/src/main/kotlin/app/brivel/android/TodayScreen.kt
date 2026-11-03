@@ -144,16 +144,14 @@ private fun ReadinessCard(act: Act) {
             Triple("Agujetas o molestias", soreness) { v: Int -> soreness = v },
         )) {
             Text(label, fontSize = 14.sp)
-            ChipRow {
-                (1..5).forEach { n ->
-                    FilterChip(selected = value == n, onClick = { set(n) },
-                        label = { Text(when (n) { 1 -> "1 mal"; 5 -> "5 bien"; else -> "$n" }) })
-                }
-            }
+            Segmented(RATINGS, value.toString()) { set(it.toInt()) }
         }
         PrimaryButton("Ajustar hoy") { act.run { act.app.answerReadiness(sleep, energy, soreness) } }
     }
 }
+
+// Del 1 al 5, con el mismo selector que el Perfil
+private val RATINGS = (1..5).map { n -> "$n" to when (n) { 1 -> "1 mal"; 5 -> "5 bien"; else -> "$n" } }
 
 /** Cada ejercicio de fuerza: lo apuntado la última vez, la sugerencia de hoy y apuntar peso y repeticiones. */
 @Composable
