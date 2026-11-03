@@ -144,7 +144,7 @@ function SessionCard({ core, item, done, children }: { core: WebApp; item: PlanI
 }
 
 /** Las sesiones de hoy con sus acciones: hecha, cambiar de deporte, apuntar fuerza, hoy no puedo (DayContent de Android). */
-function DayContent({ core, day, act }: { core: WebApp; day: DayView; act: Act }) {
+export function DayContent({ core, day, act }: { core: WebApp; day: DayView; act: Act }) {
   const [openSlot, setOpenSlot] = useState<string | null>(null)
   const changeable = core.canChangeDay(day.date)
   return (

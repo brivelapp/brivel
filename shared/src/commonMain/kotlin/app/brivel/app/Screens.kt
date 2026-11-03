@@ -131,8 +131,10 @@ private fun headline(day: DayView, planner: Planner): Pair<String, List<Reason>>
 
 // ---------------------------------------------------------------- Calendario
 
+@Serializable
 data class DoneActivity(val title: String, val sport: String, val minutes: Int, val start: String?)
 
+@Serializable
 data class CalendarDay(
     val date: String,
     val dayOfMonth: Int,
@@ -144,6 +146,7 @@ data class CalendarDay(
     val manual: List<String>,  // deportes marcados a mano
 )
 
+@Serializable
 data class MonthScreen(val title: String, val year: Int, val month: Int, val weeks: List<List<CalendarDay>>)
 
 fun buildMonth(data: AppData, today: LocalDate, year: Int, month: Int): MonthScreen {
@@ -177,8 +180,10 @@ fun buildMonth(data: AppData, today: LocalDate, year: Int, month: Int): MonthScr
 
 // ---------------------------------------------------------------- Progreso
 
+@Serializable
 data class Point(val date: String, val value: Double)
 
+@Serializable
 data class Metric(
     val key: String,
     val label: String,
@@ -192,11 +197,14 @@ data class Metric(
 )
 
 /** Estado de entrenamiento: una palabra y qué significa. */
+@Serializable
 data class StatusView(val label: String, val text: String)
 
 /** Tiempo previsto en una distancia, y de dónde sale. */
+@Serializable
 data class Prediction(val distance: String, val time: String)
 
+@Serializable
 data class RecentActivity(
     val date: String,
     val title: String,
@@ -223,6 +231,7 @@ internal fun activityDetail(sport: String, meters: Double?, seconds: Double?, av
     return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
 }
 
+@Serializable
 data class ProgressScreen(
     val linked: Boolean,
     val metrics: List<Metric>,

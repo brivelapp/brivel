@@ -20,6 +20,7 @@ import app.brivel.app.weekTimeText
 import app.brivel.app.ageAllowed as ageAllowedCore
 import app.brivel.app.goalLabel as labelOf
 import app.brivel.app.toggleCardio as toggleCardioCore
+import app.brivel.app.dateLabel as dateLabelCore
 import app.brivel.app.kg
 import app.brivel.app.conflictMessage
 import app.brivel.app.repRange
@@ -122,6 +123,12 @@ class WebApp {
     }
 
     fun todayJson(): String = json.encodeToString(app.todayScreen())
+
+    // Calendario y Progreso, como en las apps
+    fun monthJson(year: Int, month: Int): String = json.encodeToString(app.month(year, month))
+    fun dayJson(date: String): String = json.encodeToString(app.day(date))
+    fun progressJson(): String = json.encodeToString(app.progress())
+    fun dateLabel(date: String): String = dateLabelCore(date)
 
     // ------------------------------------------------------------ bienvenida y Perfil (en JSON, como las pantallas)
 

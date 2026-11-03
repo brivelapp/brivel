@@ -10,12 +10,12 @@
 :root {
   --bg: #F3F0E9; --surface: #FFFFFF; --chip: #ECE7DC; --text: #1B2420; --muted: #5D6762;
   --ok: #1F7A5C; --on-ok: #FFFFFF; --ok-soft: #DCEFE5; --caution: #9A6400; --caution-soft: #F6E7C8;
-  --z1: #4ECDC4; --z2: #45B7D1; --z3: #FFA500; --z4: #FF6B35; --z5: #FF4757; --z6: #C0392B; --on-zone: #0B1F22;
+  --band: #CDE8DA; --z1: #4ECDC4; --z2: #45B7D1; --z3: #FFA500; --z4: #FF6B35; --z5: #FF4757; --z6: #C0392B; --on-zone: #0B1F22;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0F1412; --surface: #18201C; --chip: #243029; --text: #EEF2EE; --muted: #A3B0A8;
-    --ok: #5FD3A4; --on-ok: #0B1F16; --ok-soft: #16302A; --caution: #F2B95A; --caution-soft: #3A2E17;
+    --ok: #5FD3A4; --on-ok: #0B1F16; --ok-soft: #16302A; --band: #1E4A3B; --caution: #F2B95A; --caution-soft: #3A2E17;
   }
 }
 
@@ -199,3 +199,42 @@ main.wide ~ .legal { padding-block: 8px 32px; }
 @media (min-width: 600px) and (max-width: 899px) { .topbar, main.wide ~ .legal { max-width: 760px; padding-inline: 28px; } }
 @media (min-width: 900px) { .topbar, main.wide ~ .legal { max-width: 1180px; padding-inline: 32px; } }
 .features .module h3 { flex: none; }
+
+/* Calendario (Calendar.tsx) */
+.month-head { justify-content: space-between; }
+.month-title { flex: 1; text-align: center; }
+.month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.month-letter { padding-left: 6px; }
+.day-cell { min-height: 52px; padding: 4px; border-radius: 12px; background: var(--surface); color: var(--text);
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px; font-size: 12px; }
+.day-cell.out { background: transparent; color: var(--muted); }
+.day-cell.today { box-shadow: inset 0 0 0 2px var(--ok); }
+.day-cell.selected { background: var(--ok-soft); }
+.day-icons { gap: 1px; color: var(--muted); }
+.day-done { gap: 2px; color: var(--ok); font: 600 11px "IBM Plex Mono", monospace; }
+.legend { gap: 6px; }
+
+@media (min-width: 900px) { .day-cell { min-height: 76px; } }
+
+/* Progreso (Progress.tsx) */
+.metric { display: flex; flex-direction: column; gap: 6px; width: 100%; min-height: 0; padding: 10px 0; border-radius: 0; background: none;
+  color: var(--text); text-align: left; border-top: 1px solid var(--chip); }
+.module > .metric:first-of-type { border-top: 0; padding-top: 0; }
+.metric-label { font-weight: 600; }
+.metric-value { font-weight: 600; }
+.grow { flex: 1; }
+.range { position: relative; height: 16px; display: block; }
+.range::before { content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 8px; border-radius: 99px; background: var(--chip); }
+.range-band { position: absolute; top: 4px; height: 8px; border-radius: 99px; background: var(--band); }
+.range-mark { position: absolute; top: 0; width: 4px; height: 16px; margin-left: -2px; border-radius: 2px; background: var(--ok); }
+.range-mark.warn { background: var(--caution); }
+.spark { width: 100%; height: 64px; display: block; }
+.spark-band { fill: var(--band); }
+.spark-line { fill: none; stroke: var(--ok); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.spark-line.warn { stroke: var(--caution); }
+.zones-bar { display: flex; height: 10px; border-radius: 99px; overflow: hidden; }
+.week-bars { position: relative; height: 96px; display: flex; align-items: flex-end; gap: 4px; }
+.week-bars > span:not(.target) { flex: 1; border-radius: 6px; background: var(--chip); min-height: 2px; }
+.week-bars > span.on { background: var(--ok); }
+.week-bars .target { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--muted); }
+.topbar { flex-wrap: wrap; gap: 10px; }

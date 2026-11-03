@@ -5,11 +5,14 @@ import { Footer, Today, type Act } from "./Today"
 import { Landing, Pulse } from "./Landing"
 import { Onboarding } from "./Onboarding"
 import { Profile } from "./Profile"
+import { Calendar } from "./Calendar"
+import { Progress } from "./Progress"
 import { SyncCard } from "./Sync"
 import { loadKeys } from "./sync"
 
 type Entry = "landing" | "onboarding" | "login"
-type Tab = "today" | "profile"
+type Tab = "today" | "calendar" | "progress" | "profile"
+const TABS: [Tab, string][] = [["today", "Hoy"], ["calendar", "Calendario"], ["progress", "Progreso"], ["profile", "Perfil"]]
 
 export function App() {
   const core = useMemo(() => new WebApp(), [])
@@ -88,11 +91,15 @@ export function App() {
       <nav className="topbar" aria-label="Secciones">
         <span className="brand"><span className="brand-mark"><Pulse size={20} /></span>brivel</span>
         <div className="tabs">
-          <button aria-current={tab === "today" ? "page" : undefined} onClick={() => setTab("today")}>Hoy</button>
-          <button aria-current={tab === "profile" ? "page" : undefined} onClick={() => setTab("profile")}>Perfil</button>
+          {TABS.map(([t, label]) => (
+            <button key={t} aria-current={tab === t ? "page" : undefined} onClick={() => setTab(t)}>{label}</button>
+          ))}
         </div>
       </nav>
-      {tab === "today" ? <Today core={core} act={act} synced={synced} /> : <Profile core={core} act={act} synced={synced} />}
+      {tab === "today" && <Today core={core} act={act} synced={synced} />}
+      {tab === "calendar" && <Calendar core={core} act={act} />}
+      {tab === "progress" && <Progress core={core} openProfile={() => setTab("profile")} />}
+      {tab === "profile" && <Profile core={core} act={act} synced={synced} />}
       {status}
       <Footer core={core} act={act} />
     </>
