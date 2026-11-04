@@ -29,6 +29,7 @@ import app.brivel.app.DayView
 import app.brivel.app.Reason
 import app.brivel.app.SPORT_LABEL
 import app.brivel.app.BrivelApp
+import app.brivel.app.dateLabel
 import androidx.compose.ui.Alignment
 
 @Composable
@@ -119,6 +120,17 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
                 }
             }
             if (item.chosen) TextButton(onClick = { act.run { app.clearChoice(day.date) } }) { Text("Volver a la planificada") }
+            item.movedFrom?.let { Secondary("La has movido aquí desde el ${dateLabel(it).lowercase()}.") }
+            val targets = remember(day, item.slot) { if (done || day.isPast) emptyList() else app.moveTargets(day.date, item.slot) }
+            var moving by remember { mutableStateOf(false) }
+            if (targets.isNotEmpty()) TextButton(onClick = { moving = !moving }) { Text(if (moving) "No moverla" else "Moverla a otro día") }
+            if (moving) ChipRow {
+                targets.forEach { t ->
+                    OutlinedButton(onClick = { moving = false; act.run { app.moveSession(day.date, item.slot, t) } }) {
+                        Text(dateLabel(t) + if (t == item.movedFrom) " (su día)" else "")
+                    }
+                }
+            }
         }
     }
     day.matches.forEach { ReasonRow(Reason(it.text, null), if (it.counts) Palette.ok else Palette.caution) }

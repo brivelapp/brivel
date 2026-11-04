@@ -3,8 +3,8 @@ export type Tone = "OK" | "CAUTION" | "REST"
 export interface Reason { text: string; evidence: string | null }
 export interface Step { name: string; reps: number; minutes: number; intensityZone: string; target: string | null; meters: number | null }
 export interface PlanItem { sport: string; title: string; hint: string; durationMin: number; steps: Step[]; exercises: string[]; chosen: boolean; slot: string
-  alternatives: PlanItem[] }
-export interface DayView { date: string; isToday: boolean; isPast: boolean; items: PlanItem[]; reasons: Reason[]; adjustments: Reason[]; doneSports: string[] }
+  alternatives: PlanItem[]; movedFrom: string | null }
+export interface DayView { date: string; isToday: boolean; isPast: boolean; items: PlanItem[]; note: string | null; reasons: Reason[]; adjustments: Reason[]; doneSports: string[] }
 export interface WeekDot { letter: string; date: string; isToday: boolean; planned: boolean; done: boolean }
 export interface TodayScreen {
   dateLabel: string; goalLine: string | null; stateTitle: string; stateDetail: Reason[]; tone: Tone; day: DayView

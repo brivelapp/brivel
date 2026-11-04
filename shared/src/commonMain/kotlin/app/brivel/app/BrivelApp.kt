@@ -131,6 +131,25 @@ class BrivelApp(
 
     fun clearChoice(date: String) = save(data.copy(choices = data.choices - date))
 
+    /** Días de esta semana, de hoy en adelante, a los que se puede mover la sesión `slot` de `date` (sin otra igual). */
+    fun moveTargets(date: String, slot: String): List<String> {
+        val now = today()
+        val from = LocalDate.parse(date)
+        if (from < now) return emptyList()
+        val week = Planner(data, now).week(mondayOf(from)).days
+        return week.filter { it.date != date && it.date >= now.toString() && it.items.none { i -> i.slot == slot } }.map { it.date }
+    }
+
+    /** Mueve la sesión a otro día de su semana; moverla al día del plan la devuelve a su sitio. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun moveSession(date: String, slot: String, to: String) {
+        require(to in moveTargets(date, slot)) { "Solo se puede mover a un día que queda de esa semana y sin otra sesión igual" }
+        val item = day(date).items.first { it.slot == slot }
+        val origin = item.movedFrom ?: date
+        val others = data.moves.filterNot { it.to == date && it.slot == slot && it.from == origin }
+        save(data.copy(moves = if (to == origin) others else others + SessionMove(origin, slot, to)))
+    }
+
     /** "Hoy no puedo" (0) o "puedo entrenar este día" (minutos): la semana se recalcula desde hoy. */
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
     fun changeDay(date: String, minutes: Int) {

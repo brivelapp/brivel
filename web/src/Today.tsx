@@ -124,6 +124,7 @@ function SessionCard({ core, item, done, children }: { core: WebApp; item: PlanI
 export function DayContent({ core, day, act, openStrength, synced }:
   { core: WebApp; day: DayView; act: Act; openStrength: (date: string) => void; synced?: (m: string | null) => void }) {
   const [openSlot, setOpenSlot] = useState<string | null>(null)
+  const [movingSlot, setMovingSlot] = useState<string | null>(null)  // eligiendo a qué día mover esa sesión
   const [sending, setSending] = useState(false)
   const send = (sport: string) => {
     setSending(true)
@@ -138,10 +139,13 @@ export function DayContent({ core, day, act, openStrength, synced }:
           <button className="secondary" onClick={() => act(() => core.preferTrain(day.date))}>Prefiero entrenar hoy</button>
         </section>
       )}
+      {!day.isToday && day.items.length === 0 && day.note && <p className="muted">{day.note}</p>}
       <div className="sessions">
       {day.items.map((item) => {
         const done = day.doneSports.includes(item.slot) || day.doneSports.includes(item.sport)
         const open = openSlot === item.slot
+        const moving = movingSlot === item.slot
+        const targets: string[] = !done && !day.isPast ? JSON.parse(core.moveTargetsJson(day.date, item.slot)) : []
         return (
           <SessionCard key={item.slot} core={core} item={item} done={done}>
             <div className="row">
@@ -157,6 +161,20 @@ export function DayContent({ core, day, act, openStrength, synced }:
                 <button className="secondary" aria-expanded={open} onClick={() => setOpenSlot(open ? null : item.slot)}>{open ? "Cerrar" : "Cambiar"}</button>
               )}
             </div>
+            {item.movedFrom && <p className="muted small-text">La has movido aquí desde el {core.dateLabel(item.movedFrom).toLowerCase()}.</p>}
+            {targets.length > 0 && (
+              <button className="text" aria-expanded={moving} onClick={() => setMovingSlot(moving ? null : item.slot)}>{moving ? "No moverla" : "Moverla a otro día"}</button>
+            )}
+            {moving && (
+              <div className="row wrap" role="group" aria-label="Mover a">
+                {targets.map((t) => (
+                  <button key={t} className={`secondary${t === item.movedFrom ? " on" : ""}`}
+                    onClick={() => { act(() => core.moveSession(day.date, item.slot, t), t === item.movedFrom ? "Devuelta a su día" : "Movida"); setMovingSlot(null) }}>
+                    {core.dateLabel(t)}{t === item.movedFrom ? " (su día)" : ""}
+                  </button>
+                ))}
+              </div>
+            )}
             {open && item.alternatives.map((alt) => (
               <div className="row" key={alt.sport}>
                 <span className="badge small-badge"><Icon src={SPORT_ICON[alt.sport] ?? strength} label={core.sportLabel(alt.sport)} size={18} /></span>

@@ -96,6 +96,7 @@ private struct SessionItem: View {
     let linked: Bool
     let today: Bool
     @State private var open = false
+    @State private var moving = false
 
     var body: some View {
         let core = model.core
@@ -139,6 +140,19 @@ private struct SessionItem: View {
                 }.font(.ui(14, .bold))
             }
             if item.chosen { Button("Volver a la planificada") { model.run { core.clearChoice(date: day.date) } }.font(.ui(14, .bold)) }
+            if let from = item.movedFrom { Secondary("La has movido aquí desde el \(ScreensKt.dateLabel(date: from).lowercased()).") }
+            let targets = done || day.isPast ? [] : core.moveTargets(date: day.date, slot: item.slot)
+            if !targets.isEmpty {
+                Button(moving ? "No moverla" : "Moverla a otro día") { moving.toggle() }.font(.ui(14, .bold))
+            }
+            if moving {
+                ForEach(targets, id: \.self) { t in
+                    Button(ScreensKt.dateLabel(date: t) + (t == item.movedFrom ? " (su día)" : "")) {
+                        moving = false
+                        model.run { try core.moveSession(date: day.date, slot: item.slot, to: t) }
+                    }.buttonStyle(SecondaryStyle())
+                }
+            }
         }
     }
 }

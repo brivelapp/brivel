@@ -64,6 +64,7 @@ data class PlanItem(
     val alternatives: List<PlanItem>,
     val chosen: Boolean,  // la eligió el usuario en lugar de la planificada
     val slot: String,  // deporte de la sesión planificada que ocupa (para el calendario del reloj)
+    val movedFrom: String? = null,  // la movió el usuario desde ese día
     @Transient internal val session: Session? = null,  // la web recibe la pantalla en JSON: lo interno no sale
     @Transient internal val healthStrength: HealthStrength? = null,
     @Transient internal val raceStrength: RaceStrength? = null,
@@ -107,6 +108,10 @@ data class WeekView(
 )
 
 private val RACE_SPORTS = setOf("running", "cycling", "swimming_pool")
+
+/** La sesión `slot` del día `from` se hace el día `to`, de la misma semana. Solo esa vez: la semana tipo no cambia. */
+@Serializable
+data class SessionMove(val from: String, val slot: String, val to: String)
 
 fun mondayOf(date: LocalDate): LocalDate = date.plusDays(-(date.dayOfWeek.isoDayNumber - 1))
 
@@ -272,7 +277,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
 
     fun week(monday: LocalDate): WeekView {
         val race = raceGoal()
-        val week = if (race != null && race.date >= today) raceWeek(monday, race) else healthWeek(monday)
+        val week = moveSessions(if (race != null && race.date >= today) raceWeek(monday, race) else healthWeek(monday))
         val s = screening ?: return week
         return when (s.clearance) {
             // Síntomas con actividad: nada de ejercicio hasta que lo valore un médico
@@ -282,6 +287,35 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             else -> week.copy(warnings = listOf(s.message) + week.warnings)
         }
     }
+
+    /**
+     * Las sesiones movidas pasan al día elegido. Se aplica sobre la semana ya calculada, así que vale igual sin fecha y
+     * hacia una carrera; si el motor ya no pone esa sesión en el día de origen (cambió la semana), el cambio no hace nada.
+     */
+    private fun moveSessions(week: WeekView): WeekView {
+        if (data.moves.isEmpty()) return week
+        val items = week.days.associate { it.date to it.items.toMutableList() }
+        val left = mutableMapOf<String, String>()  // día que se queda sin la sesión → día al que fue
+        for (m in data.moves) {
+            val from = items[m.from] ?: continue
+            val to = items[m.to] ?: continue
+            val i = from.indexOfFirst { it.slot == m.slot }
+            if (i < 0 || to.any { it.slot == m.slot }) continue
+            val item = from.removeAt(i)
+            // Elegir una alternativa el día nuevo se guarda con ese día
+            to += (if (item.chosen) item else choose(m.to, listOf(item)).single()).copy(movedFrom = item.movedFrom ?: m.from)
+            left[m.from] = m.to
+        }
+        val days = week.days.map { d ->
+            val now = items.getValue(d.date)
+            if (now == d.items) d
+            else dayView(d.date, d.weekday, now, left[d.date]?.let { "La has movido al ${weekdayName(it)}." } ?: d.note.takeIf { now.isEmpty() },
+                d.availableMin, d.reasons, d.adjustments, d.phase)
+        }
+        return week.copy(days = days, strengthDays = days.count { d -> d.items.any { it.isStrength } })
+    }
+
+    private fun weekdayName(date: String) = WEEKDAY_LABEL.getValue(weekdayOf(LocalDate.parse(date))).lowercase()
 
     fun day(date: LocalDate): DayView = week(mondayOf(date)).days.first { it.date == date.toString() }
 

@@ -173,6 +173,8 @@ class WebApp {
     fun answerReadiness(sleep: Int, energy: Int, soreness: Int) = app.answerReadiness(sleep, energy, soreness)
     fun chooseAlternative(date: String, plannedSport: String, chosenSport: String) = app.chooseAlternative(date, plannedSport, chosenSport)
     fun clearChoice(date: String) = app.clearChoice(date)
+    fun moveTargetsJson(date: String, slot: String): String = json.encodeToString(app.moveTargets(date, slot))
+    fun moveSession(date: String, slot: String, to: String) = app.moveSession(date, slot, to)
     fun canChangeDay(date: String): Boolean = app.canChangeDay(date)
     fun preferTrain(date: String) = app.changeDay(date, app.minutesToTrain(app.day(date)))
     fun cannotTrain(date: String) = app.changeDay(date, 0)

@@ -60,6 +60,7 @@ fun merge(base: AppData, local: AppData, remote: AppData): Merged {
         sets = items(base.sets, local.sets, remote.sets),
         reminderHour = pick("reminderHour", base.reminderHour, local.reminderHour, remote.reminderHour),
         swaps = items(base.swaps, local.swaps, remote.swaps),
+        moves = items(base.moves, local.moves, remote.moves),
     )
     return Merged(data, conflicts)
 }
