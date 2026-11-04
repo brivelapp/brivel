@@ -54,6 +54,8 @@ struct StrengthSessionView: View {
     @State private var restDone = 0  // sube al terminar cada descanso: vibración
     // Tras "Serie hecha", el descanso a pantalla; al abrir una serie de la tabla, la serie y el descanso abajo
     @State private var restView = false
+    @Environment(\.scenePhase) private var phase
+    @State private var notifyOk = true  // se puede avisar al acabar el descanso con la app cerrada
 
     var body: some View {
         let _ = model.version
@@ -94,7 +96,12 @@ struct StrengthSessionView: View {
                     setNo = (exercises.indices.contains(current) ? exercises[current].done.count : 0) + 1
                 }
             }
-            .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
+            .onDisappear { UIApplication.shared.isIdleTimerDisabled = false; RestAlert.cancel() }
+            // Con la app cerrada, el iPhone avisa al acabar el descanso; al volver, el aviso pendiente se quita
+            .onChange(of: phase) { _, p in
+                if p == .background, let end = restEnd { RestAlert.schedule(at: end) } else if p == .active { RestAlert.cancel() }
+            }
+            .task { notifyOk = await RestAlert.allowed() }
         } else {
             Color.clear.onAppear(perform: close)
         }
@@ -109,6 +116,11 @@ struct StrengthSessionView: View {
                 SessionRows(e: ex, isCurrent: i == current, currentSet: setNo) { set in current = i; setNo = set; mode = "set"; restView = false }
             }
         } else if restEnd != nil && restView {
+            if !notifyOk {
+                Button("Avisarme al acabar el descanso si salgo de la app") {
+                    Task { notifyOk = (try? await Reminders.requestAccess()) == true }
+                }.font(.ui(14, .bold))
+            }
             RestView(left: left, total: restTotal, e: e, setNo: setNo, logged: logged,
                      adjust: { s in restEnd = restEnd.map { $0.addingTimeInterval(TimeInterval(s)) }; if let r = restEnd, r <= .now { restEnd = nil } },
                      skip: { restEnd = nil },

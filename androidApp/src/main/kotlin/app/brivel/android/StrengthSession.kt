@@ -1,5 +1,12 @@
 package app.brivel.android
 
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.Lifecycle
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import android.os.Build
+import android.Manifest
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -123,6 +130,13 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
         }
     }
     val restLeft = if (restEnd > 0) ((restEnd - now + 999) / 1000).toInt().coerceAtLeast(0) else 0
+    // Con la app cerrada, el móvil avisa al acabar el descanso; al volver, el aviso pendiente se quita
+    val context = LocalContext.current
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { if (restEnd > System.currentTimeMillis()) scheduleRestAlert(context, restEnd) }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { scheduleRestAlert(context, null) }
+    DisposableEffect(Unit) { onDispose { scheduleRestAlert(context, null) } }
+    var notifyOk by remember { mutableStateOf(canNotify(context)) }
+    val askNotify = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { notifyOk = it }
 
     Column(Modifier.fillMaxSize().background(Palette.bg)) {
         Column(Modifier.padding(horizontal = 18.dp).padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -146,15 +160,20 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
                         current = i; setNo = set; mode = "set"; restView = false
                     }
                 }
-                restEnd > 0 && restView -> RestView(restLeft, restTotal, e, setNo, logged,
-                    adjust = { restEnd += it * 1000L; if (restEnd <= System.currentTimeMillis()) restEnd = 0 },
-                    skip = { restEnd = 0 },
-                    rate = { rir ->
-                        logged?.let { (ex, s) ->
-                            act.run { app.logSet(date, ex.name, s.set, s.weightKg, s.reps, rir) }
-                            logged = ex to s.copy(rir = rir)
-                        }
-                    })
+                restEnd > 0 && restView -> {
+                    if (!notifyOk && Build.VERSION.SDK_INT >= 33) TextButton(onClick = { askNotify.launch(Manifest.permission.POST_NOTIFICATIONS) }) {
+                        Text("Avisarme al acabar el descanso si salgo de la app")
+                    }
+                    RestView(restLeft, restTotal, e, setNo, logged,
+                        adjust = { restEnd += it * 1000L; if (restEnd <= System.currentTimeMillis()) restEnd = 0 },
+                        skip = { restEnd = 0 },
+                        rate = { rir ->
+                            logged?.let { (ex, s) ->
+                                act.run { app.logSet(date, ex.name, s.set, s.weightKg, s.reps, rir) }
+                                logged = ex to s.copy(rir = rir)
+                            }
+                        })
+                }
                 e == null || setNo > e.sets && firstPending() < 0 -> Finished(screen.other, close)
                 else -> SetView(e, setNo, exercises.getOrNull(current + 1),
                     swap = { r: String -> act.run { app.swapExercise(date, e.name, r) } }
