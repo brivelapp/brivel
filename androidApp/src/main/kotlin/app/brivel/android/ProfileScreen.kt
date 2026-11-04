@@ -124,6 +124,7 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, changeGoal: () -> Unit) {
         IntervalsCard(app, act, version)
         SyncCard(app, act, version)
         GarminCard(app, act, version)
+        LibraryCard()
         Module {
             SectionTitle("Tus datos")
             Secondary(PRIVACY_NOTE)

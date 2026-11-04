@@ -86,7 +86,7 @@ function ReadinessCard({ core, act }: { core: WebApp; act: Act }) {
   )
 }
 
-const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` }
+export const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` }
 
 function SessionCard({ core, item, done, children }: { core: WebApp; item: PlanItem; done: boolean; children?: ReactNode }) {
   const label = core.sportLabel(item.sport)

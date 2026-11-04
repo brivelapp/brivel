@@ -24,6 +24,11 @@ import app.brivel.app.dateLabel as dateLabelCore
 import app.brivel.app.conflictMessage
 import app.brivel.app.FIGURES
 import app.brivel.app.polylines
+import app.brivel.app.EQUIPMENT
+import app.brivel.app.PATTERN_LABEL
+import app.brivel.app.exerciseCard
+import app.brivel.app.library
+import app.brivel.app.swapOptions
 import app.brivel.sync.SyncCode
 import app.brivel.sync.Syncer
 import kotlinx.browser.window
@@ -176,6 +181,14 @@ class WebApp {
     fun strengthJson(date: String): String? = app.strengthScreen(date)?.let { json.encodeToString(it) }
     fun lastStrengthDate(): String? = app.lastStrengthDate()
     fun figureJson(pattern: String): String? = figureLinesJson(pattern)
+
+    // Biblioteca de ejercicios (Library.kt)
+    fun libraryJson(query: String, pattern: String?, equipment: String?): String = json.encodeToString(library(query, pattern, equipment))
+    fun exerciseCardJson(name: String): String? = exerciseCard(name)?.let { json.encodeToString(it) }
+    fun swapOptionsJson(name: String): String = json.encodeToString(swapOptions(name))
+    fun patternLabelsJson(): String = json.encodeToString(PATTERN_LABEL)
+    fun equipmentJson(): String = json.encodeToString(EQUIPMENT)
+    fun swapExercise(date: String, current: String, replacement: String) = app.swapExercise(date, current, replacement)
 
     /** Apunta o corrige una serie; `weight` vacío: con tu peso corporal; `rir` null: sin apuntar la reserva. */
     fun logSet(date: String, exercise: String, set: Int, weight: String, reps: Int, rir: Int?) =

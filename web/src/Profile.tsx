@@ -4,6 +4,7 @@ import type { WebApp } from "brivel-shared"
 import type { Act } from "./Today"
 import { SyncCard } from "./Sync"
 import { GarminCard } from "./Garmin"
+import { LibraryCard } from "./Library"
 import { LEVEL_CHOICES, Segmented, SportPicker, STRENGTH_CHOICES, WeekBars, type Profile as ProfileData } from "./ProfileParts"
 
 export function Profile({ core, act, synced }: { core: WebApp; act: Act; synced: (m: string | null) => void }) {
@@ -54,6 +55,7 @@ export function Profile({ core, act, synced }: { core: WebApp; act: Act; synced:
         </section>
         <SyncCard core={core} onDone={synced} />
         <GarminCard core={core} onDone={synced} />
+        <LibraryCard core={core} />
       </div>
       {/* En un diálogo: en el móvil, dentro de la página, desplazarla movería las barras */}
       <dialog ref={dialog} className="sheet" onClose={() => setEditingWeek(false)} aria-label="Tu semana">

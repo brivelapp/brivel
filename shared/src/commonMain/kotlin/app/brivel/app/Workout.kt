@@ -101,6 +101,7 @@ data class StrengthExercise(
     val weightKg: Double?,  // el peso que propone para hoy (null: tu peso o sin historial)
     val previous: List<LoggedSet>,  // la última sesión anterior a este día
     val done: List<LoggedSet>,  // lo apuntado este día
+    val original: String? = null,  // el ejercicio del plan, si se cambió por este en la biblioteca
 )
 
 @Serializable

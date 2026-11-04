@@ -234,6 +234,7 @@ struct ProfileView: View {
                 }
                 SyncSection()
                 GarminSection()
+                LibrarySection()
                 Module {
                     Secondary("Tus datos")
                     Secondary(TextsKt.PRIVACY_NOTE)

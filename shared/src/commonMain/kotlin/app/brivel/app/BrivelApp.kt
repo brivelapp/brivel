@@ -283,7 +283,7 @@ class BrivelApp(
             val events: List<WorkoutEvent> = items.map { item ->
                 when {
                     item.session != null -> workoutEvent(item.session, day.date, physio, key = item.slot)
-                    item.healthStrength != null -> strengthEvent(item.healthStrength, day.date)
+                    item.healthStrength != null -> strengthEvent(item.healthStrength.copy(exercises = item.exercises), day.date)
                     else -> WorkoutEvent(startDateLocal = "${day.date}T00:00:00", type = "WeightTraining",
                         name = "Brivel · Fuerza", movingTime = item.durationMin * 60,
                         description = (listOf(item.hint, "") + item.exercises.map { "• $it" } + listOfNotNull(item.notes))
@@ -314,7 +314,31 @@ class BrivelApp(
 
     /** La sesión de fuerza de ese día serie a serie, o null si ese día no tiene fuerza. */
     fun strengthScreen(date: String): StrengthScreen? =
-        day(date).items.firstOrNull { it.isStrength }?.let { strengthScreen(it, date, data.sets) }
+        day(date).items.firstOrNull { it.isStrength }?.let { item ->
+            val s = strengthScreen(item, date, data.sets)
+            s.copy(exercises = s.exercises.map { e -> e.copy(original = originalOf(e.name, date)) })
+        }
+
+    /** Los ejercicios se cambian en las sesiones de hoy en adelante: las pasadas se quedan como se hicieron. */
+    fun canSwapExercises(date: String): Boolean = date >= today().toString()
+
+    /** El ejercicio del plan que `name` sustituye ese día, o null si no es un cambio. */
+    private fun originalOf(name: String, date: String): String? =
+        data.swaps.map { it.original }.distinct().firstOrNull { it != name && swapped(it, data.swaps, date) == name }
+
+    /**
+     * Cambia `current` por `replacement` desde `date` (la sesión que se ve) en adelante; los días anteriores siguen con
+     * el que se hizo. `replacement` igual al ejercicio del plan, o null, vuelve a él.
+     */
+    @Throws(Exception::class)
+    fun swapExercise(date: String, current: String, replacement: String?) {
+        require(canSwapExercises(date)) { "Solo se puede cambiar en las sesiones de hoy en adelante" }
+        val original = originalOf(current, date) ?: current
+        val to = replacement?.takeIf { it != original }
+        require(to == null || swapOptions(original).any { it.name == to }) { "Ese ejercicio no es del mismo tipo" }
+        save(data.copy(swaps = data.swaps.filterNot { it.original == original && it.since == date } +
+            ExerciseSwap(date, original, to)))
+    }
 
     /** El día más reciente de la última semana (hoy incluido) con sesión de fuerza, o null. */
     fun lastStrengthDate(): String? = (0..6).map { today().plusDays(-it).toString() }.firstOrNull { strengthScreen(it) != null }

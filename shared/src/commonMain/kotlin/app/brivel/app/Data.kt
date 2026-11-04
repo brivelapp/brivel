@@ -87,7 +87,7 @@ data class IntervalsCache(
 data class GarminLink(val privateKey: String, val publicKey: String, val token: String, val since: String)
 
 /** Versión del formato guardado: al cambiarlo, `migrate` adapta los datos antiguos (sin servidor no hay migraciones). */
-const val SCHEMA = 4
+const val SCHEMA = 5
 
 /** Campo nuevo: añádelo también a `merge` (sync/Merge.kt), o un cambio de otro dispositivo pisará el de este. */
 @Serializable
@@ -109,13 +109,15 @@ data class AppData(
     val lifts: List<LiftLog> = emptyList(),  // formato v2 (un resumen por ejercicio y día): `migrate` lo pasa a `sets`
     val sets: List<SetLog> = emptyList(),  // registro de fuerza, serie a serie
     val reminderHour: Int? = null,  // recordatorio diario a esa hora; null = apagado (se activa a propósito)
+    val swaps: List<ExerciseSwap> = emptyList(),  // ejercicios cambiados por otros del mismo patrón (Library.kt)
 )
 
 /**
  * Adapta datos guardados con un formato anterior. v1 → v2: añade los datos de salud del móvil (vacíos). v2 → v3: cada
  * resumen de `lifts` pasa a una serie por cada una que apuntó. También con v3: un móvil sin actualizar aún sincroniza lifts.
  * v3 → v4: añade `garmin` (vacío). Sube para que un dispositivo sin actualizar no sincronice: descartaría `garmin` al
- * leerlo (ignoreUnknownKeys) y lo borraría también en los demás al subir su copia.
+ * leerlo (ignoreUnknownKeys) y lo borraría también en los demás al subir su copia. v4 → v5: añade `swaps` (vacío), por
+ * lo mismo.
  */
 fun migrate(data: AppData): AppData = when {
     data.schema >= SCHEMA && data.lifts.isEmpty() -> data

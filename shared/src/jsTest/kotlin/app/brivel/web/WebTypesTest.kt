@@ -1,6 +1,7 @@
 package app.brivel.web
 
 import app.brivel.app.GoalKind
+import app.brivel.app.library
 import app.brivel.app.KeyValueStore
 import app.brivel.app.BrivelApp
 import app.brivel.app.UserProfile
@@ -58,7 +59,8 @@ class WebTypesTest {
             (1..40).map { n -> DailyHealth(today.plusDays(-n).toString(), 420.0 + n % 7, 50.0 + n % 9, 50.0 + n % 4, 72.0, 8000.0 + 100 * n) },
             (1..20).map { n -> Workout("w$n", if (n % 2 == 0) "running" else "cycling", "${today.plusDays(-2 * n)}T08:00:00", 50.0,
                 145.0, 170.0, listOf(300.0, 1200.0, 900.0, 300.0, 200.0, 100.0, 0.0), 9000.0) }, today.toString()))
-        val screens = listOf(json.encodeToString(app.month(2026, 10)), json.encodeToString(app.progress()))
+        val screens = listOf(json.encodeToString(app.month(2026, 10)), json.encodeToString(app.progress()),
+            json.encodeToString(library()))  // la biblioteca de ejercicios, en Perfil
         val all = sent + screens.flatMap { keys(Json.parseToJsonElement(it)) }
         val types = fs.readFileSync(js("process.env.WEB_TYPES"), "utf8") as String
         val declared = Regex("""(\w+)\??:\s""").findAll(types.substringAfter("export type Tone")).map { it.groupValues[1] }.toSet()

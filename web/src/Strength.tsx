@@ -2,8 +2,9 @@
 import { useEffect, useState } from "react"
 import type { WebApp } from "brivel-shared"
 import type { FigureLines, LoggedSet, StrengthExercise, StrengthScreen } from "./types"
-import { Icon, type Act } from "./Today"
+import { Icon, localToday, type Act } from "./Today"
 import { Segmented } from "./ProfileParts"
+import { ExerciseSheet } from "./Library"
 import check from "../../iosApp/iosApp/Assets.xcassets/check.imageset/check.svg"
 import back from "../../iosApp/iosApp/Assets.xcassets/chevron_left.imageset/chevron_left.svg"
 
@@ -104,7 +105,8 @@ export function Strength({ core, date, act, close }: { core: WebApp; date: strin
           ? <Rest left={left} total={restTotal} e={e} setNo={setNo} logged={logged} rate={rate}
               adjust={(s) => { const end = restEnd + s * 1000; setRestEnd(end <= Date.now() ? null : end) }} skip={() => setRestEnd(null)} />
           : e && !(setNo > e.sets && pending < 0)
-            ? <SetView key={`${e.name}-${setNo}`} core={core} e={e} setNo={setNo} next={exercises[current + 1]} done={(w, r) => save(e, w, r)} />
+            ? <SetView key={`${e.name}-${setNo}`} core={core} e={e} setNo={setNo} next={exercises[current + 1]} done={(w, r) => save(e, w, r)}
+                swap={date >= localToday() && e.done.length === 0 ? (r) => act(() => core.swapExercise(date, e.name, r), "Ejercicio cambiado") : undefined} />
             : <Finished other={screen.other} close={close} />}
       {restEnd != null && (mode === "session" || !restView) && (
         <div className="rest-bar" role="timer" aria-label="Descanso">
@@ -117,8 +119,9 @@ export function Strength({ core, date, act, close }: { core: WebApp; date: strin
   )
 }
 
-function SetView({ core, e, setNo, next, done }:
-  { core: WebApp; e: StrengthExercise; setNo: number; next?: StrengthExercise; done: (weight: string, reps: number) => void }) {
+function SetView({ core, e, setNo, next, done, swap }: { core: WebApp; e: StrengthExercise; setNo: number
+  next?: StrengthExercise; done: (weight: string, reps: number) => void; swap?: (replacement: string) => void }) {
+  const [sheet, setSheet] = useState<"card" | "swap" | null>(null)
   const today = e.done.find((d) => d.set === setNo)
   const previous = e.previous.find((d) => d.set === setNo)
   const startWeight = today?.weightKg ?? e.weightKg ?? previous?.weightKg ?? null
@@ -138,6 +141,13 @@ function SetView({ core, e, setNo, next, done }:
         <div className="grow">
           <h2>{e.name}</h2>
           <p className="muted small-text">Serie {setNo} de {e.sets} · {e.repsLow}–{e.repsHigh} {e.timed ? "segundos" : "repeticiones"}</p>
+          {e.original && <p className="muted small">En lugar de {e.original}</p>}
+          <div className="row">
+            <button className="text" onClick={() => setSheet("card")}>Cómo se hace</button>
+            {swap && <button className="text" onClick={() => setSheet("swap")}>Cambiar ejercicio</button>}
+          </div>
+          {sheet && <ExerciseSheet core={core} name={e.name} close={() => setSheet(null)}
+            swap={sheet === "swap" && swap ? { original: e.original, choose: (r) => { setSheet(null); swap(r) } } : undefined} />}
           {e.rir != null && <p className="small-text"><strong>{effort(e.rir)}</strong></p>}
         </div>
       </div>

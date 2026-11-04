@@ -118,7 +118,10 @@ struct StrengthSessionView: View {
                          logged = (ex, LoggedSet(set: s.set, weightKg: s.weightKg, reps: s.reps, rir: KotlinInt(int: Int32(rir))))
                      })
         } else if let e, !(setNo > Int(e.sets) && pending == nil) {
-            SetView(e: e, setNo: setNo, next: exercises.indices.contains(current + 1) ? exercises[current + 1] : nil) { weight, reps in
+            SetView(e: e, setNo: setNo, next: exercises.indices.contains(current + 1) ? exercises[current + 1] : nil,
+                    swap: model.core.canSwapExercises(date: date) && e.done.isEmpty ? { (r: String) in
+                        model.run("Ejercicio cambiado") { try model.core.swapExercise(date: date, current: e.name, replacement: r) }
+                    } : nil) { weight, reps in
                 save(e, weight: weight, reps: reps)
             }.id("\(e.name)-\(setNo)")
         } else {
@@ -155,14 +158,16 @@ private struct SetView: View {
     let e: StrengthExercise
     let setNo: Int
     let next: StrengthExercise?
+    let swap: ((String) -> Void)?
     let done: (Double?, Int) -> Void
+    @State private var sheet: String?  // "card" o "swap"
     @State private var weight: Double?
     @State private var reps: Int
     @State private var typing = false
     @State private var typed = ""
 
-    init(e: StrengthExercise, setNo: Int, next: StrengthExercise?, done: @escaping (Double?, Int) -> Void) {
-        self.e = e; self.setNo = setNo; self.next = next; self.done = done
+    init(e: StrengthExercise, setNo: Int, next: StrengthExercise?, swap: ((String) -> Void)?, done: @escaping (Double?, Int) -> Void) {
+        self.e = e; self.setNo = setNo; self.next = next; self.swap = swap; self.done = done
         let today = e.done.first { Int($0.set) == setNo }
         let previous = e.previous.first { Int($0.set) == setNo }
         _weight = State(initialValue: today?.weightKg?.doubleValue ?? e.weightKg?.doubleValue ?? previous?.weightKg?.doubleValue)
@@ -186,7 +191,15 @@ private struct SetView: View {
                 Text(e.name).font(.ui(22, .heavy, relativeTo: .title2))
                 Secondary("Serie \(setNo) de \(e.sets) · \(e.repsLow)–\(e.repsHigh) \(e.timed ? "segundos" : "repeticiones")")
                 if let rir = e.rir { Text(effort(Int(rir.int32Value))).font(.ui(14, .bold)) }
+                if let original = e.original { Secondary("En lugar de \(original)") }
             }
+        }
+        HStack(spacing: 16) {
+            Button("Cómo se hace") { sheet = "card" }.font(.ui(14, .bold))
+            if swap != nil { Button("Cambiar ejercicio") { sheet = "swap" }.font(.ui(14, .bold)) }
+        }
+        .sheet(isPresented: Binding(get: { sheet != nil }, set: { if !$0 { sheet = nil } })) {
+            ExerciseSheet(name: e.name, original: e.original, onSwap: sheet == "swap" ? swap : nil)
         }
         if let s = e.suggestion {
             Text(s).font(.small).frame(maxWidth: .infinity, alignment: .leading).padding(12)

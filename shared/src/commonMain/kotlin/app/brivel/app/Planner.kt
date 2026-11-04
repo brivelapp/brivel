@@ -298,8 +298,13 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             matches.mapNotNull { it.matched }.toSet(), phase)
     }
 
+    /** La alternativa elegida y los ejercicios cambiados en la biblioteca. */
+    private fun applyChoice(date: String, items: List<PlanItem>): List<PlanItem> = choose(date, items).map {
+        if (it.isStrength && data.swaps.isNotEmpty()) it.copy(exercises = swapLines(it.exercises, data.swaps, date)) else it
+    }
+
     /** La alternativa elegida pasa a ser la sesión del día; la planificada queda entre las alternativas. */
-    private fun applyChoice(date: String, items: List<PlanItem>): List<PlanItem> {
+    private fun choose(date: String, items: List<PlanItem>): List<PlanItem> {
         val picks = data.choices[date] ?: return items
         return items.map { item ->
             val chosenSport = picks[item.sport] ?: return@map item

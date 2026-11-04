@@ -14,7 +14,10 @@ export interface TodayScreen {
 // Sesión de fuerza serie a serie (Workout.kt) y figura de su movimiento (Figures.kt); reps son segundos si timed
 export interface LoggedSet { set: number; weightKg: number | null; reps: number; rir: number | null }
 export interface StrengthExercise { name: string; pattern: string; sets: number; repsLow: number; repsHigh: number; timed: boolean
-  restSeconds: number; rir: number | null; suggestion: string | null; weightKg: number | null; previous: LoggedSet[]; done: LoggedSet[] }
+  restSeconds: number; rir: number | null; suggestion: string | null; weightKg: number | null; previous: LoggedSet[]; done: LoggedSet[]
+  original: string | null }
+export interface ExerciseCard { name: string; pattern: string; patternLabel: string; equipment: string[]; timed: boolean
+  cues: string[]; cueSource: string; figure: string }
 export interface StrengthScreen { date: string; title: string; exercises: StrengthExercise[]; other: string[] }
 export interface FigureLines { head: [number, number]; body: number[][]; work: number[][] }
 

@@ -156,7 +156,9 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
                         }
                     })
                 e == null || setNo > e.sets && firstPending() < 0 -> Finished(screen.other, close)
-                else -> SetView(e, setNo, exercises.getOrNull(current + 1)) { weight, reps ->
+                else -> SetView(e, setNo, exercises.getOrNull(current + 1),
+                    swap = { r: String -> act.run { app.swapExercise(date, e.name, r) } }
+                        .takeIf { app.canSwapExercises(date) && e.done.isEmpty() }) { weight, reps ->
                     val editing = e.done.firstOrNull { it.set == setNo }
                     act.run { app.logSet(date, e.name, setNo, weight, reps, editing?.rir) }
                     logged = e to LoggedSet(setNo, weight, reps, editing?.rir)
@@ -182,7 +184,8 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
 }
 
 @Composable
-private fun SetView(e: StrengthExercise, setNo: Int, next: StrengthExercise?, done: (Double?, Int) -> Unit) {
+private fun SetView(e: StrengthExercise, setNo: Int, next: StrengthExercise?, swap: ((String) -> Unit)?, done: (Double?, Int) -> Unit) {
+    var sheet by remember { mutableStateOf<String?>(null) }  // "card" o "swap"
     val previous = e.done.firstOrNull { it.set == setNo } ?: e.previous.firstOrNull { it.set == setNo }
     // Sin historial: el mínimo del rango; con él, lo de esa serie (hoy si se corrige, si no la última vez)
     var weight by remember(e.name, setNo) { mutableStateOf(e.done.firstOrNull { it.set == setNo }?.weightKg ?: e.weightKg ?: previous?.weightKg) }
@@ -205,7 +208,15 @@ private fun SetView(e: StrengthExercise, setNo: Int, next: StrengthExercise?, do
             Text(e.name, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 26.sp)
             Secondary("Serie $setNo de ${e.sets} · ${e.repsLow}–${e.repsHigh} ${if (e.timed) "segundos" else "repeticiones"}")
             e.rir?.let { Text(effort(it), fontSize = 14.sp, fontWeight = FontWeight.Bold) }
+            e.original?.let { Secondary("En lugar de $it") }
         }
+    }
+    Row {
+        TextButton(onClick = { sheet = "card" }) { Text("Cómo se hace") }
+        if (swap != null) TextButton(onClick = { sheet = "swap" }) { Text("Cambiar ejercicio") }
+    }
+    sheet?.let { s ->
+        ExerciseSheet(e.name, e.original, { sheet = null }, swap?.takeIf { s == "swap" }?.let { f -> { r: String -> sheet = null; f(r) } })
     }
     e.suggestion?.let {
         Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Palette.okSoft).padding(12.dp)) {
