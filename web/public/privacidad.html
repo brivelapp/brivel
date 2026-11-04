@@ -14,7 +14,7 @@
 <main>
   <nav><a href="./">Brivel</a><a href="terminos.html">Términos de uso</a></nav>
   <h1>Política de privacidad</h1>
-  <p class="muted">Última actualización: 3 de noviembre de 2026 (versión 4: la conexión con Garmin se comparte entre tus dispositivos) · <a href="#english">Summary in English</a></p>
+  <p class="muted">Última actualización: 4 de noviembre de 2026 (versión 5: sesiones al reloj y borrado de la conexión de Garmin tras 12 meses sin uso) · <a href="#english">Summary in English</a></p>
 
   <div class="box">
     <p><strong>En resumen:</strong> la web y las apps de Brivel guardan tus datos en tu dispositivo. Si activas
@@ -113,12 +113,17 @@
       incluyen.</li>
     <li><strong>Qué guarda el servidor:</strong> el identificador de usuario que da Garmin (sin nombre ni email), las
       claves de acceso a tu cuenta de Garmin (cifradas, para pedirle datos y mandar sesiones a tu reloj), la parte
-      pública de la clave de tu dispositivo y los envíos cifrados pendientes, con su fecha y su tamaño.</li>
+      pública de la clave de tu dispositivo, la fecha en que un dispositivo tuyo abrió por última vez el buzón y los envíos
+      cifrados pendientes, con su fecha y su tamaño.</li>
     <li><strong>Sesiones al reloj:</strong> cuando mandas una sesión a tu reloj, el servidor la pasa a Garmin (nombre,
-      deporte, fecha, pasos y objetivos de cada paso) y no la guarda.</li>
+      descripción, deporte, fecha, pasos y objetivos de cada paso, y en la fuerza el ejercicio y el peso) y no la guarda.
+      Antes mira qué sesiones tienes programadas ese día en Garmin Connect, solo para quitar la que Brivel mandó antes del
+      mismo deporte; lo que ve no se guarda.</li>
     <li><strong>Cuánto tiempo:</strong> cada envío se borra en cuanto tu dispositivo lo descarga y, si ningún dispositivo
       lo descarga, a los 30 días. El historial de recuperación de la base de datos (Time Travel de Cloudflare D1) lo puede
-      conservar hasta 7 días más. Lo descargado queda en tu dispositivo como el resto del apartado 2 y, si sincronizas,
+      conservar hasta 7 días más. Si ningún dispositivo tuyo abre el buzón en 12 meses (por ejemplo, porque borraste
+      Brivel sin desconectar), el servidor desconecta Garmin, se lo comunica y borra todo lo tuyo, como al desconectar.
+      Lo descargado queda en tu dispositivo como el resto del apartado 2 y, si sincronizas,
       en tu copia cifrada del apartado 4.</li>
     <li><strong>Desconectar y borrar:</strong> en Perfil → «Desconectar Garmin» desde cualquiera de tus dispositivos (se
       desconectan todos), o en Garmin Connect quitando el permiso a Brivel. En los dos casos el servidor borra al momento las claves de acceso y los envíos pendientes y deja de
@@ -185,7 +190,10 @@
         summaries, sleep and HRV are used only to show you your own data, adapt your own training plan and send your
         planned workouts to your Garmin device. Garmin pushes the data to our server, which acts only as a relay: each
         delivery is encrypted on arrival with a public key from your device and deleted once your device downloads it,
-        or after 30 days. With the optional sync, the private key travels end-to-end encrypted to your other devices. The server stores your Garmin user ID, your encrypted Garmin access tokens and pending
+        or after 30 days. If none of your devices opens the mailbox for 12 months, the connection is removed (Garmin is
+        told) and everything about you on the server is deleted. When you send a workout to your watch, the server passes
+        it to Garmin without keeping it, and only looks at that day's scheduled workouts to replace the one Brivel sent
+        before. With the optional sync, the private key travels end-to-end encrypted to your other devices. The server stores your Garmin user ID, your encrypted Garmin access tokens and pending
         encrypted deliveries.</li>
       <li><strong>Third parties:</strong> only Cloudflare, Inc. (hosting and database, EU jurisdiction) as data processor.
         Garmin data is never sold or shared. No advertising, analytics, cookies or AI: Garmin data is not used to train,

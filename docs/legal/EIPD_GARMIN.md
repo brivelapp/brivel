@@ -32,15 +32,15 @@ Fuente: AEPD, «Listas de tipos de tratamientos de datos que requieren EIPD (art
 | **Encargado** | Cloudflare, Inc. (Workers y D1), con su Anexo de Tratamiento de Datos v6.4 |
 | **Otros responsables** | Garmin trata los datos en Garmin Connect como responsable independiente, según su política. Brivel recibe los datos por su programa de desarrolladores (Health API y Training API) |
 | **Finalidad** | Enseñar al usuario sus propios datos de Garmin, adaptar su propio plan y mandar a su reloj las sesiones que planifique. Nada más: ni publicidad, ni perfiles, ni entrenar o evaluar modelos de IA |
-| **Base legal** | Consentimiento explícito, aparte de las condiciones (arts. 6.1.a y 9.2.a), que se da al conectar en Perfil y en la pantalla de permisos de Garmin. Se guarda la fecha y la versión (`2026-11-03.4`). Límite de peticiones por IP: interés legítimo (art. 6.1.f) |
+| **Base legal** | Consentimiento explícito, aparte de las condiciones (arts. 6.1.a y 9.2.a), que se da al conectar en Perfil y en la pantalla de permisos de Garmin. Se guarda la fecha y la versión (`2026-11-04.5` desde la política v5; antes `2026-11-03.4`). Límite de peticiones por IP: interés legítimo (art. 6.1.f) |
 | **Interesados** | Usuarios de 14 años o más que conectan Garmin. Es opcional. Hoy, solo Gabriel |
 | **Datos que llegan** | Los que el usuario permita en Garmin: actividades (deporte, fecha, duración, distancia, pulso, ritmo, potencia, vueltas, modelo del reloj), resúmenes diarios (pasos, pulso en reposo, estrés), sueño y variabilidad cardiaca |
 | **Datos que salen** | Sesiones mandadas al reloj: nombre, descripción, deporte, fecha y pasos (duración, objetivo de pulso, ritmo o potencia, ejercicio y peso). El servidor no las guarda |
 | **Datos que se leen de paso** | Al mandar una sesión, las sesiones programadas ese día en el calendario de Garmin Connect, solo para borrar la que Brivel mandó antes del mismo deporte. Ni se guardan ni salen del relevo |
-| **Qué guarda el servidor** | Identificador de usuario de Garmin (sin nombre ni email); tokens de Garmin cifrados con una clave del servidor (AES-256-GCM); clave pública X25519 del dispositivo; SHA-256 del token del buzón; permisos dados; fechas de alta y caducidad; envíos cifrados para el dispositivo con su fecha y tamaño. Durante los 15 minutos de la conexión: el `state`, el verificador PKCE y la clave pública |
+| **Qué guarda el servidor** | Identificador de usuario de Garmin (sin nombre ni email); tokens de Garmin cifrados con una clave del servidor (AES-256-GCM); clave pública X25519 del dispositivo; SHA-256 del token del buzón; permisos dados; fechas de alta, de caducidad y de la última vez que un dispositivo abrió el buzón; envíos cifrados para el dispositivo con su fecha y tamaño. Durante los 15 minutos de la conexión: el `state`, el verificador PKCE y la clave pública |
 | **Dónde** | D1 `brivel-garmin` con jurisdicción UE, creada el 2026-11-03. Los Workers pueden ejecutarse fuera de la UE |
 | **Transferencias** | A EE. UU. (Cloudflare, Inc.): Marco de Privacidad de Datos UE-EE. UU. y, si cae, cláusulas contractuales tipo. Las sesiones al reloj van a Garmin, que para usuarios de fuera de EE. UU. es Garmin Ltd. (Suiza), país con decisión de adecuación de la Comisión Europea [Inferencia: según la política de privacidad global de Garmin; confirmar en la versión europea]. Lo que Garmin haga después con ellas (por ejemplo, en EE. UU.) es tratamiento suyo, con sus propias garantías |
-| **Plazo** | Cada envío, hasta que un dispositivo lo descarga y lo confirma, o 30 días (tarea diaria). Tokens y conexión, hasta desconectar desde Brivel o desde Garmin Connect (al momento). **Sin límite si el usuario abandona Brivel sin desconectar:** la tarea diaria renueva los tokens antes de que caduquen (ver G8). El historial de D1 (Time Travel) los conserva hasta 7 días más. En el dispositivo, como el resto de sus datos |
+| **Plazo** | Cada envío, hasta que un dispositivo lo descarga y lo confirma, o 30 días (tarea diaria). Tokens y conexión, hasta desconectar desde Brivel o desde Garmin Connect (al momento). Si ningún dispositivo abre el buzón en 12 meses, la tarea diaria avisa a Garmin y borra la conexión, los tokens y lo pendiente (G8). El historial de D1 (Time Travel) los conserva hasta 7 días más. En el dispositivo, como el resto de sus datos |
 
 ### Ciclo de vida
 
@@ -67,11 +67,11 @@ Fuente: AEPD, «Listas de tipos de tratamientos de datos que requieren EIPD (art
   permisos en Garmin y los puede cambiar. Se descarta lo que llega de quien no está conectado. Las sesiones al reloj no
   se guardan.
 - **Cifrado para el dispositivo:** Brivel y Cloudflare no pueden leer los envíos guardados.
-- **Información:** política de privacidad v4, apartado 5, enlazada desde la casilla del consentimiento. Atribución de
+- **Información:** política de privacidad v5 (2026-11-04), apartado 5, que también cuenta la lectura del calendario y el borrado a los 12 meses, enlazada desde la casilla del consentimiento. Atribución de
   Garmin en cada dato («Garmin [modelo]»), como piden sus normas de marca.
 - **Derechos:** desconectar borra todo lo del servidor al momento. Acceso, portabilidad y supresión de lo descargado:
   en el dispositivo (exportar y borrar). Sin el dispositivo, el responsable no puede leer los envíos.
-- **Plazos:** cortos. Un envío vive horas (hasta que se abre la app) o, como mucho, 30 días.
+- **Plazos:** cortos. Un envío vive horas (hasta que se abre la app) o, como mucho, 30 días. Una conexión abandonada, 12 meses.
 
 ## 4. Riesgos y medidas
 
@@ -87,7 +87,7 @@ están en el código.
 | G5 | Robo del token del buzón (descargar los envíos de otro) | Medio | Token aleatorio de 256 bits, entregado una sola vez y guardado como SHA-256; aun con él, los envíos van cifrados para la clave privada del dispositivo | Bajo |
 | G6 | Robo de la clave privada o del token en el dispositivo, o en la copia sincronizada | Medio | Almacén seguro del sistema; la copia sincronizada va cifrada de extremo a extremo; no salen al exportar; desconectar los invalida para todos los dispositivos | Medio-bajo |
 | G7 | Tokens de Garmin robados del servidor | Alto | Cifrados con `GARMIN_TOKEN_KEY` (secreto del Worker, fuera de la base de datos y del código); el de acceso caduca pronto y Garmin rota el de refresco; se borran al desconectar | Bajo (salvo G2) |
-| G8 | Conservación de más (envíos olvidados, conexiones abandonadas) | Medio | Borrado al descargar; tarea diaria que borra lo de más de 30 días y lo pendiente de más de 15 minutos; Garmin avisa al quitar el permiso y se borra al momento. **Sin hacer:** quien borra la app sin desconectar deja una conexión que no caduca (la tarea diaria renueva los tokens) y Garmin sigue mandando sus datos, que se cifran y se borran a los 30 días sin que nadie los lea. Medida pendiente: borrar la conexión (y avisar a Garmin) tras 12 meses sin descargas, como la copia de la sincronización | Medio (Bajo con la medida) |
+| G8 | Conservación de más (envíos olvidados, conexiones abandonadas) | Medio | Borrado al descargar; tarea diaria que borra lo de más de 30 días y lo pendiente de más de 15 minutos; Garmin avisa al quitar el permiso y se borra al momento. Quien borra la app sin desconectar: tras 12 meses sin que ningún dispositivo abra el buzón, la tarea diaria avisa a Garmin y lo borra todo (2026-11-04, con test); hasta entonces sus envíos se cifran y se borran a los 30 días sin que nadie los lea | Bajo |
 | G9 | Los metadatos revelan hábitos (hora y tamaño de cada envío) | Bajo | Solo fecha y tamaño, sin contenido legible; vida corta | Bajo |
 | G10 | Garmin cambia o retira el acceso | Bajo | Lo descargado sigue en el dispositivo; la app funciona sin Garmin | Bajo |
 | G11 | Uso para fines que no son del usuario (publicidad, IA, venta) | Medio | Prohibido por la política y por el acuerdo con Garmin; el responsable no puede leer los envíos | Bajo |
@@ -102,9 +102,9 @@ No hay delegado de protección de datos (no es obligatorio: ver `REGISTRO_ACTIVI
 
 ## 6. Conclusión
 
-Con las medidas descritas, el riesgo residual es **bajo o medio-bajo** en todos los casos salvo G8, que es **medio** hasta que se borren las conexiones sin uso. El mayor en impacto es G2: el relevo ve
+Con las medidas descritas, el riesgo residual es **bajo o medio-bajo** en todos los casos. El mayor en impacto es G2: el relevo ve
 los datos un instante al llegar, así que la seguridad de la cuenta de Cloudflare del responsable es la medida clave. No
 hace falta la consulta previa a la AEPD (art. 36), que es para riesgo residual alto [Inferencia: según el art. 36.1].
 
-Antes de abrir la conexión a otras personas: borrar las conexiones sin uso (G8), mencionar en la política la lectura del calendario (G15), aprobar esta EIPD, tener respuesta de Garmin al aviso de 30 días, que
+Antes de abrir la conexión a otras personas: aprobar esta EIPD, tener respuesta de Garmin al aviso de 30 días, que
 `hola@brivel.app` reciba correo y probarla en un iPhone y un Android reales.

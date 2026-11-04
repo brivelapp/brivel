@@ -128,7 +128,7 @@ const val SYNC_NO_RECOVERY = "Nadie puede recuperar el código. Si lo pierdes y 
 const val SYNC_JOIN_NOTE = "Se juntan los datos de este móvil con los de la copia."
 
 // Garmin Connect (política de privacidad, apartado 5): los mismos textos que web/src/Garmin.tsx
-const val GARMIN_POLICY_VERSION = "2026-11-03.4"
+const val GARMIN_POLICY_VERSION = "2026-11-04.5"
 const val GARMIN_TITLE = "Garmin Connect™"
 const val GARMIN_INTRO = "Opcional y en pruebas. Tus actividades, sueño, pasos, pulso en reposo y variabilidad cardiaca del reloj, " +
     "para adaptar tu plan."

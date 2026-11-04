@@ -55,7 +55,7 @@ de datos: no es obligatorio mientras no sea a gran escala (art. 37.1.c; LOPDGDD 
 | Datos | Actividades, resúmenes diarios, sueño y variabilidad cardiaca (los que permita el usuario), guardados cifrados para su dispositivo; identificador de Garmin; tokens cifrados; clave pública del dispositivo; permisos; fechas y tamaños. Sesiones al reloj: solo de paso |
 | Destinatarios | Cloudflare, Inc. como encargado (DPA v6.4). Garmin recibe las sesiones al reloj y el aviso de desconexión, como responsable independiente |
 | Transferencias | EE. UU.: Marco de Privacidad UE-EE. UU.; si cae, cláusulas contractuales tipo. D1 con jurisdicción UE |
-| Plazo de supresión | Envíos: al descargarlos o a los 30 días. Conexión y tokens: al desconectar. Historial de D1 hasta 7 días más |
+| Plazo de supresión | Envíos: al descargarlos o a los 30 días. Conexión y tokens: al desconectar o tras 12 meses sin que ningún dispositivo abra el buzón. Historial de D1 hasta 7 días más |
 | Seguridad (art. 32) | X25519 + HKDF-SHA256 + AES-256-GCM para el dispositivo al llegar, tokens con AES-256-GCM y clave fuera de la base de datos, token del buzón como SHA-256, OAuth 2.0 con PKCE, solo envíos desde Garmin, sin registros. Detalle en `docs/legal/EIPD_GARMIN.md` |
 
 ## Registro de brechas (art. 33.5)
