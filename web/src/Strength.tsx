@@ -1,5 +1,5 @@
 // Sesión de fuerza a pantalla completa, como StrengthSession.kt: Serie (una cada vez) y Sesión (toda la sesión en tabla)
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { WebApp } from "brivel-shared"
 import type { FigureLines, LoggedSet, StrengthExercise, StrengthScreen } from "./types"
 import { Icon, localToday, type Act } from "./Today"
@@ -44,6 +44,8 @@ export function Strength({ core, date, act, close }: { core: WebApp; date: strin
   const [now, setNow] = useState(Date.now())
 
   useEffect(() => { if (!screen) close() }, [screen, close])
+  const title = useRef<HTMLHeadingElement>(null)
+  useEffect(() => { title.current?.focus() }, [])  // al abrir, el foco en la sesión y no en la página de detrás
   // La pantalla no se apaga entre series, donde el navegador lo permite
   useEffect(() => {
     let lock: { release: () => Promise<void> } | null = null
@@ -90,7 +92,7 @@ export function Strength({ core, date, act, close }: { core: WebApp; date: strin
     <main className="strength">
       <div className="row">
         <button className="back" aria-label="Cerrar la sesión" onClick={close}><Icon src={back} size={22} /></button>
-        <h1 className="grow strength-title">{screen.title}</h1>
+        <h1 className="grow strength-title" tabIndex={-1} ref={title}>{screen.title}</h1>
         <span className="mono muted small">
           {exercises.reduce((a, x) => a + x.done.length, 0)}/{exercises.reduce((a, x) => a + x.sets, 0)} series
         </span>
@@ -184,9 +186,11 @@ function Rest({ left, total, e, setNo, logged, rate, adjust, skip }: {
 }) {
   const r = 52, c = 2 * Math.PI * r
   const last = e && (e.done.find((d) => d.set === setNo) ?? e.previous.find((d) => d.set === setNo))
+  const ring = useRef<HTMLDivElement>(null)
+  useEffect(() => { ring.current?.focus() }, [])  // «Serie hecha» desaparece: el foco pasa al descanso
   return (
     <>
-      <div className="rest-ring" role="timer" aria-label={`Descanso: quedan ${clock(left)}`}>
+      <div className="rest-ring" role="timer" aria-label={`Descanso: quedan ${clock(left)}`} tabIndex={-1} ref={ring}>
         <svg viewBox="0 0 120 120" aria-hidden="true">
           <circle cx="60" cy="60" r={r} className="ring-track" />
           <circle cx="60" cy="60" r={r} className="ring-left" strokeDasharray={c} strokeDashoffset={c * (1 - left / Math.max(total, 1))} />

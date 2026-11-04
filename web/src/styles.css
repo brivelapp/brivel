@@ -100,6 +100,7 @@ legend { font-size: 14px; margin-bottom: 6px; }
 /* Sesión de fuerza (Strength.tsx), como StrengthSession.kt */
 .strength { gap: 14px; }
 .strength-title { font-size: 18px; }
+.strength-title:focus, .rest-ring:focus { outline: none; }  /* reciben el foco solo para que el teclado siga desde ahí */
 .strength .back { display: grid; place-items: center; background: none; }
 .set-dots { display: flex; gap: 6px; }
 .set-dots span { flex: 1; height: 5px; border-radius: 3px; background: var(--chip); }

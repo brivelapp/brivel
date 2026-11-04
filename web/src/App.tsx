@@ -24,6 +24,12 @@ export function App() {
   const [tab, setTab] = useState<Tab>(() => (location.hash === "#garmin" ? "profile" : "today"))  // de vuelta de Garmin
   const [strengthDate, setStrengthDate] = useState<string | null>(null)  // sesión de fuerza abierta, a pantalla completa
   const closeStrength = useCallback(() => setStrengthDate(null), [])
+  // Al cerrar la sesión, el foco vuelve al botón que la abrió (para quien usa el teclado o un lector de pantalla)
+  const lastStrength = useRef<string | null>(null)
+  useEffect(() => {
+    if (strengthDate) lastStrength.current = strengthDate
+    else if (lastStrength.current) document.querySelector<HTMLElement>(`[data-strength="${lastStrength.current}"]`)?.focus()
+  }, [strengthDate])
   const refresh = () => setVersion((v) => v + 1)
 
   // Con la sincronización activada, cada cambio se sube poco después (varios seguidos, de una vez)

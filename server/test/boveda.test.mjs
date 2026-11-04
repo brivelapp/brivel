@@ -4,6 +4,7 @@ import assert from "node:assert/strict"
 import { execFileSync, spawn } from "node:child_process"
 import { createHash, randomBytes } from "node:crypto"
 import { mkdtempSync, rmSync } from "node:fs"
+import { get } from "node:http"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -96,11 +97,18 @@ test("bajar cuenta como uso y a los 12 meses sin uso se borra", async () => {
   for (const t of [old, recent]) assert.equal((await call(t, "PUT", { "If-None-Match": "*" }, block())).status, 201)
   sql(`update bovedas set usado = '2025-01-01T00:00:00.000Z' where id = '${accountOf(old)}'`)
   sql(`update bovedas set usado = '2026-01-01T00:00:00.000Z' where id = '${accountOf(recent)}'`)
-  assert.equal((await call(recent)).status, 200)  // la baja: ya cuenta como usada hoy
+  // shortcut: aquí wrangler dev a veces cierra la conexión ("other side closed") tras escribir en la D1 local desde
+  // otro proceso; un reintento al segundo. Solo en local: en producción la D1 tiene un solo escritor
+  const again = (...a) => call(...a).catch(() => new Promise((r) => setTimeout(r, 1000)).then(() => call(...a)))
+  assert.equal((await again(recent)).status, 200)  // la baja: ya cuenta como usada hoy
   assert.ok(sql(`select usado from bovedas where id = '${accountOf(recent)}'`)[0].usado > "2026-01-02")
-  assert.equal((await fetch(`http://127.0.0.1:${PORT}/__scheduled?cron=0+3+*+*+*`)).status, 200)
-  assert.equal((await call(old)).status, 404)
-  assert.equal((await call(recent)).status, 200)
+  // Por node:http y sin reutilizar la conexión: con fetch, wrangler dev a veces la cierra ("other side closed")
+  const status = await new Promise((ok, ko) => get({ host: "127.0.0.1", port: PORT, path: "/__scheduled?cron=0+3+*+*+*", agent: false },
+    (r) => { r.resume(); r.on("end", () => ok(r.statusCode)) }).on("error", ko))
+  assert.equal(status, 200)
+  await new Promise((r) => setTimeout(r, 300))  // la tarea termina después de responder
+  assert.equal((await again(old)).status, 404)
+  assert.equal((await again(recent)).status, 200)
 })
 
 // El último: agota las altas de esta IP (5 por minuto; las pruebas de arriba ya gastaron 5)

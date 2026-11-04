@@ -147,7 +147,7 @@ export function DayContent({ core, day, act, openStrength, synced }:
             <div className="row">
               {/* Fuerza: apuntar las series ya la cuenta como hecha; "La he hecho" queda para quien no apunta */}
               {item.sport === "strength" && day.date <= localToday() && (
-                <button className="primary grow" onClick={() => openStrength(day.date)}>{done ? "Ver las series" : "Empezar"}</button>
+                <button className="primary grow" data-strength={day.date} onClick={() => openStrength(day.date)}>{done ? "Ver las series" : "Empezar"}</button>
               )}
               {!done && (
                 <button className={item.sport === "strength" && day.date <= localToday() ? "secondary" : "primary grow"}
