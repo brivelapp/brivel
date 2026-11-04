@@ -1,0 +1,7 @@
+{
+  "title": "Brivel",
+  "kind": "Training app",
+  "description": "Free, open source endurance and strength training plans that adapt to your own data. A Kotlin Multiplatform core runs the training engine on the device and powers native Android (Compose) and iOS (SwiftUI) apps plus a React web app. It reads Apple Health, Health Connect, intervals.icu and Garmin Connect, and syncs between devices with end-to-end encryption through Cloudflare Workers.",
+  "technologies": ["Kotlin", "Swift", "React", "TypeScript", "Cloudflare Workers"],
+  "imageAlt": "the Today, Calendar and set-by-set strength screens of the iOS app (sample data)"
+}
