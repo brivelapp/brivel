@@ -200,7 +200,8 @@ tr.done .tick { background: var(--ok); color: var(--on-ok); }
 .progress span { height: 6px; border-radius: 3px; background: var(--chip); }
 .progress span.on { background: var(--ok); }
 .next { margin-top: auto; min-height: 54px; font-size: 17px; font-weight: 700; }
-.field input[type=date] { text-transform: none; letter-spacing: 0; font-family: inherit; }
+.field input[type=date], .field input[type=search] { text-transform: none; letter-spacing: 0; font-family: inherit; }
+.field select { min-height: 48px; padding: 0 10px; border-radius: 12px; border: 1px solid var(--muted); background: var(--bg); color: var(--text); font: inherit; font-size: 16px; }
 
 /* Portada (Landing.tsx, lienzo de Pulso, opción A) */
 .landing { max-width: 1280px; margin: 0 auto; padding: 0 18px; }
@@ -221,12 +222,13 @@ tr.done .tick { background: var(--ok); color: var(--on-ok); }
 .features { display: grid; gap: 16px; padding-bottom: 48px; }
 .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--chip); }
 .tabs button { min-height: 40px; padding: 0 18px; background: none; color: var(--text); font-weight: 600; }
+@media (max-width: 400px) { .tabs button { padding: 0 10px; flex: 1; } }  /* a 360 px las cuatro pestañas no cabían */
 .tabs button[aria-current=page] { background: var(--ok); color: var(--on-ok); font-weight: 700; }
 .profile-grid { display: grid; gap: 14px; align-items: start; }
 .sheet { border: 0; border-radius: 28px; padding: 22px; width: min(480px, calc(100% - 32px)); background: var(--surface); color: var(--text); }
 .sheet::backdrop { background: rgb(0 0 0 / 0.45); }
 .sheet[open] { display: flex; flex-direction: column; gap: 16px; }
-.sheet[open] { max-height: calc(100dvh - 32px); overflow-y: auto; }
+.sheet[open] { max-height: calc(100dvh - 32px); overflow-y: auto; margin: auto; }  /* el reset de margin quitaba el centrado del diálogo */
 /* Una fila que se pulsa (biblioteca de ejercicios): como texto, a todo el ancho */
 button.option { width: 100%; text-align: left; background: none; border: 0; padding: 6px 0; color: inherit; font: inherit; cursor: pointer; }
 button.option:hover .grow { text-decoration: underline; }

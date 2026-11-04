@@ -73,20 +73,18 @@ export function LibraryCard({ core }: { core: WebApp }) {
             <label className="field">Buscar
               <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Sentadilla, remo…" />
             </label>
-            <div className="row">
-              <label className="field grow">Patrón
+            <label className="field">Patrón
                 <select value={pattern} onChange={(e) => setPattern(e.target.value)}>
                   <option value="">Todos</option>
                   {patterns.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
                 </select>
-              </label>
-              <label className="field grow">Material
+            </label>
+            <label className="field">Material
                 <select value={equipment} onChange={(e) => setEquipment(e.target.value)}>
                   <option value="">Cualquiera</option>
                   {(JSON.parse(core.equipmentJson()) as string[]).map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
-              </label>
-            </div>
+            </label>
             {list.length === 0 && <p className="muted">Ningún ejercicio con esos filtros.</p>}
             {list.map((c) => (
               <button key={c.name} className="row option" onClick={() => setShown(c.name)}>
