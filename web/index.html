@@ -4,11 +4,57 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <title>Brivel</title>
-    <link rel="icon" href="data:," />
+    <title>Brivel · Plan de entrenamiento gratis que se adapta a ti</title>
+    <meta name="description" content="Brivel te dice qué entrenar hoy y por qué: carrera, bici, natación y fuerza, con tu sueño, tu pulso y el tiempo que tienes. Gratis, sin anuncios y de código abierto." />
+    <link rel="canonical" href="https://brivel.app/" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <meta name="theme-color" content="#F3F0E9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0F1412" media="(prefers-color-scheme: dark)" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Brivel" />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:url" content="https://brivel.app/" />
+    <meta property="og:title" content="Brivel · El sistema operativo de tu cuerpo" />
+    <meta property="og:description" content="Qué entrenar hoy y por qué, con tus datos. Gratis, sin anuncios y de código abierto." />
+    <meta property="og:image" content="https://brivel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Brivel: el sistema operativo de tu cuerpo" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- Datos estructurados para buscadores (no se ejecutan: la CSP no los bloquea) -->
+    <script type="application/ld+json">
+      {"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Brivel", "url": "https://brivel.app/",
+       "applicationCategory": "HealthApplication", "operatingSystem": "Web, Android, iOS", "inLanguage": "es",
+       "description": "Planes de entrenamiento de resistencia y fuerza que se adaptan a tu semana, a tu sueño y a tu pulso. Gratis, sin anuncios y de código abierto (AGPL-3.0).",
+       "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"},
+       "license": "https://www.gnu.org/licenses/agpl-3.0.html", "codeRepository": "https://github.com/brivelapp/brivel",
+       "image": "https://brivel.app/icon-512.png"}
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- La portada (src/Landing.tsx) ya en el HTML, para buscadores y para quien no tenga JavaScript; React la sustituye -->
+    <div id="root">
+      <div class="landing">
+        <header class="landing-head"><span class="brand">brivel</span></header>
+        <section class="hero">
+          <div class="hero-text">
+            <h1>El sistema operativo de tu cuerpo</h1>
+            <p class="lead">Brivel te dice qué entrenar hoy y por qué, con tus datos: tu sueño, tu pulso y el tiempo que tienes de verdad.</p>
+            <noscript><p>Brivel necesita JavaScript para funcionar en el navegador.</p></noscript>
+          </div>
+        </section>
+        <section class="features">
+          <div class="module"><h3>Cabe en tu semana</h3><p class="muted">Le dices qué días y cuánto tiempo tienes, y el plan se ajusta a eso.</p></div>
+          <div class="module"><h3>Se adapta a cómo estás</h3><p class="muted">Si dormiste mal o vas cargado, la sesión de hoy es más suave, y te dice por qué.</p></div>
+          <div class="module"><h3>Tus datos son tuyos</h3><p class="muted">Se guardan en tu dispositivo. Si sincronizas, van cifrados y solo tus dispositivos los leen.</p></div>
+          <div class="module"><h3>Gratis y abierto</h3><p class="muted">Sin pagos, sin anuncios y con el código a la vista de cualquiera.</p></div>
+        </section>
+        <footer class="legal">
+          <a href="privacidad">Privacidad</a> <a href="terminos">Términos</a> <a href="https://github.com/brivelapp/brivel">Código fuente</a>
+        </footer>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
