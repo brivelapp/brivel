@@ -1,7 +1,7 @@
 # Registro de actividades de tratamiento (RGPD art. 30)
 
 Obligatorio aunque Brivel sea de una sola persona, porque hay datos de salud (art. 30.5: la excepción de menos de 250
-empleados no aplica a las categorías especiales). Actualizado el 2026-11-02.
+empleados no aplica a las categorías especiales). Actualizado el 2026-11-04.
 
 **Responsable:** Gabriel Miralles Alvarez (persona física). Contacto: `hola@brivel.app`. No hay delegado de protección
 de datos: no es obligatorio mientras no sea a gran escala (art. 37.1.c; LOPDGDD art. 34) [Inferencia].
@@ -44,6 +44,19 @@ de datos: no es obligatorio mientras no sea a gran escala (art. 37.1.c; LOPDGDD 
 | Transferencias | EE. UU. (Cloudflare y Google): Marco de Privacidad UE-EE. UU. [Inferencia: comprobar la certificación de Google en dataprivacyframework.gov] |
 | Plazo de supresión | Hasta resolver la petición y, si es un derecho del RGPD, el tiempo de posibles reclamaciones |
 | Seguridad | Cuenta de Gmail con verificación en dos pasos [Pendiente de confirmar por Gabriel] |
+
+## 4. Conexión con Garmin Connect (opcional)
+
+| Campo (art. 30.1) | |
+|---|---|
+| Fines | Enseñar al usuario sus datos de Garmin, adaptar su plan y mandar sesiones a su reloj |
+| Base legal | Consentimiento explícito (arts. 6.1.a y 9.2.a); límite de peticiones por IP: interés legítimo (art. 6.1.f) |
+| Interesados | Usuarios de 14 años o más que conectan Garmin |
+| Datos | Actividades, resúmenes diarios, sueño y variabilidad cardiaca (los que permita el usuario), guardados cifrados para su dispositivo; identificador de Garmin; tokens cifrados; clave pública del dispositivo; permisos; fechas y tamaños. Sesiones al reloj: solo de paso |
+| Destinatarios | Cloudflare, Inc. como encargado (DPA v6.4). Garmin recibe las sesiones al reloj y el aviso de desconexión, como responsable independiente |
+| Transferencias | EE. UU.: Marco de Privacidad UE-EE. UU.; si cae, cláusulas contractuales tipo. D1 con jurisdicción UE |
+| Plazo de supresión | Envíos: al descargarlos o a los 30 días. Conexión y tokens: al desconectar. Historial de D1 hasta 7 días más |
+| Seguridad (art. 32) | X25519 + HKDF-SHA256 + AES-256-GCM para el dispositivo al llegar, tokens con AES-256-GCM y clave fuera de la base de datos, token del buzón como SHA-256, OAuth 2.0 con PKCE, solo envíos desde Garmin, sin registros. Detalle en `docs/legal/EIPD_GARMIN.md` |
 
 ## Registro de brechas (art. 33.5)
 

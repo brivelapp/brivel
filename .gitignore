@@ -19,3 +19,6 @@ local.properties
 .kotlin/
 iosApp/iosApp.xcodeproj/
 *.xcuserstate
+
+# Playwright CLI (capturas locales)
+.playwright-cli/

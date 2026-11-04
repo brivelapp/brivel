@@ -80,3 +80,11 @@ Etiquetas: **[Verificado]** comprobado en el código o en la app real · **[Fuen
 - **Plazo:** borrado automático tras 12 meses sin uso (subir o bajar), decidido el 2026-11-02; tarea diaria del Worker.
 - **Verificación en dos pasos** en Cloudflare y GitHub: activada, según Gabriel (2026-11-02).
 - **Publicada** con la API y la política v2 el 2026-11-02.
+
+## 5. Garmin Connect: documentos del RGPD (2026-11-04)
+
+- **EIPD:** `docs/legal/EIPD_GARMIN.md`, borrador del 2026-11-04 **pendiente de aprobar por Gabriel**. Riesgo residual
+  bajo o medio-bajo; el mayor, una cuenta de Cloudflare comprometida (el relevo ve los datos un instante al llegar).
+- **Registro de actividades:** actividad 4 en `docs/legal/REGISTRO_ACTIVIDADES.md`.
+- No abrir la conexión a otras personas antes de aprobar la EIPD y de la respuesta de Garmin al aviso de 30 días
+  (2026-12-04).
