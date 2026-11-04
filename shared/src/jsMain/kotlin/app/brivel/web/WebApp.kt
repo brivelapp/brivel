@@ -187,6 +187,10 @@ class WebApp {
     fun garminSyncedAt(): String? = app.garminSyncedAt()
     val garminConnected: Boolean get() = app.garminConnected
     fun garminLinkJson(): String? = app.garminLinkJson()
+
+    /** Las sesiones de hoy (o la de ese deporte) para «Enviar al reloj», en JSON; lanza un error si no hay ninguna. */
+    fun watchWorkoutsJson(sport: String?): String = json.encodeToString(app.watchWorkouts(sport))
+    val watchSentText: String get() = app.watchSentText
     fun setGarminLink(privateKey: String, publicKey: String, token: String) = app.setGarminLink(privateKey, publicKey, token)
     fun clearGarminLink() = app.clearGarminLink()
 }

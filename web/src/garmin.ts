@@ -84,6 +84,16 @@ export async function pullGarmin(core: WebApp): Promise<number> {
   }
 }
 
+/** Manda al calendario de Garmin Connect las sesiones de hoy (o la de ese deporte); el relevo no las guarda. */
+export async function sendToWatch(core: WebApp, sport: string): Promise<void> {
+  const json = core.garminLinkJson()
+  if (!json) throw new Error("Conecta Garmin en Perfil para enviar sesiones al reloj")
+  const res = await fetch(`${API}/workouts`, { method: "POST", body: core.watchWorkoutsJson(sport),
+    headers: { Authorization: `Bearer ${(JSON.parse(json) as Link).token}`, "Content-Type": "application/json" } })
+  if (res.status === 401) { core.clearGarminLink(); throw new Error("Garmin se desconectó: vuelve a conectar si quieres seguir") }
+  if (!res.ok) await fail(res)
+}
+
 /** Desconecta en Garmin y en el servidor, para todos los dispositivos de la sesión; lo descargado se queda. */
 export async function disconnectGarmin(core: WebApp): Promise<void> {
   const json = core.garminLinkJson()

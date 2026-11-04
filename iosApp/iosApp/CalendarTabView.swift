@@ -97,7 +97,7 @@ private struct DayDetail: View {
                     Secondary("\(a.minutes) min" + (a.start.map { " a las \($0)" } ?? ""))
                 }
             }
-            if let day { DayContent(day: day, linked: model.core.linkedAthlete != nil, today: day.isToday) }
+            if let day { DayContent(day: day, linked: model.core.watchRoute != nil, today: day.isToday) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 8)

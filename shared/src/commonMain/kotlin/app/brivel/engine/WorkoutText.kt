@@ -79,6 +79,28 @@ fun stepTarget(zone: String, session: Session, profile: Profile, mode: String): 
     return "${pct(lo)}-${pct(hi)}% HR"
 }
 
+/**
+ * El mismo objetivo que `stepTarget`, en números para el reloj (envío directo a Garmin): ppm, vatios o s/km, de más
+ * bajo a más alto. null: por sensación, y en natación (Garmin no admite objetivo en los pasos de piscina).
+ */
+fun stepRange(zone: String, session: Session, profile: Profile, mode: String): Triple<String, Double, Double>? {
+    val sport = session.sport
+    if (mode == "rpe" || sport in SWIM || (zone == "Z6" && mode != "power")) return null
+    if (mode == "power") {
+        val (lo, hi) = POWER_ZONES[zone]!!
+        return Triple("power", profile.ftp!! * lo / 100, profile.ftp * hi / 100)
+    }
+    val lthr = profile.lthrFor(sport)
+    val bounds = if (lthr != null && lthr != 0.0) hrBounds(zone, sport, lthr, profile.maxHr, session.hrCap) else null
+    if (mode == "pace" && profile.runModel != null && bounds != null)
+        return Triple("pace", paceAt(bounds.second, profile.runModel), paceAt(bounds.first, profile.runModel))
+    if (mode == "pace") {
+        val (fast, slow) = RUN_PACE_ZONES[zone]!!
+        return Triple("pace", profile.runPace!! * fast, profile.runPace * slow)
+    }
+    return bounds?.let { Triple("hr", it.first, it.second) }
+}
+
 /** Texto de la sesión: objetivo, notas de cada bloque y los pasos. */
 fun describe(session: Session, profile: Profile): String {
     val mode = metric(session, profile)

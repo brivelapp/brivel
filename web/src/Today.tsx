@@ -3,6 +3,7 @@ import { WebApp } from "brivel-shared"
 import type { DayView, PlanItem, Reason, TodayScreen, Tone } from "./types"
 import { SyncCard } from "./Sync"
 import { clearKeys } from "./sync"
+import { sendToWatch } from "./garmin"
 import { Segmented } from "./ProfileParts"
 import running from "../../iosApp/iosApp/Assets.xcassets/sport_running.imageset/sport_running.svg"
 import cycling from "../../iosApp/iosApp/Assets.xcassets/sport_cycling.imageset/sport_cycling.svg"
@@ -120,8 +121,15 @@ function SessionCard({ core, item, done, children }: { core: WebApp; item: PlanI
 }
 
 /** Las sesiones de hoy con sus acciones: hecha, cambiar de deporte, apuntar fuerza, hoy no puedo (DayContent de Android). */
-export function DayContent({ core, day, act, openStrength }: { core: WebApp; day: DayView; act: Act; openStrength: (date: string) => void }) {
+export function DayContent({ core, day, act, openStrength, synced }:
+  { core: WebApp; day: DayView; act: Act; openStrength: (date: string) => void; synced?: (m: string | null) => void }) {
   const [openSlot, setOpenSlot] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
+  const send = (sport: string) => {
+    setSending(true)
+    sendToWatch(core, sport).then(() => synced?.(core.watchSentText), (e) => synced?.(e instanceof Error && e.message ? e.message : "No se pudo enviar"))
+      .finally(() => setSending(false))
+  }
   const changeable = core.canChangeDay(day.date)
   return (
     <>
@@ -156,6 +164,9 @@ export function DayContent({ core, day, act, openStrength }: { core: WebApp; day
                 <button className="text" onClick={() => { act(() => core.chooseAlternative(day.date, item.slot, alt.sport)); setOpenSlot(null) }}>Haré esta</button>
               </div>
             ))}
+            {synced && day.isToday && core.garminConnected && (
+              <button className="text" disabled={sending} onClick={() => send(item.sport)}>Enviar al reloj</button>
+            )}
             {item.chosen && <button className="text" onClick={() => act(() => core.clearChoice(day.date))}>Volver a la planificada</button>}
           </SessionCard>
         )
@@ -218,7 +229,7 @@ export function Today({ core, act, synced, openStrength }:
         </div>
       </section>
       {screen.askReadiness && !wide && <ReadinessCard core={core} act={act} />}
-      <DayContent core={core} day={screen.day} act={act} openStrength={openStrength} />
+      <DayContent core={core} day={screen.day} act={act} openStrength={openStrength} synced={synced} />
       </div>
       {/* En ordenador la semana va al lado, fija al desplazar; en el móvil, debajo como en las apps */}
       <aside className="col side">

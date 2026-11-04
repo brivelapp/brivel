@@ -108,6 +108,15 @@ internal class GarminClient(private val base: String, engine: HttpClientEngine? 
         })
     }
 
+    /** Manda al reloj las sesiones (JSON de `List<WatchWorkout>`); el relevo las pasa a Garmin y no las guarda. */
+    suspend fun sendWorkouts(token: String, workouts: String) {
+        ok(http.post("$base/workouts") {
+            auth(token)
+            contentType(ContentType.Application.Json)
+            setBody(workouts)
+        })
+    }
+
     suspend fun disconnect(token: String) {
         val response = http.post("$base/disconnect") { auth(token) }
         if (response.status != HttpStatusCode.Unauthorized) ok(response)  // ya desconectado: nada que borrar

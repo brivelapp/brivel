@@ -23,7 +23,7 @@ struct TodayView: View {
                 // Tu cuerpo hoy en una frase: sale de la misma decisión que la sesión
                 StateCard(tone: screen.tone, title: screen.stateTitle, detail: screen.stateDetail, source: screen.garminNote)
                 if screen.askReadiness { ReadinessCard() }
-                DayContent(day: day, linked: screen.linked, today: true)
+                DayContent(day: day, linked: model.core.watchRoute != nil, today: true)
                 Module {
                     HStack {
                         Text("Esta semana").font(.section)
@@ -131,7 +131,7 @@ private struct SessionItem: View {
             }
             if today && linked {
                 Button {
-                    model.runAsync("Enviada a intervals.icu: llegará a tu reloj si tienes la sincronización activada") {
+                    model.runAsync(core.watchSentText) {
                         _ = try await core.sendToday(sport: item.sport)
                     }
                 } label: {

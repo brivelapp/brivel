@@ -231,10 +231,49 @@ class BrivelApp(
         }
     }
 
-    /** Envía al reloj (vía intervals.icu) las sesiones de hoy o solo la del deporte indicado. */
+    /** Adónde va «Enviar al reloj»: directo a Garmin Connect si está conectado; si no, a intervals.icu; null: a ningún sitio. */
+    val watchRoute: String? get() = when {
+        garminConnected -> "Garmin Connect"
+        linkedAthlete != null -> "intervals.icu"
+        else -> null
+    }
+
+    /** Lo que se dice al enviar al reloj. */
+    val watchSentText: String get() = if (garminConnected) "Enviada a Garmin Connect: llegará a tu reloj al sincronizarlo"
+        else "Enviada a intervals.icu: llegará a tu reloj si tienes la sincronización activada"
+
+    /** Las sesiones de hoy (o solo la del deporte indicado) en el formato del reloj, para el relevo de Garmin. */
+    fun watchWorkouts(sport: String? = null): List<WatchWorkout> {
+        val planner = Planner(data, today())
+        val day = planner.day(today())
+        val items = day.items.filter { sport == null || it.sport == sport }
+        check(items.isNotEmpty()) { "Hoy no hay sesiones que enviar" }
+        val physio = planner.physiology ?: Profile(activeSports = listOf("running"))
+        val date = day.date.toString()
+        return items.map { item ->
+            item.session?.let { watchWorkout(it, date, physio) }
+                ?: watchStrength(strengthScreen(item, date, data.sets), "Brivel · ${item.title}").let { w ->
+                    // Sin ejercicios que se apunten serie a serie (equilibrio): un paso abierto con la lista
+                    if (w.blocks.isNotEmpty()) w else w.copy(blocks = listOf(WatchBlock(1,
+                        listOf(WatchStep("active", seconds = item.durationMin * 60, note = item.hint.take(500))))))
+                }
+        }
+    }
+
+    /** Envía al reloj las sesiones de hoy o solo la del deporte indicado: por Garmin Connect o por intervals.icu. */
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
     suspend fun sendToday(sport: String? = null): List<String> {
-        val c = client() ?: throw IllegalStateException("Vincula primero tu cuenta de intervals.icu")
+        data.garminLink?.let { link ->
+            val workouts = watchWorkouts(sport)
+            try {
+                garminClient.sendWorkouts(link.token, json.encodeToString(workouts))
+            } catch (e: GarminException) {
+                if (e.status == 401) clearGarminLink()  // desconectado desde Garmin Connect o desde otro dispositivo
+                throw e
+            }
+            return workouts.map { it.name.removePrefix("Brivel · ") }
+        }
+        val c = client() ?: throw IllegalStateException("Vincula primero tu cuenta de intervals.icu o conecta Garmin")
         try {
             val planner = Planner(data, today())
             val day = planner.day(today())
