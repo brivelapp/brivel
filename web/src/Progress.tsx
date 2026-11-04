@@ -1,7 +1,7 @@
 // Progreso, como ProgressScreen.kt: tu cuerpo frente a tu rango habitual, tu forma, la actividad semanal y lo último hecho
 import { useState } from "react"
 import type { WebApp } from "brivel-shared"
-import type { Metric, Point, ProgressScreen, RecentActivity } from "./types"
+import type { Metric, Milestone, Point, ProgressScreen, RecentActivity } from "./types"
 import { Icon, SPORT_ICON } from "./Today"
 
 const BODY = ["sleep", "sleepScore", "hrv", "restingHR", "weight", "steps"]
@@ -80,6 +80,38 @@ function Recent({ r, core }: { r: RecentActivity; core: WebApp }) {
   )
 }
 
+/** Mejores marcas, semanas seguidas cumpliendo la OMS y récords de fuerza; los umbrales, aparte. */
+function Milestones({ core, screen }: { core: WebApp; screen: ProgressScreen }) {
+  const row = (m: Milestone) => (
+    <div key={m.title} className="row between">
+      <span>{m.title}{m.date && <span className="muted small"> · {core.dateLabel(m.date)}</span>}
+        {m.source && <span className="muted small source"> · {m.source}</span>}</span>
+      <span className="mono nowrap">{m.value}</span>
+    </div>
+  )
+  return (
+    <>
+      {screen.milestones.length + screen.strengthRecords.length > 0 && (
+        <section className="module">
+          <h3>Tus hitos</h3>
+          {screen.milestones.map(row)}
+          {screen.strengthRecords.length > 0 && <p className="muted small-text">Lo más pesado que has levantado en cada ejercicio</p>}
+          {screen.strengthRecords.map(row)}
+        </section>
+      )}
+      {screen.thresholds.length > 0 && (
+        <section className="module">
+          <h3>Tus umbrales</h3>
+          <p className="muted small-text">De intervals.icu: con ellos salen tus zonas. Cámbialos allí si haces un test.</p>
+          {screen.thresholds.map((t) => (
+            <div key={t.label} className="row between"><span>{t.label}<br /><span className="muted small">{t.explanation}</span></span><span className="mono nowrap">{t.value}</span></div>
+          ))}
+        </section>
+      )}
+    </>
+  )
+}
+
 export function Progress({ core, openProfile }: { core: WebApp; openProfile: () => void }) {
   const screen: ProgressScreen = JSON.parse(core.progressJson())
   const body = screen.metrics.filter((m) => BODY.includes(m.key))
@@ -91,11 +123,14 @@ export function Progress({ core, openProfile }: { core: WebApp; openProfile: () 
     <main className="wide">
       <header className="page-head"><div><p className="muted">Últimos 90 días</p><h1>Progreso</h1></div></header>
       {!screen.linked ? (
+        <div className="profile-grid">
         <section className="module">
           <p className="muted">El navegador no puede leer Apple Salud ni Health Connect. Para ver aquí tu sueño, tu VFC o tu pulso en
             reposo, actívalo en la app del móvil y sincroniza: Perfil → «Usar en otros dispositivos».</p>
           <button className="primary" onClick={openProfile}>Ir a Perfil</button>
         </section>
+        <Milestones core={core} screen={screen} />
+        </div>
       ) : (
         <div className="profile-grid">
           {body.length > 0 && (
@@ -139,6 +174,7 @@ export function Progress({ core, openProfile }: { core: WebApp; openProfile: () 
               {screen.recent.map((r, i) => <Recent key={i} r={r} core={core} />)}
             </section>
           )}
+          <Milestones core={core} screen={screen} />
         </div>
       )}
     </main>

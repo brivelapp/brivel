@@ -30,4 +30,6 @@ export interface Metric { key: string; label: string; unit: string; explanation:
   normalLow: number | null; normalHigh: number | null; higherIsBetter: boolean | null; source: string | null }
 export interface RecentActivity { date: string; title: string; sport: string; minutes: number; detail: string | null; zoneMinutes: number[]; source: string | null }
 export interface ProgressScreen { linked: boolean; metrics: Metric[]; weeklyMinutes: Point[]; status: { label: string; text: string } | null
-  predictions: { distance: string; time: string }[]; predictionSource: string | null; recent: RecentActivity[]; garminNote: string | null }
+  predictions: { distance: string; time: string }[]; predictionSource: string | null; recent: RecentActivity[]; garminNote: string | null
+  milestones: Milestone[]; strengthRecords: Milestone[]; thresholds: { label: string; value: string; explanation: string }[] }
+export interface Milestone { title: string; value: string; date: string | null; source: string | null }

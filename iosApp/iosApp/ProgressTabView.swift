@@ -81,6 +81,7 @@ struct ProgressTabView: View {
                         }
                     }
                 }
+                MilestonesSection(screen: screen)
             }.padding(.horizontal, 18).padding(.vertical, 16)
         }.background(Palette.bg)
     }
@@ -89,6 +90,46 @@ struct ProgressTabView: View {
 private func format(_ v: Double?) -> String {
     guard let v else { return "—" }
     return v >= 20 ? String(Int(v.rounded())) : String(format: "%.1f", v).replacingOccurrences(of: ".", with: ",")
+}
+
+/// Mejores marcas, semanas seguidas cumpliendo la OMS y récords de fuerza; los umbrales, aparte (como web/src/Progress.tsx).
+private struct MilestonesSection: View {
+    let screen: ProgressScreen
+
+    private func line(_ title: String, _ detail: String?, _ value: String) -> some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.body15)
+                if let detail { Text(detail).font(.caption12).foregroundStyle(Palette.muted) }
+            }
+            Spacer()
+            Text(value).font(.mono(15, .semibold)).fixedSize()
+        }
+    }
+
+    var body: some View {
+        if !screen.milestones.isEmpty || !screen.strengthRecords.isEmpty {
+            Module {
+                Text("Tus hitos").font(.section)
+                ForEach(screen.milestones, id: \.title) { m in
+                    line(m.title, [m.date.map { ScreensKt.dateLabel(date: $0) }, m.source].compactMap { $0 }.joined(separator: " · ").nilIfEmpty, m.value)
+                }
+                if !screen.strengthRecords.isEmpty { Secondary("Lo más pesado que has levantado en cada ejercicio") }
+                ForEach(screen.strengthRecords, id: \.title) { m in line(m.title, m.date.map { ScreensKt.dateLabel(date: $0) }, m.value) }
+            }
+        }
+        if !screen.thresholds.isEmpty {
+            Module {
+                Text("Tus umbrales").font(.section)
+                Secondary("De intervals.icu: con ellos salen tus zonas. Cámbialos allí si haces un test.")
+                ForEach(screen.thresholds, id: \.label) { t in line(t.label, t.explanation, t.value) }
+            }
+        }
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }
 
 /// Un entrenamiento: al tocarlo, lo medido y los minutos en cada zona.

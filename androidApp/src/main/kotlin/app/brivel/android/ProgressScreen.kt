@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.brivel.app.Metric
 import app.brivel.app.Point
+import app.brivel.app.ProgressScreen
 import app.brivel.app.RecentActivity
 import app.brivel.app.BrivelApp
 import app.brivel.app.dateLabel
@@ -60,6 +61,7 @@ fun ProgressTab(app: BrivelApp, version: Int, openProfile: () -> Unit) {
                     "(los datos de tu reloj o tu báscula en este móvil) o tu cuenta de intervals.icu (gratis).")
                 PrimaryButton("Ir a Perfil", onClick = openProfile)
             }
+            Milestones(screen)
             return@Column
         }
         val body = screen.metrics.filter { it.key in BODY }
@@ -108,7 +110,32 @@ fun ProgressTab(app: BrivelApp, version: Int, openProfile: () -> Unit) {
             SectionTitle("Tus últimos entrenamientos")
             screen.recent.forEach { r -> RecentRow(r) }
         }
+        Milestones(screen)
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** Mejores marcas, semanas seguidas cumpliendo la OMS y récords de fuerza; los umbrales, aparte (como web/src/Progress.tsx). */
+@Composable
+private fun Milestones(screen: ProgressScreen) {
+    @Composable fun Line(title: String, detail: String?, value: String) = Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 15.sp)
+            detail?.let { Text(it, fontSize = 12.sp, color = Palette.muted) }
+        }
+        Spacer(Modifier.width(10.dp))
+        Text(value, fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, softWrap = false)
+    }
+    if (screen.milestones.isNotEmpty() || screen.strengthRecords.isNotEmpty()) Module {
+        SectionTitle("Tus hitos")
+        screen.milestones.forEach { m -> Line(m.title, listOfNotNull(m.date?.let { dateLabel(it) }, m.source).joinToString(" · ").ifEmpty { null }, m.value) }
+        if (screen.strengthRecords.isNotEmpty()) Secondary("Lo más pesado que has levantado en cada ejercicio")
+        screen.strengthRecords.forEach { m -> Line(m.title, m.date?.let { dateLabel(it) }, m.value) }
+    }
+    if (screen.thresholds.isNotEmpty()) Module {
+        SectionTitle("Tus umbrales")
+        Secondary("De intervals.icu: con ellos salen tus zonas. Cámbialos allí si haces un test.")
+        screen.thresholds.forEach { t -> Line(t.label, t.explanation, t.value) }
     }
 }
 

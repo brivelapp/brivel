@@ -246,6 +246,9 @@ data class ProgressScreen(
     val predictionSource: String? = null,  // "tu VO2max (52)" o "tu mejor carrera de entrenamiento"
     val recent: List<RecentActivity> = emptyList(),
     val garminNote: String? = null,  // forma, estado y tiempos previstos calculados en parte con datos de Garmin
+    val milestones: List<Milestone> = emptyList(),  // mejores marcas y semanas seguidas cumpliendo la OMS (Milestones.kt)
+    val strengthRecords: List<Milestone> = emptyList(),  // el mayor peso de cada ejercicio; no necesita reloj
+    val thresholds: List<Threshold> = emptyList(),  // de intervals.icu
 )
 
 /** h:mm:ss o mm:ss. */
@@ -257,7 +260,8 @@ fun raceTime(minutes: Double): String {
 }
 
 fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScreen {
-    val cache = data.deviceData(today) ?: return ProgressScreen(false, emptyList(), emptyList())
+    val records = strengthRecords(data.sets)
+    val cache = data.deviceData(today) ?: return ProgressScreen(false, emptyList(), emptyList(), strengthRecords = records)
     val since = today.plusDays(-days).toString()
     val wellness = cache.wellness.filter { (it["id"].str() ?: "") >= since }.sortedBy { it["id"].str() }
     fun series(key: String, label: String, unit: String, explanation: String, better: Boolean?,
@@ -331,7 +335,9 @@ fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScre
                 a["icu_hr_zone_times"].nums().takeIf { it.sum() > 0 }?.map { pyRound(it / 60) } ?: emptyList(),
                 a["brivel_source"].str())
         }
-    return ProgressScreen(true, metrics, weekly, status, predictions, source, recent, GARMIN_DERIVED.takeIf { data.usesGarmin() })
+    return ProgressScreen(true, metrics, weekly, status, predictions, source, recent, GARMIN_DERIVED.takeIf { data.usesGarmin() },
+        milestones = listOfNotNull(whoStreak(weekly)) + longest(cache.activities), strengthRecords = records,
+        thresholds = data.cache?.let { thresholds(it.athlete) } ?: emptyList())
 }
 
 /** De dónde salen los puntos de una métrica: Garmin, sola o con el móvil; null si Garmin no aporta ninguno. */
