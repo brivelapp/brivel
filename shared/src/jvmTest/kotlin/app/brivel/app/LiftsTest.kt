@@ -23,6 +23,12 @@ class LiftsTest {
         assertEquals("Sentadilla con barra", app.data.sets.last().exercise)
         assertFailsWith<IllegalArgumentException> { app.logLift("2026-10-23", line, 60.0, 8, 3) }
         assertNull(repRange("Plancha frontal y lateral: 2 × 20–45″ por lado"))
+        // 4 kg → 4,5 kg sería un 12,5 %: más que el tope, así que mantiene el peso
+        val curl = "Remo con mancuerna: 3 × 8–12 repeticiones"
+        app.logLift("2026-10-22", curl, 4.0, 12, 3)
+        assertEquals("Llegaste al máximo, pero subir de 4 kg sería más de un 10 %: sigue con 4 kg y haz 13 repeticiones",
+            app.liftHint(curl).suggestion)
+        assertEquals(4.0, app.liftHint(curl).weightKg)
         app.logLift("2026-10-22", "Flexiones (inclinadas al empezar): 2 × 10–15 repeticiones", null, 15, 2)
         assertEquals("Llegaste al máximo: pasa a una variante más difícil y vuelve a 10 repeticiones",
             app.liftHint("Flexiones (inclinadas al empezar): 2 × 10–15 repeticiones").suggestion)

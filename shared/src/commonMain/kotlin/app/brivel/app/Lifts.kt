@@ -34,8 +34,11 @@ fun latestSets(sets: List<SetLog>): List<SetLog> = sets.associateBy { Triple(it.
  * 0,5 kg; con tu peso, una variante más difícil); si no, el mismo peso buscando una repetición más. Si te quedaste por
  * debajo del rango, o llevas 3 sesiones con el mismo peso sin ganar repeticiones, baja un ~10 % y vuelve a subir.
  * Si llegaste al máximo pero apuntaste menos reserva que `rir` (la que pide el plan), no sube: el peso aún es mucho.
- * [Práctica: ACSM 2009, progresión doble; Helms 2016, progresión por RIR; el 5 % y el 10 % son Inferencia dentro del
- * 2–10 % de la nota]
+ * Tope: nunca propone subir más de un 10 % (MAX_RAISE); si el paso mínimo (0,5 kg) lo supera, mantiene el peso y pide
+ * repeticiones por encima del rango.
+ * [Práctica: ACSM 2009 (PMID 19204579): "2-10% increase in load be applied when the individual can perform the current
+ * workload for one to two repetitions over the desired number"; Helms 2016, progresión por RIR; el 5 % y la bajada del
+ * 10 % son Inferencia dentro de ese 2–10 %]
  */
 fun liftHint(lifts: List<LiftLog>, line: String, range: IntRange? = repRange(line), rir: Int? = null): LiftHint {
     val name = exerciseName(line)
@@ -52,6 +55,9 @@ fun liftHint(lifts: List<LiftLog>, line: String, range: IntRange? = repRange(lin
         last.reps >= range.last && rir != null && last.rir != null && last.rir < rir ->
             "Llegaste al máximo, pero más cerca del fallo de lo indicado: repite ${w?.let { kg(it) } ?: "la variante"} " +
                 "hasta que te sobren $rir" to w
+        last.reps >= range.last && w != null && up(w) > w * (1 + MAX_RAISE) ->
+            "Llegaste al máximo, pero subir de ${kg(w)} sería más de un 10 %: sigue con ${kg(w)} y haz " +
+                "${last.reps + 1} repeticiones" to w
         last.reps >= range.last && w != null ->
             "Llegaste al máximo: hoy prueba ${kg(up(w))} y vuelve a ${range.first} repeticiones" to up(w)
         last.reps >= range.last -> "Llegaste al máximo: pasa a una variante más difícil y vuelve a ${range.first} repeticiones" to null
@@ -65,5 +71,8 @@ fun liftHint(lifts: List<LiftLog>, line: String, range: IntRange? = repRange(lin
     }
     return LiftHint(name, last, suggestion, weight)
 }
+
+/** Lo máximo que Brivel propone subir el peso de una sesión a la siguiente (techo del 2–10 % del ACSM 2009). */
+const val MAX_RAISE = 0.10
 
 fun kg(v: Double): String = (if (v % 1.0 == 0.0) v.toLong().toString() else v.toString().replace('.', ',')) + " kg"
