@@ -5,6 +5,7 @@ import type { Act } from "./Today"
 import { SyncCard } from "./Sync"
 import { GarminCard } from "./Garmin"
 import { IntervalsCard } from "./Intervals"
+import { RoutinesCard } from "./Routines"
 import { LibraryCard } from "./Library"
 import { LEVEL_CHOICES, Segmented, SportPicker, STRENGTH_CHOICES, WeekBars, type Profile as ProfileData } from "./ProfileParts"
 
@@ -57,6 +58,7 @@ export function Profile({ core, act, synced }: { core: WebApp; act: Act; synced:
         <IntervalsCard core={core} onDone={synced} />
         <SyncCard core={core} onDone={synced} />
         <GarminCard core={core} onDone={synced} />
+        <RoutinesCard core={core} act={act} />
         <LibraryCard core={core} />
       </div>
       {/* En un diálogo: en el móvil, dentro de la página, desplazarla movería las barras */}

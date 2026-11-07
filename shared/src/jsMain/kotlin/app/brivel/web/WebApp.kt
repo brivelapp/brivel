@@ -8,6 +8,7 @@ package app.brivel.web
 import app.brivel.app.EVIDENCE_MEANING
 import app.brivel.app.GoalKind
 import app.brivel.app.HEALTH_NOTICE
+import app.brivel.app.Routine
 import app.brivel.app.KeyValueStore
 import app.brivel.app.SPORT_LABEL
 import app.brivel.app.BrivelApp
@@ -183,6 +184,11 @@ class WebApp {
     fun strengthJson(date: String): String? = app.strengthScreen(date)?.let { json.encodeToString(it) }
     fun lastStrengthDate(): String? = app.lastStrengthDate()
     fun figureJson(pattern: String): String? = figureLinesJson(pattern)
+
+    // Rutinas propias (Routines.kt): la web las manda y las recibe en JSON
+    fun routinesJson(): String = json.encodeToString(app.routines)
+    fun saveRoutineJson(text: String): String = json.encodeToString(app.saveRoutine(read.decodeFromString<Routine>(text)))
+    fun deleteRoutine(id: String) = app.deleteRoutine(id)
 
     // Biblioteca de ejercicios (Library.kt)
     fun libraryJson(query: String, pattern: String?, equipment: String?): String = json.encodeToString(library(query, pattern, equipment))

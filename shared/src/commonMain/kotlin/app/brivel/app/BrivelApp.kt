@@ -161,6 +161,26 @@ class BrivelApp(
         save(data.copy(moves = if (to == origin) others else others + SessionMove(origin, slot, to)))
     }
 
+    // ------------------------------------------------------------ rutinas propias (Routines.kt)
+
+    val routines: List<Routine> get() = data.routines
+
+    /**
+     * Crea (id vacío) o cambia una rutina; los días que se le asignan dejan de ser de las demás. Cuenta desde hoy.
+     * shortcut: quitar un día a otra rutina, o borrarla, también cambia sus días ya pasados en el calendario; guardar
+     * el historial de asignaciones si alguien lo echa en falta.
+     */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun saveRoutine(routine: Routine): Routine {
+        val r = validRoutine(routine).copy(id = routine.id.ifBlank { kotlin.random.Random.nextLong().toULong().toString(36) },
+            since = today().toString())
+        val others = data.routines.filter { it.id != r.id }.map { it.copy(days = it.days - r.days.toSet()) }
+        save(data.copy(routines = others + r))
+        return r
+    }
+
+    fun deleteRoutine(id: String) = save(data.copy(routines = data.routines.filter { it.id != id }))
+
     /** "Hoy no puedo" (0) o "puedo entrenar este día" (minutos): la semana se recalcula desde hoy. */
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
     fun changeDay(date: String, minutes: Int) {

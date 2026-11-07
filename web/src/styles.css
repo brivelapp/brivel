@@ -72,6 +72,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
 .field input { min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--muted); background: var(--bg);
   color: var(--text); font-size: 17px; letter-spacing: 0.08em; text-transform: uppercase; }
+.field input.text { letter-spacing: normal; text-transform: none; }  /* texto normal, no un código */
 .code { font-size: 22px; font-weight: 600; letter-spacing: 0.06em; word-spacing: 0.3em; user-select: all; }
 
 .legal { display: flex; flex-wrap: wrap; gap: 8px 18px; padding-top: 8px; font-size: 13px; color: var(--muted); }
@@ -291,3 +292,5 @@ main.wide ~ .legal { padding-block: 8px 32px; }
 .garmin-title { gap: 10px; align-items: center; }
 .garmin-title img { border-radius: 7px; }
 .nowrap { white-space: nowrap; }
+.small-field { flex: 1 1 90px; min-width: 0; }
+.routine-exercise { padding: 12px; display: flex; flex-direction: column; gap: 8px; }

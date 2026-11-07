@@ -22,6 +22,7 @@ import app.brivel.engine.screen
 import app.brivel.engine.adherenceHistory
 import app.brivel.engine.adjustDay
 import app.brivel.engine.alternatives
+import app.brivel.engine.effortNote
 import app.brivel.engine.equivalentMinutes
 import app.brivel.engine.isoWeek
 import app.brivel.engine.matchDay
@@ -277,7 +278,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
 
     fun week(monday: LocalDate): WeekView {
         val race = raceGoal()
-        val week = moveSessions(if (race != null && race.date >= today) raceWeek(monday, race) else healthWeek(monday))
+        val week = moveSessions(applyRoutines(if (race != null && race.date >= today) raceWeek(monday, race) else healthWeek(monday)))
         val s = screening ?: return week
         return when (s.clearance) {
             // Síntomas con actividad: nada de ejercicio hasta que lo valore un médico
@@ -287,6 +288,30 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             else -> week.copy(warnings = listOf(s.message) + week.warnings)
         }
     }
+
+    /**
+     * Rutinas propias (Routines.kt): el día asignado, la fuerza de Brivel pasa a ser la rutina; si ese día no tenía
+     * fuerza, se añade. Solo desde `since`: lo pasado se queda como estaba.
+     */
+    private fun applyRoutines(week: WeekView): WeekView {
+        if (data.routines.isEmpty()) return week
+        val days = week.days.map { d ->
+            val routine = data.routines.firstOrNull { r -> weekdayOf(LocalDate.parse(d.date)) in r.days && d.date >= r.since }
+                ?: return@map d
+            val s = routine.strength()
+            val item = routineItem(routine, s)
+            val i = d.items.indexOfFirst { it.isStrength }
+            val items = if (i >= 0) d.items.toMutableList().also { it[i] = item } else d.items + item
+            dayView(d.date, d.weekday, items, d.note.takeIf { items.isEmpty() }, d.availableMin, d.reasons, d.adjustments, d.phase)
+        }
+        return week.copy(days = days, strengthDays = days.count { d -> d.items.any { it.isStrength } })
+    }
+
+    private fun routineItem(r: Routine, s: HealthStrength) = PlanItem(
+        sport = "strength", kind = "routine", title = r.name, hint = "Tu rutina", technicalName = r.name,
+        durationMin = s.durationMin, steps = emptyList(), exercises = s.exercises, notes = effortNote(r.rir, "gym"),
+        alternatives = emptyList(), chosen = false, slot = "strength", session = null, healthStrength = s, raceStrength = null,
+    )
 
     /**
      * Las sesiones movidas pasan al día elegido. Se aplica sobre la semana ya calculada, así que vale igual sin fecha y
