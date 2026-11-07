@@ -237,6 +237,7 @@ struct ProfileView: View {
                 }
                 SyncSection()
                 GarminSection()
+                RoutinesSection()
                 LibrarySection()
                 Module {
                     Secondary("Tus datos")
