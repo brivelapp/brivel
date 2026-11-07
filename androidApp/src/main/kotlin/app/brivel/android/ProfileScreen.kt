@@ -2,6 +2,7 @@ package app.brivel.android
 
 import android.Manifest
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -29,7 +30,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,7 +43,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.brivel.app.HEALTH_NOTICE
@@ -257,8 +256,7 @@ private fun HealthCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") v
 
 @Composable
 private fun IntervalsCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: Int) {
-    var athlete by remember { mutableStateOf(app.data.intervalsAthlete ?: "") }
-    var key by remember { mutableStateOf("") }
+    val context = LocalContext.current
     Module {
         SectionTitle("Reloj (intervals.icu)")
         val linked = app.linkedAthlete
@@ -267,17 +265,16 @@ private fun IntervalsCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER"
             app.data.cache?.let { Secondary("Datos al día del ${it.syncedAt}") }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { act.suspend("Datos actualizados") { app.sync() } }) { Text("Actualizar ahora") }
-                OutlinedButton(onClick = { act.run { app.unlinkIntervals() } }) { Text("Desvincular") }
+                OutlinedButton(onClick = { act.suspend("intervals.icu desvinculado") { app.disconnectIntervals() } }) { Text("Desvincular") }
             }
         } else {
             Secondary("intervals.icu es gratis y recoge los datos de tu reloj (Garmin, Polar, Coros, Suunto, Wahoo…). " +
-                "En intervals.icu: Settings → Developer Settings, copia tu Athlete ID y crea una API key.")
-            OutlinedTextField(athlete, { athlete = it }, label = { Text("Athlete ID (p. ej. i123456)") }, singleLine = true,
-                modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(key, { key = it }, label = { Text("API key") }, singleLine = true,
-                visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
-            Button(onClick = { act.suspend("Cuenta vinculada") { app.linkIntervals(athlete, key); key = "" } },
-                enabled = athlete.isNotBlank() && key.isNotBlank()) { Text("Vincular") }
+                "Inicia sesión allí y da permiso a Brivel.")
+            Button(onClick = {
+                act.suspend(null) {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(app.startIntervals("brivel://intervals"))))
+                }
+            }) { Text("Conectar con intervals.icu") }
         }
     }
 }

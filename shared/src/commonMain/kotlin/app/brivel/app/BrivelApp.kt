@@ -7,9 +7,18 @@ import app.brivel.engine.WorkoutEvent
 import app.brivel.engine.plusDays
 import app.brivel.engine.strengthEvent
 import app.brivel.engine.workoutEvent
+import app.brivel.intervals.INTERVALS_CLIENT_ID
+import app.brivel.intervals.INTERVALS_SCOPES
 import app.brivel.intervals.IntervalsClient
 import app.brivel.intervals.IntervalsException
+import app.brivel.intervals.exchangeIntervalsCode
 import app.brivel.intervals.str
+import dev.whyoleg.cryptography.CryptographyProvider
+import dev.whyoleg.cryptography.algorithms.SHA256
+import dev.whyoleg.cryptography.random.CryptographyRandom
+import io.ktor.http.URLBuilder
+import io.ktor.http.Url
+import kotlin.io.encoding.Base64
 import app.brivel.sync.SyncClient
 import app.brivel.sync.SyncCode
 import app.brivel.sync.Syncer
@@ -21,7 +30,9 @@ import kotlinx.datetime.todayIn
 import kotlinx.serialization.json.Json
 
 private const val DATA_KEY = "brivel.data"
-private const val API_KEY = "intervals.apiKey"
+private const val API_KEY = "intervals.apiKey"  // cuentas vinculadas con clave antes de OAuth (2026-11-07)
+private const val INTERVALS_TOKEN = "intervals.token"  // token de OAuth, en el almacén seguro
+private const val INTERVALS_PKCE = "intervals.pkce"  // "state verificador" mientras se conecta
 internal const val SYNC_STATE_KEY = "brivel.sync"  // sync/Syncer.kt
 private const val SYNC_CODE_KEY = "sync.code"  // en el almacén seguro, como la clave de intervals.icu
 private const val SYNC_CONSENT_KEY = "brivel.syncConsent"  // fecha y versión de la política aceptadas (CUMPLIMIENTO #6)
@@ -188,35 +199,69 @@ class BrivelApp(
 
     // ------------------------------------------------------------ intervals.icu
 
-    val linkedAthlete: String? get() = data.intervalsAthlete?.takeIf { secrets.read(API_KEY) != null }
+    val linkedAthlete: String? get() =
+        data.intervalsAthlete?.takeIf { secrets.read(INTERVALS_TOKEN) != null || secrets.read(API_KEY) != null }
 
     private fun client(): IntervalsClient? {
         val athlete = data.intervalsAthlete ?: return null
+        secrets.read(INTERVALS_TOKEN)?.let { return IntervalsClient(athlete, it, httpEngine, oauth = true) }
         val key = secrets.read(API_KEY) ?: return null
         return IntervalsClient(athlete, key, httpEngine)
     }
 
-    /** Vincula la cuenta una vez: comprueba la clave contra intervals.icu antes de guardarla. */
+    /**
+     * Primer paso de conectar: la dirección de intervals.icu que se abre en el navegador. Al aceptar, intervals.icu vuelve
+     * a `redirect` (brivel://intervals en las apps, brivel.app/intervals en la web) y entonces `finishIntervals`.
+     */
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
-    suspend fun linkIntervals(athleteId: String, apiKey: String) {
-        val id = athleteId.trim()
-        val key = apiKey.trim()
-        val probe = IntervalsClient(id, key, httpEngine)
-        try {
-            probe.athlete()
+    suspend fun startIntervals(redirect: String): String {
+        val b64 = Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT)
+        val verifier = b64.encode(CryptographyRandom.Default.nextBytes(32))
+        val state = b64.encode(CryptographyRandom.Default.nextBytes(16))
+        val challenge = b64.encode(CryptographyProvider.Default.get(SHA256).hasher().hash(verifier.encodeToByteArray()))
+        secrets.write(INTERVALS_PKCE, "$state $verifier")
+        return URLBuilder("https://intervals.icu/oauth/authorize").apply {
+            parameters.append("client_id", INTERVALS_CLIENT_ID)
+            parameters.append("redirect_uri", redirect)
+            parameters.append("scope", INTERVALS_SCOPES)
+            parameters.append("state", state)
+            parameters.append("code_challenge", challenge)
+            parameters.append("code_challenge_method", "S256")
+        }.buildString()
+    }
+
+    /** De vuelta de intervals.icu (la dirección completa, con ?code=…&state=…): canjea el código y descarga los datos. */
+    @Throws(Exception::class)
+    suspend fun finishIntervals(callback: String) {
+        val pkce = secrets.read(INTERVALS_PKCE)?.split(' ')
+            ?: throw IllegalStateException("La conexión con intervals.icu caducó: vuelve a empezar")
+        secrets.write(INTERVALS_PKCE, null)
+        val params = Url(callback).parameters
+        if (params["error"] != null) throw IllegalArgumentException("No has dado permiso en intervals.icu")
+        // El state que mandamos: sin él, otra web podría colar su propia cuenta de intervals.icu
+        require(params["state"] == pkce[0]) { "La vuelta de intervals.icu no es de esta conexión: vuelve a empezar" }
+        val code = params["code"] ?: throw IllegalArgumentException("intervals.icu no devolvió el código")
+        val (token, athlete) = try {
+            exchangeIntervalsCode(code, pkce[1], httpEngine)
         } catch (e: IntervalsException) {
-            throw IllegalArgumentException(
-                if (e.status == 401 || e.status == 403) "intervals.icu no acepta ese ID de atleta o esa clave" else "intervals.icu respondió ${e.status}")
-        } finally {
-            probe.close()
+            throw IllegalArgumentException("intervals.icu respondió ${e.status}: vuelve a empezar")
         }
-        secrets.write(API_KEY, key)
-        save(data.copy(intervalsAthlete = id))
+        secrets.write(INTERVALS_TOKEN, token)
+        secrets.write(API_KEY, null)
+        save(data.copy(intervalsAthlete = athlete))
         sync()
+    }
+
+    /** Desvincula; con OAuth, antes retira el permiso en intervals.icu (sin red, se desvincula igual aquí). */
+    @Throws(Exception::class)
+    suspend fun disconnectIntervals() {
+        if (secrets.read(INTERVALS_TOKEN) != null) client()?.let { c -> runCatching { c.disconnectApp() }; c.close() }
+        unlinkIntervals()
     }
 
     fun unlinkIntervals() {
         secrets.write(API_KEY, null)
+        secrets.write(INTERVALS_TOKEN, null)
         save(data.copy(intervalsAthlete = null, cache = null))
     }
 
@@ -577,6 +622,7 @@ class BrivelApp(
     /** Borra todo del móvil, clave incluida, y deja de sincronizar: si no, la próxima sincronización lo borraría también en el servidor. */
     fun deleteAll() {
         secrets.write(API_KEY, null)
+        secrets.write(INTERVALS_TOKEN, null)
         store.write(DATA_KEY, null)
         forgetSync()
         data = AppData()

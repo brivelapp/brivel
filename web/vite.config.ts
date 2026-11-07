@@ -22,4 +22,6 @@ const csp = (): Plugin => ({
 })
 
 // Fuentes e iconos de Pulso salen de iosApp/ (una sola copia en el repo); base relativa para alojarla en cualquier ruta
-export default defineConfig({ plugins: [react(), csp()], base: "./", server: { fs: { allow: [".."] } } })
+// "ws": ktor (intervals.icu desde el núcleo) solo lo carga con import() dinámico en Node, nunca en el navegador
+export default defineConfig({ plugins: [react(), csp()], base: "./", server: { fs: { allow: [".."] } },
+  build: { rolldownOptions: { external: ["ws"] } } })

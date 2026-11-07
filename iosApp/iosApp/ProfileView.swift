@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 import Shared
 
 
@@ -101,8 +102,7 @@ struct ProfileView: View {
     @EnvironmentObject var model: AppModel
     @State private var draft = ProfileDraft(nil)
     @State private var loaded = false
-    @State private var athlete = ""
-    @State private var apiKey = ""
+    @Environment(\.webAuthenticationSession) private var webAuth
     @State private var confirmDelete = false
     @State private var editingWeek = false
 
@@ -218,18 +218,21 @@ struct ProfileView: View {
                         if let cache = core.data.cache { Secondary("Datos al día del \(cache.syncedAt)") }
                         HStack {
                             Button("Actualizar ahora") { model.runAsync("Datos actualizados") { try await core.sync() } }.buttonStyle(PrimaryStyle())
-                            Button("Desvincular") { model.run { core.unlinkIntervals() } }.buttonStyle(SecondaryStyle())
+                            Button("Desvincular") {
+                                model.runAsync("intervals.icu desvinculado") { try await core.disconnectIntervals() }
+                            }.buttonStyle(SecondaryStyle())
                         }
                     } else {
-                        Secondary("intervals.icu es gratis y recoge los datos de tu reloj (Garmin, Polar, Coros, Suunto, Wahoo…). En intervals.icu: Settings → Developer Settings, copia tu Athlete ID y crea una API key.")
-                        TextField("Athlete ID (p. ej. i123456)", text: $athlete).textFieldStyle(.roundedBorder)
-                            .textInputAutocapitalization(.never).autocorrectionDisabled()
-                        SecureField("API key", text: $apiKey).textFieldStyle(.roundedBorder)
-                        Button("Vincular") {
-                            let id = athlete, key = apiKey
-                            model.runAsync("Cuenta vinculada") { try await core.linkIntervals(athleteId: id, apiKey: key) }
-                            apiKey = ""
-                        }.buttonStyle(PrimaryStyle()).disabled(athlete.isEmpty || apiKey.isEmpty)
+                        Secondary("intervals.icu es gratis y recoge los datos de tu reloj (Garmin, Polar, Coros, Suunto, Wahoo…). Inicia sesión allí y da permiso a Brivel.")
+                        // La pantalla de permisos de intervals.icu dentro de la app; se cierra sola al volver a brivel://intervals
+                        Button("Conectar con intervals.icu") {
+                            model.runAsync("intervals.icu conectado") {
+                                let url = try await core.startIntervals(redirect: "brivel://intervals")
+                                guard let start = URL(string: url) else { return }
+                                let back = try await webAuth.authenticate(using: start, callbackURLScheme: "brivel")
+                                try await core.finishIntervals(callback: back.absoluteString)
+                            }
+                        }.buttonStyle(PrimaryStyle())
                     }
                 }
                 SyncSection()
@@ -259,7 +262,7 @@ struct ProfileView: View {
         }
         .background(Palette.bg)
         .onAppear {
-            if !loaded { draft = ProfileDraft(core.data.profile); athlete = core.data.intervalsAthlete ?? ""; loaded = true }
+            if !loaded { draft = ProfileDraft(core.data.profile); loaded = true }
         }
         .confirmationDialog("¿Borrar todo?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Borrar", role: .destructive) { model.run { core.deleteAll() } }

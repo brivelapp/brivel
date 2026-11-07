@@ -196,6 +196,14 @@ class WebApp {
     fun logSet(date: String, exercise: String, set: Int, weight: String, reps: Int, rir: Int?) =
         app.logSet(date, exercise, set, weight.replace(',', '.').toDoubleOrNull(), reps, rir)
 
+    // intervals.icu por OAuth con PKCE desde el navegador (cliente público, sin secreto); vuelve a brivel.app/intervals.
+    // El token, en sessionStorage como el resto de secretos: al cerrar la pestaña hay que volver a conectar
+    val intervalsAthlete: String? get() = app.linkedAthlete
+    fun startIntervals(): Promise<String> = promise { app.startIntervals(window.location.origin + "/intervals") }
+    fun finishIntervals(callback: String): Promise<Unit> = promise { app.finishIntervals(callback) }
+    fun syncIntervals(): Promise<Unit> = promise { app.sync() }
+    fun disconnectIntervals(): Promise<Unit> = promise { app.disconnectIntervals() }
+
     // Garmin Connect: la web descifra cada envío del relevo con su clave (IndexedDB) y lo entrega aquí ya en claro
     fun importGarmin(delivery: String) = app.importGarmin(delivery)
     fun clearGarmin() = app.clearGarmin()

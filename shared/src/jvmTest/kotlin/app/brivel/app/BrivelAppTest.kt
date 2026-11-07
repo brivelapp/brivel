@@ -7,6 +7,7 @@ import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.Url
 import io.ktor.http.headersOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
@@ -291,7 +292,14 @@ class BrivelAppTest {
         val engine = MockEngine { request ->
             val path = request.url.encodedPath
             calls += "${request.method.value} $path"
-            if (request.headers[HttpHeaders.Authorization] != "Basic QVBJX0tFWTpidWVuYQ==") {
+            if (path == "/api/oauth/token") {
+                val form = request.body.toByteArray().decodeToString()
+                return@MockEngine if ("code=buena" in form && "code_verifier=" in form && "client_secret" !in form)
+                    respond("""{"token_type":"Bearer","access_token":"tok","athlete":{"id":"i1","name":"Prueba"}}""",
+                        HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                else respond("""{"error":"Invalid code_verifier"}""", HttpStatusCode.UnprocessableEntity)
+            }
+            if (request.headers[HttpHeaders.Authorization] != "Bearer tok") {
                 return@MockEngine respond("no", HttpStatusCode.Unauthorized)
             }
             val body = when {
@@ -300,7 +308,7 @@ class BrivelAppTest {
                     sent += events.map { it.jsonObject }
                     JsonArray(events.mapIndexed { n, e -> JsonObject(e.jsonObject + ("id" to JsonPrimitive(n))) }).toString()
                 }
-                request.method == HttpMethod.Put -> "{}"
+                request.method == HttpMethod.Put || request.method == HttpMethod.Delete -> "{}"
                 path.endsWith("/wellness") -> cache().wellness.let { JsonArray(it) }.toString()
                 path.endsWith("/activities") -> cache().activities.let { JsonArray(it) }.toString()
                 else -> cache().athlete.toString()
@@ -311,14 +319,20 @@ class BrivelAppTest {
         val a = app(secrets = secrets, engine = engine)
         a.saveProfile(profile)
         a.setGoal(GoalKind.FITNESS)
-        assertFailsWith<IllegalArgumentException> { a.linkIntervals("i1", "mala") }
+        fun state(url: String) = Url(url).parameters["state"]!!
+        val start = a.startIntervals("brivel://intervals")
+        assertEquals("S256", Url(start).parameters["code_challenge_method"])
+        // Una vuelta con otro state no vale (y hay que volver a empezar)
+        assertFailsWith<IllegalArgumentException> { a.finishIntervals("brivel://intervals?code=buena&state=otro") }
+        assertFailsWith<IllegalStateException> { a.finishIntervals("brivel://intervals?code=buena&state=${state(start)}") }
         assertEquals(null, a.linkedAthlete)
-        a.linkIntervals(" i1 ", "buena")
+        a.finishIntervals("brivel://intervals?code=buena&state=${state(a.startIntervals("brivel://intervals"))}")
         assertEquals("i1", a.linkedAthlete)
+        assertEquals("tok", secrets.read("intervals.token"))
         assertNotNull(a.data.cache)
         assertTrue(calls.any { it == "PUT /api/v1/activity/act-1" })  // la de ayer, con su título de verdad
         assertTrue("act-1" in a.data.renamed)
-        assertFalse("buena" in a.exportJson())  // la clave nunca sale en la exportación
+        assertFalse("tok" in a.exportJson())  // el token nunca sale en la exportación
 
         val day = a.todayScreen().day
         if (day.items.isNotEmpty()) {
@@ -326,8 +340,11 @@ class BrivelAppTest {
             assertEquals(day.items.size, names.size)
             assertTrue(sent.all { (it["external_id"] as JsonPrimitive).content.startsWith("brivel-${today}") })
         }
+        a.disconnectIntervals()
+        assertTrue(calls.any { it == "DELETE /api/v1/disconnect-app" })
+        assertEquals(null, a.linkedAthlete)
         a.deleteAll()
-        assertEquals(null, secrets.read("intervals.apiKey"))
+        assertEquals(null, secrets.read("intervals.token"))
         assertTrue(a.needsOnboarding)
     }
 

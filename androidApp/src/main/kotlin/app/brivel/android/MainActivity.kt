@@ -44,24 +44,30 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     /** Sube cada vez que vuelve de Garmin (brivel://garmin): Root recoge entonces la conexión. */
     private val garminReturns = mutableIntStateOf(0)
+    /** La dirección de vuelta de intervals.icu (brivel://intervals?code=…&state=…): Root termina de conectar. */
+    private val intervalsReturn = mutableStateOf<String?>(null)
 
-    private fun fromGarmin(intent: Intent?) {
-        if (intent?.data?.let { it.scheme == "brivel" && it.host == "garmin" } == true) garminReturns.intValue += 1
+    private fun fromBrowser(intent: Intent?) {
+        val uri = intent?.data?.takeIf { it.scheme == "brivel" } ?: return
+        when (uri.host) {
+            "garmin" -> garminReturns.intValue += 1
+            "intervals" -> intervalsReturn.value = uri.toString()
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        fromGarmin(intent)
+        fromBrowser(intent)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (savedInstanceState == null) fromGarmin(intent)
+        if (savedInstanceState == null) fromBrowser(intent)
         // Iconos de la barra de estado claros u oscuros según el modo del sistema
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT))
         val app = BrivelApp(PrefsStore(this), KeystoreStore(this), { systemToday() })
-        setContent { BrivelTheme { Root(app, garminReturns.intValue) } }
+        setContent { BrivelTheme { Root(app, garminReturns.intValue, intervalsReturn.value) } }
     }
 }
 
@@ -129,7 +135,7 @@ private val TABS = listOf("Hoy" to R.drawable.ic_tab_today, "Calendario" to R.dr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Root(app: BrivelApp, garminReturns: Int = 0) {
+fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null) {
     var version by remember { mutableIntStateOf(0) }
     var tab by remember { mutableIntStateOf(0) }
     var strengthDate by rememberSaveable { mutableStateOf<String?>(null) }  // sesión de fuerza abierta, a pantalla completa
@@ -158,6 +164,10 @@ fun Root(app: BrivelApp, garminReturns: Int = 0) {
     // De vuelta de la pantalla de permisos de Garmin
     LaunchedEffect(garminReturns) {
         if (garminReturns > 0) act.suspend("Garmin conectado: los datos llegan cuando sincronices el reloj") { app.finishGarmin() }
+    }
+    // De vuelta de intervals.icu con el código
+    LaunchedEffect(intervalsReturn) {
+        intervalsReturn?.let { act.suspend("intervals.icu conectado") { app.finishIntervals(it) } }
     }
 
     val onboarding = version >= 0 && app.needsOnboarding  // version: se recalcula tras cada acción

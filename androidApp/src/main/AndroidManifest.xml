@@ -35,12 +35,14 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Vuelta desde la pantalla de permisos de Garmin Connect (el relevo redirige a brivel://garmin) -->
+            <!-- Vuelta desde la pantalla de permisos de Garmin Connect (el relevo redirige a brivel://garmin) y de
+                 intervals.icu (brivel://intervals con el código de OAuth) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="brivel" android:host="garmin" />
+                <data android:scheme="brivel" android:host="intervals" />
             </intent-filter>
             <!-- Health Connect enseña por qué la app pide permisos (Android 13 o anterior) -->
             <intent-filter>

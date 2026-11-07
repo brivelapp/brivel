@@ -21,7 +21,8 @@ export function App() {
   const [, setVersion] = useState(0)
   const [message, setMessage] = useState<string | null>(null)
   const [entry, setEntry] = useState<Entry>("landing")
-  const [tab, setTab] = useState<Tab>(() => (location.hash === "#garmin" ? "profile" : "today"))  // de vuelta de Garmin
+  // De vuelta de Garmin (#garmin) o de intervals.icu (/intervals?code=…), a Perfil
+  const [tab, setTab] = useState<Tab>(() => (location.hash === "#garmin" || location.pathname === "/intervals" ? "profile" : "today"))
   const [strengthDate, setStrengthDate] = useState<string | null>(null)  // sesión de fuerza abierta, a pantalla completa
   const closeStrength = useCallback(() => setStrengthDate(null), [])
   // Al cerrar la sesión, el foco vuelve al botón que la abrió (para quien usa el teclado o un lector de pantalla)
@@ -50,8 +51,16 @@ export function App() {
       syncSoon()
     })
     // Lo que Garmin dejó en el buzón: al abrir y cada vez que se vuelve a la pestaña; sin conexión no hace nada
-    const pull = () => pullGarmin(core).then((n) => { if (n) { refresh(); syncSoon() } }, () => {})
-    if (location.hash !== "#garmin") pull()
+    const pull = () => {
+      pullGarmin(core).then((n) => { if (n) { refresh(); syncSoon() } }, () => {})
+      if (core.intervalsAthlete) core.syncIntervals().then(refresh, () => {})
+    }
+    if (location.pathname === "/intervals") {
+      const back = location.href
+      history.replaceState(null, "", "/")  // el código no se queda en el historial
+      core.finishIntervals(back).then(() => { setMessage("intervals.icu conectado"); refresh(); syncSoon() },
+        (e) => setMessage(e instanceof Error && e.message ? e.message : "No se pudo conectar con intervals.icu"))
+    } else if (location.hash !== "#garmin") pull()
     const onVisible = () => { if (document.visibilityState === "visible") pull() }
     document.addEventListener("visibilitychange", onVisible)
     return () => document.removeEventListener("visibilitychange", onVisible)
