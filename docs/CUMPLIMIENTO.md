@@ -83,8 +83,9 @@ Etiquetas: **[Verificado]** comprobado en el código o en la app real · **[Fuen
 
 ## 5. Garmin Connect: documentos del RGPD (2026-11-04)
 
-- **EIPD:** `docs/legal/EIPD_GARMIN.md`, borrador del 2026-11-04 **pendiente de aprobar por Gabriel**. Riesgo residual
+- **EIPD:** `docs/legal/EIPD_GARMIN.md`, aprobada por Gabriel el 2026-11-07. Riesgo residual
   bajo o medio-bajo; el mayor, una cuenta de Cloudflare comprometida (el relevo ve los datos un instante al llegar).
 - **Registro de actividades:** actividad 4 en `docs/legal/REGISTRO_ACTIVIDADES.md`.
-- No abrir la conexión a otras personas antes de aprobar la EIPD y de la respuesta de Garmin al aviso de 30 días
-  (2026-12-04).
+- No abrir la conexión a otras personas antes del 2026-12-07: el aviso de 30 días se dio de nuevo desde `hola@brivel.app`
+  (dirección registrada) el 2026-11-07, porque Garmin no reconoció el del 2026-11-03 desde Gmail. Garmin contestó con una
+  respuesta genérica (Starter no incluye revisión) y no pidió cambios.

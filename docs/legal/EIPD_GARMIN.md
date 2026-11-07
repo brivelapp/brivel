@@ -1,6 +1,6 @@
 # Evaluación de impacto (EIPD): conexión con Garmin Connect
 
-**Estado:** borrador del 2026-11-04, revisado el mismo día contra el código y las fuentes, **pendiente de aprobación por Gabriel**, responsable del tratamiento. Preparado por
+**Estado:** aprobada por Gabriel, responsable del tratamiento, el 2026-11-07 (borrador del 2026-11-04, revisado el mismo día contra el código y las fuentes). Preparado por
 Claude a partir del apartado 5 de la política de privacidad (`web/public/privacidad.html`) y del código del relevo
 (repositorio privado `brivel-garmin`). Completa la EIPD de la sincronización (`EIPD_SINCRONIZACION.md`), que sigue
 vigente para la copia cifrada. Se puede pasar a Gestiona EIPD de la AEPD, que sigue los mismos apartados.
@@ -106,5 +106,6 @@ Con las medidas descritas, el riesgo residual es **bajo o medio-bajo** en todos 
 los datos un instante al llegar, así que la seguridad de la cuenta de Cloudflare del responsable es la medida clave. No
 hace falta la consulta previa a la AEPD (art. 36), que es para riesgo residual alto [Inferencia: según el art. 36.1].
 
-Antes de abrir la conexión a otras personas: aprobar esta EIPD, tener respuesta de Garmin al aviso de 30 días, que
-`hola@brivel.app` reciba correo y probarla en un iPhone y un Android reales.
+Antes de abrir la conexión a otras personas: que pasen los 30 días del aviso a Garmin (dado de nuevo desde
+`hola@brivel.app`, la dirección registrada, el 2026-11-07: no antes del 2026-12-07) y probarla en un iPhone y un Android
+reales. Hecho: aprobar esta EIPD (2026-11-07) y que `hola@brivel.app` reciba y envíe correo.
