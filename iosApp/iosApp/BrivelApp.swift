@@ -32,16 +32,31 @@ final class AppModel: ObservableObject {
     }
 
     func runAsync(_ success: String? = nil, _ block: @escaping () async throws -> Void) {
+        // Al salir de la app, iOS corta enseguida la red (NSURLError -1005): así deja terminar lo que ya está en marcha
+        var background = UIBackgroundTaskIdentifier.invalid
+        func endBackground() {
+            guard background != .invalid else { return }
+            UIApplication.shared.endBackgroundTask(background)
+            background = .invalid
+        }
+        background = UIApplication.shared.beginBackgroundTask(expirationHandler: endBackground)
         Task {
+            defer { endBackground() }
             do {
                 try await block()
                 if let success { message = success }
                 syncSoon()
             } catch {
-                message = error.localizedDescription
+                message = readable(error)
             }
             refresh()
         }
+    }
+
+    /// El error para enseñarlo; los de red llegan de Ktor como un volcado de NSError.
+    private func readable(_ error: Error) -> String {
+        let text = error.localizedDescription
+        return text.contains("NSURLErrorDomain") ? "Se ha cortado la conexión: inténtalo de nuevo" : text
     }
 
     private var pending: Task<Void, Never>?
@@ -82,7 +97,7 @@ final class AppModel: ObservableObject {
             do {
                 message = try await core.syncDevices() ?? "Sincronizado"
             } catch {
-                message = error.localizedDescription
+                message = readable(error)
             }
             refresh()
         }
