@@ -67,7 +67,7 @@ export function GarminCard({ core, onDone }: { core: WebApp; onDone: (message: s
       <label className="check">
         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
         <span>Acepto que Brivel reciba mis datos de Garmin, también los de salud, para adaptar mi plan. Puedo retirarlo
-          cuando quiera desconectando. {" "}<a href="privacidad.html#garmin">Política de privacidad</a></span>
+          cuando quiera desconectando. {" "}<a href="privacidad#garmin">Política de privacidad</a></span>
       </label>
       <label className="check">
         <input type="checkbox" checked={adult} onChange={(e) => setAdult(e.target.checked)} />

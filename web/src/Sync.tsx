@@ -113,7 +113,7 @@ export function SyncCard({ core, onDone, joinOnly = false }:
         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
         <span>Acepto que Brivel guarde en su servidor una copia cifrada de mis datos, también los de salud, para usarlos
           en mis dispositivos. Puedo retirarlo cuando quiera borrando la copia.
-          {" "}<a href="privacidad.html">Política de privacidad</a></span>
+          {" "}<a href="privacidad">Política de privacidad</a></span>
       </label>
       <label className="check">
         <input type="checkbox" checked={adult} onChange={(e) => setAdult(e.target.checked)} />

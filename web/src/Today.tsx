@@ -207,8 +207,8 @@ export function Footer({ core, act }: { core: WebApp; act: Act }) {
   }
   return (
     <footer className="legal">
-      <a href="privacidad.html">Privacidad</a>
-      <a href="terminos.html">Términos</a>
+      <a href="privacidad">Privacidad</a>
+      <a href="terminos">Términos</a>
       <a href="https://github.com/brivelapp/brivel">Código fuente</a>
       <button className="link" onClick={erase}>Borrar mis datos</button>
     </footer>
