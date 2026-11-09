@@ -61,7 +61,7 @@ export function Calendar({ core, act, openStrength }: { core: WebApp; act: Act; 
                   aria-label={`${core.dateLabel(d.date)}${d.planned.length ? `, ${d.planned.length} ${d.planned.length === 1 ? "planificada" : "planificadas"}` : ""}${doneSports.length ? ", hecha" : ""}`}
                   onClick={() => setSelected(d.date)}>
                   <span className="mono">{d.dayOfMonth}</span>
-                  <span className="row day-icons">{d.planned.slice(0, 2).map((p, i) => <Icon key={i} src={SPORT_ICON[p.sport] ?? SPORT_ICON.running} size={14} />)}</span>
+                  <span className="row day-icons">{d.planned.slice(0, 2).map((p, i) => <Icon key={i} src={SPORT_ICON[p.sport] ?? SPORT_ICON.strength} size={14} />)}</span>
                   {doneSports.length > 0 && <span className="row day-done"><Icon src={check} size={14} />{doneSports.length > 1 && doneSports.length}</span>}
                 </button>
               )

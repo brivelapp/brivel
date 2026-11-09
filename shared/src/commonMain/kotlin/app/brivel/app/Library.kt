@@ -3,13 +3,14 @@ package app.brivel.app
 import kotlinx.serialization.Serializable
 
 // Biblioteca de ejercicios: la ficha de cada uno (patrón, material y claves de técnica), buscar y filtrar, y cambiar un
-// ejercicio del plan por otro del mismo patrón. Solo los ejercicios que proponen los motores (EXERCISES).
+// ejercicio del plan por otro del mismo patrón. Los ejercicios: LIBRARY (ExerciseCatalog.kt) y los propios del usuario.
 
 /** Nombre del patrón para la pantalla. */
 val PATTERN_LABEL = mapOf(
     "sentadilla" to "Sentadilla", "bisagra" to "Bisagra de cadera", "zancada" to "Zancada", "gemelo" to "Gemelo",
     "salto" to "Saltos", "empuje horizontal" to "Empuje horizontal", "empuje vertical" to "Empuje vertical",
     "tracción horizontal" to "Tracción horizontal", "tracción vertical" to "Tracción vertical", "core" to "Core",
+    "brazos" to "Brazos", "hombros" to "Hombros (aislamiento)", "pierna aislada" to "Pierna (aislamiento)",
 )
 
 /**
@@ -83,7 +84,7 @@ private val EXERCISE_EQUIPMENT = mapOf(
 )
 
 /** Las etiquetas del filtro de material, en orden. */
-val EQUIPMENT = listOf("peso corporal", "mancuernas", "barra", "banco o cajón", "polea o máquina", "goma", "barra de dominadas")
+val EQUIPMENT = listOf("peso corporal", "mancuernas", "barra", "banco o cajón", "polea o máquina", "goma", "barra de dominadas", "pesa rusa")
 
 /** La ficha de un ejercicio. `figure`: el patrón cuya figura lo dibuja (FIGURES). */
 @Serializable
@@ -92,28 +93,49 @@ data class ExerciseCard(val name: String, val pattern: String, val patternLabel:
 
 const val CUE_SOURCE = "Pautas generales de técnica de la NSCA (Haff y Triplett, 2016). No sustituyen a un entrenador."
 
-fun exerciseCard(name: String): ExerciseCard? = EXERCISES[name]?.let { info ->
-    ExerciseCard(name, info.pattern, PATTERN_LABEL[info.pattern]!!, EXERCISE_EQUIPMENT[name] ?: emptyList(), info.timed,
-        PATTERN_CUES[info.pattern]!!, CUE_SOURCE, info.pattern)
+const val NO_CUES = "Aún sin claves de técnica: no tenemos una fuente verificada para este tipo de ejercicio."
+
+/** Un ejercicio creado por el usuario: el nombre lo identifica (las series apuntadas guardan el nombre). */
+@Serializable
+data class CustomExercise(val name: String, val pattern: String, val timed: Boolean = false)
+
+/** Patrón y medida de un ejercicio, de la biblioteca o de los propios. */
+fun exerciseInfo(name: String, custom: List<CustomExercise>): ExerciseInfo? =
+    LIBRARY[name] ?: custom.firstOrNull { it.name == name }?.let { ExerciseInfo(it.pattern, it.timed) }
+
+fun exerciseCard(name: String, custom: List<CustomExercise> = emptyList()): ExerciseCard? = exerciseInfo(name, custom)?.let { info ->
+    val cues = PATTERN_CUES[info.pattern]
+    ExerciseCard(name, info.pattern, PATTERN_LABEL[info.pattern]!!, EXERCISE_EQUIPMENT[name] ?: CATALOG_EQUIPMENT[name] ?: emptyList(), info.timed,
+        cues ?: emptyList(), if (cues != null) CUE_SOURCE else NO_CUES, info.pattern)
 }
 
 /** Sin tildes ni mayúsculas, para buscar «busqueda» y encontrar «búsqueda». */
 private fun plain(s: String) = s.lowercase().map { c -> "áàäâéèëêíìïîóòöôúùüûñ".indexOf(c).let { if (it < 0) c else "aaaaeeeeiiiioooouuuun"[it] } }
     .joinToString("")
 
-/** Buscar por nombre o patrón y filtrar por patrón y por material; en el orden de EXERCISES (por patrón). */
-fun library(query: String = "", pattern: String? = null, equipment: String? = null): List<ExerciseCard> {
+/** Comprueba un ejercicio nuevo; devuelve el mismo con el nombre limpio. El «:» separa el nombre de la dosis en el plan. */
+fun validCustomExercise(e: CustomExercise, custom: List<CustomExercise>): CustomExercise {
+    val name = e.name.trim()
+    require(name.length in 2..60) { "El nombre va de 2 a 60 letras" }
+    require(':' !in name) { "El nombre no puede llevar dos puntos" }
+    require((LIBRARY.keys + custom.map { it.name }).none { plain(it) == plain(name) }) { "Ya hay un ejercicio con ese nombre" }
+    require(e.pattern in PATTERN_LABEL) { "Tipo de ejercicio no válido" }
+    return e.copy(name = name)
+}
+
+/** Buscar por nombre o patrón y filtrar por patrón y por material; primero los propios y luego por patrón. */
+fun library(query: String = "", pattern: String? = null, equipment: String? = null, custom: List<CustomExercise> = emptyList()): List<ExerciseCard> {
     val words = plain(query).split(' ').filter { it.isNotBlank() }
-    return EXERCISES.keys.mapNotNull(::exerciseCard).filter { c ->
+    return (custom.map { it.name } + LIBRARY.keys).mapNotNull { exerciseCard(it, custom) }.filter { c ->
         (pattern == null || c.pattern == pattern) && (equipment == null || equipment in c.equipment) &&
             words.all { w -> plain(c.name).contains(w) || plain(c.patternLabel).contains(w) }
     }
 }
 
 /** Por qué otros se puede cambiar: mismo patrón y misma forma de medirlo (repeticiones o tiempo). */
-fun swapOptions(name: String): List<ExerciseCard> {
-    val info = EXERCISES[name] ?: return emptyList()
-    return library(pattern = info.pattern).filter { it.name != name && it.timed == info.timed }
+fun swapOptions(name: String, custom: List<CustomExercise> = emptyList()): List<ExerciseCard> {
+    val info = exerciseInfo(name, custom) ?: return emptyList()
+    return library(pattern = info.pattern, custom = custom).filter { it.name != name && it.timed == info.timed }
 }
 
 /** Desde `since` (incluido), `original` se hace como `replacement`; null: vuelve al original. */

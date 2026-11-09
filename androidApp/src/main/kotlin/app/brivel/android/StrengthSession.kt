@@ -96,7 +96,7 @@ fun ExerciseFigure(pattern: String, size: Dp) {
 }
 
 private fun amount(e: StrengthExercise, reps: Int) = if (e.timed) "$reps″" else "$reps"
-private fun weightText(w: Double?) = w?.let { kg(it).removeSuffix(" kg") } ?: "Tu peso"
+private fun weightText(w: Double?) = w?.let { kg(it).removeSuffix(" kg") } ?: "Sin peso"
 private fun effort(rir: Int) = if (rir == 0) "Hasta no poder más" else "Termina con $rir en reserva"
 private fun setText(s: LoggedSet, timed: Boolean) =
     (s.weightKg?.let { "${kg(it).removeSuffix(" kg")} × " } ?: "") + if (timed) "${s.reps}″" else "${s.reps}"
@@ -162,7 +162,7 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
                 }
                 restEnd > 0 && restView -> {
                     if (!notifyOk && Build.VERSION.SDK_INT >= 33) TextButton(onClick = { askNotify.launch(Manifest.permission.POST_NOTIFICATIONS) }) {
-                        Text("Avisarme al acabar el descanso si salgo de la app")
+                        LinkText("Avisarme al acabar el descanso si salgo de la app")
                     }
                     RestView(restLeft, restTotal, e, setNo, logged,
                         adjust = { restEnd += it * 1000L; if (restEnd <= System.currentTimeMillis()) restEnd = 0 },
@@ -175,7 +175,7 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
                         })
                 }
                 e == null || setNo > e.sets && firstPending() < 0 -> Finished(screen.other, close)
-                else -> SetView(e, setNo, exercises.getOrNull(current + 1),
+                else -> SetView(app, e, setNo, exercises.getOrNull(current + 1),
                     swap = { r: String -> act.run { app.swapExercise(date, e.name, r) } }
                         .takeIf { app.canSwapExercises(date) && e.done.isEmpty() }) { weight, reps ->
                     val editing = e.done.firstOrNull { it.set == setNo }
@@ -203,7 +203,7 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
 }
 
 @Composable
-private fun SetView(e: StrengthExercise, setNo: Int, next: StrengthExercise?, swap: ((String) -> Unit)?, done: (Double?, Int) -> Unit) {
+private fun SetView(app: BrivelApp, e: StrengthExercise, setNo: Int, next: StrengthExercise?, swap: ((String) -> Unit)?, done: (Double?, Int) -> Unit) {
     var sheet by remember { mutableStateOf<String?>(null) }  // "card" o "swap"
     val previous = e.done.firstOrNull { it.set == setNo } ?: e.previous.firstOrNull { it.set == setNo }
     // Sin historial: el mínimo del rango; con él, lo de esa serie (hoy si se corrige, si no la última vez)
@@ -231,11 +231,11 @@ private fun SetView(e: StrengthExercise, setNo: Int, next: StrengthExercise?, sw
         }
     }
     Row {
-        TextButton(onClick = { sheet = "card" }) { Text("Cómo se hace") }
-        if (swap != null) TextButton(onClick = { sheet = "swap" }) { Text("Cambiar ejercicio") }
+        TextButton(onClick = { sheet = "card" }) { LinkText("Cómo se hace") }
+        if (swap != null) TextButton(onClick = { sheet = "swap" }) { LinkText("Cambiar ejercicio") }
     }
     sheet?.let { s ->
-        ExerciseSheet(e.name, e.original, { sheet = null }, swap?.takeIf { s == "swap" }?.let { f -> { r: String -> sheet = null; f(r) } })
+        ExerciseSheet(app, e.name, e.original, { sheet = null }, swap?.takeIf { s == "swap" }?.let { f -> { r: String -> sheet = null; f(r) } })
     }
     e.suggestion?.let {
         Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Palette.okSoft).padding(12.dp)) {
@@ -266,7 +266,7 @@ private fun Stepper(label: String, value: String, modifier: Modifier, onTap: (()
     Column(modifier.clip(RoundedCornerShape(24.dp)).background(Palette.surface).padding(vertical = 14.dp, horizontal = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Secondary(label)
-        // Misma altura con "Tu peso" que con un número, para que las dos tarjetas queden parejas
+        // Misma altura con "Sin peso" que con un número, para que las dos tarjetas queden parejas
         Box(Modifier.height(48.dp).then(if (onTap != null) Modifier.clickable(onClickLabel = "Escribir el peso", onClick = onTap) else Modifier),
             contentAlignment = Alignment.Center) {
             Text(value, fontFamily = Mono, fontWeight = FontWeight.SemiBold, fontSize = if (value.length > 5) 26.sp else 38.sp)

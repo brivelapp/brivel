@@ -8,6 +8,7 @@ package app.brivel.web
 import app.brivel.app.EVIDENCE_MEANING
 import app.brivel.app.GoalKind
 import app.brivel.app.HEALTH_NOTICE
+import app.brivel.app.CustomExercise
 import app.brivel.app.Routine
 import app.brivel.app.KeyValueStore
 import app.brivel.app.SPORT_LABEL
@@ -27,9 +28,6 @@ import app.brivel.app.FIGURES
 import app.brivel.app.polylines
 import app.brivel.app.EQUIPMENT
 import app.brivel.app.PATTERN_LABEL
-import app.brivel.app.exerciseCard
-import app.brivel.app.library
-import app.brivel.app.swapOptions
 import app.brivel.sync.SyncCode
 import app.brivel.sync.Syncer
 import kotlinx.browser.window
@@ -155,6 +153,7 @@ class WebApp {
     val goalLabel: String? get() = app.data.goal?.let { labelOf(it) }
 
     fun abandonGoal() = app.abandonGoal()
+    fun exportJson(): String = app.exportJson()
 
     // Las mismas reglas que las apps (Texts.kt)
     fun toggleCardio(cardio: Array<String>, sport: String): Array<String> = toggleCardioCore(cardio.toList(), sport).toTypedArray()
@@ -189,11 +188,14 @@ class WebApp {
     fun routinesJson(): String = json.encodeToString(app.routines)
     fun saveRoutineJson(text: String): String = json.encodeToString(app.saveRoutine(read.decodeFromString<Routine>(text)))
     fun deleteRoutine(id: String) = app.deleteRoutine(id)
+    fun customExercisesJson(): String = json.encodeToString(app.customExercises)
+    fun saveCustomExerciseJson(text: String): String = json.encodeToString(app.saveCustomExercise(read.decodeFromString<CustomExercise>(text)))
+    fun deleteCustomExercise(name: String) = app.deleteCustomExercise(name)
 
     // Biblioteca de ejercicios (Library.kt)
-    fun libraryJson(query: String, pattern: String?, equipment: String?): String = json.encodeToString(library(query, pattern, equipment))
-    fun exerciseCardJson(name: String): String? = exerciseCard(name)?.let { json.encodeToString(it) }
-    fun swapOptionsJson(name: String): String = json.encodeToString(swapOptions(name))
+    fun libraryJson(query: String, pattern: String?, equipment: String?): String = json.encodeToString(app.library(query, pattern, equipment))
+    fun exerciseCardJson(name: String): String? = app.exerciseCard(name)?.let { json.encodeToString(it) }
+    fun swapOptionsJson(name: String): String = json.encodeToString(app.swapOptions(name))
     fun patternLabelsJson(): String = json.encodeToString(PATTERN_LABEL)
     fun equipmentJson(): String = json.encodeToString(EQUIPMENT)
     fun swapExercise(date: String, current: String, replacement: String) = app.swapExercise(date, current, replacement)

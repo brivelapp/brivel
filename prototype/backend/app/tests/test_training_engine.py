@@ -68,6 +68,12 @@ def test_bad_hrv_and_sleep_turn_quality_into_recovery():
     assert kind == "recovery" and volume == 0.7 and len(reasons) == 2
 
 
+@pytest.mark.parametrize("session", ["long", "neuromuscular"])
+def test_bad_hrv_and_sleep_turn_non_quality_sessions_into_recovery(session):
+    state = e.DayState(ctl=40, atl=45, hrv_history=BASELINE + [80] * 7, sleep_score=40)
+    assert e.adjust(session, state)[0] == "recovery"
+
+
 def test_very_negative_tsb_forces_recovery():
     assert e.adjust("long", e.DayState(ctl=40, atl=75))[0] == "recovery"
 

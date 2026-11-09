@@ -148,6 +148,7 @@ private struct RecentRow: View {
                     Text(ScreensKt.dateLabel(date: activity.date)).font(.caption12).foregroundStyle(Palette.muted)
                 }
                 Spacer()
+                RowChevron(open: open)
                 Text("\(activity.minutes)′").font(.mono(15))
             }
             if open {
@@ -186,6 +187,7 @@ private struct MetricRow: View {
                 Text(metric.label).font(.ui(15, .semibold, relativeTo: .subheadline))
                 Spacer()
                 Text(format(latest) + (metric.unit.isEmpty ? "" : " \(metric.unit)")).font(.mono(15, .semibold))
+                RowChevron(open: open)
             }
             if let source = metric.source { Source(text: source) }
             if let low, let high, let latest, format(low) != format(high) {

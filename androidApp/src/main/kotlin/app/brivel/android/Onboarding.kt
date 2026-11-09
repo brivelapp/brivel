@@ -120,7 +120,7 @@ fun Onboarding(app: BrivelApp, act: Act) {
             Text("El sistema operativo de tu cuerpo", fontSize = 18.sp, color = Palette.ok)
             Secondary("Te dice qué hacer hoy y por qué, con tus datos y según la evidencia. Gratis, sin anuncios y de código abierto.")
             Secondary(PRIVACY_NOTE)
-            TextButton(onClick = { links.openUri(PRIVACY_URL) }) { Text("Política de privacidad") }
+            TextButton(onClick = { links.openUri(PRIVACY_URL) }) { LinkText("Política de privacidad") }
             Button(onClick = { step = 1 }, modifier = Modifier.fillMaxWidth()) { Text("Empezar") }
             SyncCard(app, act, 0, allowCreate = false)
         }

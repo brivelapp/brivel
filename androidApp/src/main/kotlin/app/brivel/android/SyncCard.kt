@@ -78,9 +78,9 @@ fun SyncCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: In
                     OutlinedButton(onClick = { showCode = !showCode }) { Text(if (showCode) "Ocultar código" else "Ver código") }
                 }
                 TextButton(onClick = { act.run("Este móvil ya no sincroniza. La copia sigue en el servidor") { app.forgetSync() } }) {
-                    Text("Dejar de sincronizar aquí")
+                    LinkText("Dejar de sincronizar aquí")
                 }
-                TextButton(onClick = { confirmDelete = true }) { Text("Borrar la copia del servidor", color = Palette.danger) }
+                TextButton(onClick = { confirmDelete = true }) { LinkText("Borrar la copia del servidor", color = Palette.danger) }
             }
             view == SyncView.IDLE -> {
                 SectionTitle(if (allowCreate) "Usar en otros dispositivos" else "¿Ya usas Brivel en otro dispositivo?")

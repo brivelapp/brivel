@@ -56,7 +56,7 @@ struct OtherRacesView: View {
                             Secondary(ScreensKt.dateLabel(date: r.date) + (r.priority == "B" ? " · importante" : " · de preparación"))
                         }
                         Spacer()
-                        Button("Quitar") { model.run { core.removeRace(date: r.date) } }
+                        Button("Quitar") { model.run { core.removeRace(date: r.date) } }.buttonStyle(TextActionStyle())
                     }
                 }
                 if adding {
@@ -75,7 +75,7 @@ struct OtherRacesView: View {
                                                 priority: priority, distanceKm: nil, trail: false)
                             model.run("Carrera añadida") { try core.addRace(race: race); adding = false; name = "" }
                         }.buttonStyle(PrimaryStyle())
-                        Button("Cancelar") { adding = false }
+                        Button("Cancelar") { adding = false }.buttonStyle(TextActionStyle())
                     }
                 } else {
                     Secondary("El plan afina unos días antes de cada una y te deja recuperar después.")
@@ -117,13 +117,6 @@ struct ProfileView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Perfil").font(.screenTitle)
-                Module {
-                    Secondary("Tu objetivo")
-                    Text(core.data.goal.map { TextsKt.goalLabel(goal: $0) } ?? "Sin objetivo").font(.ui(20, .bold, relativeTo: .title3))
-                    Secondary("Puedes cambiarlo o abandonarlo cuando quieras; el plan se rehace al momento.")
-                    Button("Cambiar objetivo") { model.run { core.abandonGoal() } }.buttonStyle(SecondaryStyle())
-                    OtherRacesView()
-                }
                 // Se guarda solo: cada cambio rehace el plan al momento (lienzo de Pulso, opción B)
                 Module {
                     Text("Qué haces además de caminar").font(.section)
@@ -154,6 +147,8 @@ struct ProfileView: View {
                     Text("Tu nivel").font(.section)
                     Segmented(options: levelChoices.map { ($0.0, $0.1) }, selected: draft.level) { draft.level = $0; save() }
                 }
+                RoutinesSection()
+                LibrarySection()
                 Module {
                     Text("Año de nacimiento").font(.section)
                     TextField("1990", text: Binding(get: { draft.birthYear.map(String.init) ?? "" }, set: { v in
@@ -235,10 +230,8 @@ struct ProfileView: View {
                         }.buttonStyle(PrimaryStyle())
                     }
                 }
-                SyncSection()
                 GarminSection()
-                RoutinesSection()
-                LibrarySection()
+                SyncSection()
                 Module {
                     Secondary("Tus datos")
                     Secondary(TextsKt.PRIVACY_NOTE)

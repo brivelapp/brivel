@@ -24,30 +24,31 @@ data class Routine(val id: String, val name: String, val exercises: List<Routine
 private const val WARMUP_MIN = 10  // como las sesiones de fuerza del plan de salud
 
 /** La línea del plan ("Sentadilla con barra: 3 × 8–12 repeticiones"): la lee la sesión serie a serie (prescription). */
-fun RoutineExercise.line(): String =
-    "$name: $sets × $low–$high" + if (EXERCISES[name]?.timed == true) "″" else " repeticiones"
+fun RoutineExercise.line(custom: List<CustomExercise>): String =
+    "$name: $sets × $low–$high" + if (exerciseInfo(name, custom)?.timed == true) "″" else " repeticiones"
 
 /** Minutos: calentamiento más cada serie con su descanso (restSeconds) y unos 45″ de trabajo [Inferencia]. */
-fun Routine.minutes(): Int = WARMUP_MIN + pyRound(exercises.sumOf { e ->
-    val p = Prescription(e.sets, e.low..e.high, EXERCISES[e.name]?.timed == true)
-    e.sets * (restSeconds(p, EXERCISES[e.name]?.pattern ?: "") + 45)
+fun Routine.minutes(custom: List<CustomExercise>): Int = WARMUP_MIN + pyRound(exercises.sumOf { e ->
+    val info = exerciseInfo(e.name, custom)
+    val p = Prescription(e.sets, e.low..e.high, info?.timed == true)
+    e.sets * (restSeconds(p, info?.pattern ?: "") + 45)
 } / 60.0)
 
 /** La rutina como sesión de fuerza: la carga semanal y el emparejamiento con lo hecho la tratan como las del plan. */
-internal fun Routine.strength(): HealthStrength {
-    val min = minutes()
-    return HealthStrength(name = name, patterns = exercises.mapNotNull { EXERCISES[it.name]?.pattern }.distinct(),
-        setsPerExercise = exercises.maxOfOrNull { it.sets } ?: 0, exercises = exercises.map { it.line() }, rir = rir,
+internal fun Routine.strength(custom: List<CustomExercise>): HealthStrength {
+    val min = minutes(custom)
+    return HealthStrength(name = name, patterns = exercises.mapNotNull { exerciseInfo(it.name, custom)?.pattern }.distinct(),
+        setsPerExercise = exercises.maxOfOrNull { it.sets } ?: 0, exercises = exercises.map { it.line(custom) }, rir = rir,
         durationMin = min, tss = pyRound(strengthTss((10 - rir).toDouble(), min.toDouble())), notes = "")
 }
 
 /** Comprueba una rutina antes de guardarla; devuelve la misma con el nombre limpio. */
-fun validRoutine(r: Routine): Routine {
+fun validRoutine(r: Routine, custom: List<CustomExercise>): Routine {
     val name = r.name.trim()
     require(name.isNotEmpty()) { "Ponle un nombre a la rutina" }
     require(r.exercises.isNotEmpty()) { "Añade al menos un ejercicio" }
     for (e in r.exercises) {
-        require(e.name in EXERCISES) { "«${e.name}» no está en la biblioteca" }
+        require(exerciseInfo(e.name, custom) != null) { "«${e.name}» no está en la biblioteca" }
         require(e.sets in 1..10) { "Entre 1 y 10 series en ${e.name}" }
         require(e.low in 1..300 && e.high in e.low..300) { "Revisa el rango de ${e.name}" }
     }

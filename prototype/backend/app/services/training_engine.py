@@ -287,6 +287,8 @@ def adjust(session_type: str, state: DayState) -> tuple[str, float, list[str]]:
         reasons.append("Esfuerzo percibido alto con FC baja en tu última sesión: posible fatiga, hoy sin intensidad [Verificado]")
     if state.sleep_score is not None and state.sleep_score < 50:
         # Mal sueño quita la calidad; sumado a HRV fuera de rango, el día pasa a recuperación (criterio Fase 3)
+        if status == "outside_swc" and session_type in ("long", "neuromuscular"):
+            session_type = "aerobic"  # no son QUALITY: el bloque de HRV no los ha bajado todavía
         if session_type in QUALITY or status == "outside_swc":
             session_type = DOWNGRADE[session_type]
         volume = 0.7

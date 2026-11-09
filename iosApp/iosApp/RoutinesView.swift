@@ -42,10 +42,11 @@ private struct RoutineEditor: View {
     @State private var exercises: [DraftExercise] = []
     @State private var rir = 2
     @State private var picking = false
+    @State private var query = ""
     @State private var confirmDelete = false
     @State private var loaded = false
 
-    private var all: [ExerciseCard] { LibraryKt.library(query: "", pattern: nil, equipment: nil) }
+    private var all: [ExerciseCard] { model.core.library(query: "", pattern: nil, equipment: nil) }
     private func timed(_ name: String) -> Bool { all.first { $0.name == name }?.timed ?? false }
 
     var body: some View {
@@ -68,7 +69,7 @@ private struct RoutineEditor: View {
                             HStack {
                                 Text(e.name).font(.ui(16, .bold))
                                 Spacer()
-                                Button("Quitar") { exercises.removeAll { $0.id == e.id } }
+                                Button("Quitar") { exercises.removeAll { $0.id == e.id } }.buttonStyle(TextActionStyle())
                             }
                             let unit = timed(e.name) ? "s" : "reps"
                             HStack(spacing: 8) {
@@ -84,7 +85,7 @@ private struct RoutineEditor: View {
                     }
                     Secondary("Brivel te propone el peso con lo que apuntes, sin subir nunca más de un 10 % de una vez.")
                     Button("Guardar") { save() }.buttonStyle(PrimaryStyle())
-                    if start != nil { Button("Borrar rutina", role: .destructive) { confirmDelete = true } }
+                    if start != nil { Button("Borrar rutina", role: .destructive) { confirmDelete = true }.buttonStyle(TextActionStyle()) }
                 }.padding(18)
             }
             .background(Palette.bg)
@@ -111,7 +112,7 @@ private struct RoutineEditor: View {
     private var picker: some View {
         NavigationStack {
             List {
-                ForEach(Dictionary(grouping: all, by: \.patternLabel).sorted { $0.key < $1.key }, id: \.key) { group in
+                ForEach(Dictionary(grouping: model.core.library(query: query, pattern: nil, equipment: nil), by: \.patternLabel).sorted { $0.key < $1.key }, id: \.key) { group in
                     Section(group.key) {
                         ForEach(group.value, id: \.name) { c in
                             Button(c.name) {
@@ -123,6 +124,7 @@ private struct RoutineEditor: View {
                     }
                 }
             }
+            .searchable(text: $query, prompt: "Buscar")
             .navigationTitle("Añadir ejercicio").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cerrar") { picking = false } } }
         }
@@ -138,11 +140,43 @@ private struct RoutineEditor: View {
     }
 }
 
+private struct NewExercise: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var name = ""
+    @State private var pattern = "sentadilla"
+    @State private var timed = false
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 14) {
+                TextField("Nombre", text: $name).textFieldStyle(.roundedBorder)
+                Picker("Tipo", selection: $pattern) {
+                    ForEach(LibraryKt.PATTERN_LABEL.sorted { $0.value < $1.value }, id: \.key) { Text($0.value).tag($0.key) }
+                }
+                Toggle("Va por tiempo, no por repeticiones", isOn: $timed)
+                Button("Guardar") { save() }.buttonStyle(PrimaryStyle())
+                Spacer()
+            }
+            .padding(18).background(Palette.bg)
+            .navigationTitle("Nuevo ejercicio").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() } } }
+        }
+    }
+
+    private func save() {
+        var saved = false
+        model.run("Ejercicio guardado") { _ = try model.core.saveCustomExercise(exercise: CustomExercise(name: name, pattern: pattern, timed: timed)); saved = true }
+        if saved { dismiss() }
+    }
+}
+
 /// En Perfil: las rutinas propias y el botón para crear otra.
 struct RoutinesSection: View {
     @EnvironmentObject var model: AppModel
     @State private var editing: Routine?
     @State private var creating = false
+    @State private var adding = false
 
     var body: some View {
         Module {
@@ -150,14 +184,29 @@ struct RoutinesSection: View {
             Secondary("Crea tu propia rutina de fuerza y elige qué días la haces. Esos días sustituye a la fuerza del plan.")
             ForEach(model.core.routines, id: \.id) { r in
                 Button { editing = r } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(r.name).font(.ui(16, .bold))
-                        Secondary("\(r.exercises.count) ejercicios · \(daysText(r.days))")
-                    }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(r.name).font(.ui(16, .bold))
+                            Secondary("\(r.exercises.count) ejercicios · \(daysText(r.days))")
+                        }
+                        Spacer()
+                        RowChevron()
+                    }.contentShape(Rectangle())
                 }.buttonStyle(.plain)
             }
             Button("Nueva rutina") { creating = true }.buttonStyle(SecondaryStyle())
+            Text("Tus ejercicios").font(.section)
+            Secondary("Si falta alguno en la biblioteca, créalo y úsalo en tus rutinas.")
+            ForEach(model.core.customExercises, id: \.name) { e in
+                HStack {
+                    Text(e.name)
+                    Spacer()
+                    Button("Borrar") { model.run("Ejercicio borrado") { try model.core.deleteCustomExercise(name: e.name) } }.buttonStyle(TextActionStyle())
+                }
+            }
+            Button("Nuevo ejercicio") { adding = true }.buttonStyle(SecondaryStyle())
         }
+        .sheet(isPresented: $adding) { NewExercise() }
         .sheet(isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) { RoutineEditor(start: editing) }
         .sheet(isPresented: $creating) { RoutineEditor(start: nil) }
     }

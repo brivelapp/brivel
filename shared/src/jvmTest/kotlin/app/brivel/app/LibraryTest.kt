@@ -6,12 +6,15 @@ import kotlin.test.assertTrue
 
 class LibraryTest {
     @Test fun everyExerciseHasACard() {
-        for (name in EXERCISES.keys) {
+        for (name in LIBRARY.keys) {
             val c = exerciseCard(name)!!
             assertTrue(c.equipment.isNotEmpty() && c.equipment.all { it in EQUIPMENT }, name)
-            assertTrue(c.cues.isNotEmpty(), name)
+            assertEquals(c.pattern in PATTERN_CUES, c.cues.isNotEmpty(), name)
         }
-        assertEquals(EXERCISES.size, library().size)
+        assertEquals(LIBRARY.size, library().size)
+        assertTrue(LIBRARY.size >= 300 && LIBRARY.keys.containsAll(EXERCISES.keys))
+        assertEquals(PATTERN_LABEL.keys.toList(), library().map { it.pattern }.distinct())  // agrupada por patrón
+        assertTrue(LIBRARY.keys.none { ':' in it })  // el «:» separa el nombre de la dosis en el plan
     }
 
     @Test fun searchIgnoresAccentsAndFilters() {

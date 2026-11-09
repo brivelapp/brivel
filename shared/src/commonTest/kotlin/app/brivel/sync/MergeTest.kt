@@ -25,6 +25,7 @@ class MergeTest {
 
     // Todos los campos distintos de los valores por defecto: si AppData gana un campo, añádelo aquí y a merge
     private val full = AppData(
+        customExercises = listOf(app.brivel.app.CustomExercise("Curl con TRX", "brazos")),
         profile = UserProfile(birthYear = 1990, level = "advanced"),
         goal = UserGoal(GoalKind.FITNESS, since = "2026-11-02"),
         blockStart = "2026-11-02",

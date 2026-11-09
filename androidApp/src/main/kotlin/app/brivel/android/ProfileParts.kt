@@ -104,7 +104,7 @@ fun SportPicker(cardio: List<String>, onChange: (List<String>) -> Unit) {
 fun WeekBars(days: Map<String, Int>, editable: Boolean = true, onCommit: (Map<String, Int>) -> Unit = {}) {
     var live by remember(days) { mutableStateOf(days) }
     val commit by rememberUpdatedState(onCommit)
-    val area = 240.dp  // la barra más alta (5 h: cada paso de 15 son 12 dp); encima van los minutos
+    val area = if (editable) 240.dp else 108.dp  // en el Perfil solo se ve  // la barra más alta (5 h: cada paso de 15 son 12 dp); encima van los minutos
     val haptic = LocalHapticFeedback.current
     // Un toque suave en cada paso de 15 minutos, para notarlos sin mirar
     fun set(d: String, v: Int) {

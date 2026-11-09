@@ -65,7 +65,7 @@ function Recent({ r, core }: { r: RecentActivity; core: WebApp }) {
   return (
     <button className="metric" aria-expanded={open} onClick={() => setOpen(!open)}>
       <span className="row">
-        <span className="badge"><Icon src={SPORT_ICON[r.sport] ?? SPORT_ICON.running} size={18} /></span>
+        <span className="badge"><Icon src={SPORT_ICON[r.sport] ?? SPORT_ICON.strength} size={18} /></span>
         <span className="grow"><span className="metric-label">{r.title}</span><br />{r.source && <><span className="muted small source">{r.source}</span><br /></>}<span className="muted small">{core.dateLabel(r.date)}</span></span>
         <span className="mono">{r.minutes}′</span>
       </span>

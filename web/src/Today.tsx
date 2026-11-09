@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { WebApp } from "brivel-shared"
 import type { DayView, PlanItem, Reason, TodayScreen, Tone } from "./types"
-import { SyncCard } from "./Sync"
 import { clearKeys } from "./sync"
 import { sendToWatch } from "./garmin"
 import { Segmented } from "./ProfileParts"
@@ -15,7 +14,7 @@ import stateCaution from "../../iosApp/iosApp/Assets.xcassets/state_caution.imag
 import stateRest from "../../iosApp/iosApp/Assets.xcassets/state_rest.imageset/state_rest.svg"
 import check from "../../iosApp/iosApp/Assets.xcassets/check.imageset/check.svg"
 
-export const SPORT_ICON: Record<string, string> = { running, cycling, swimming_pool: swimming, swimming_open: swimming, walking }
+export const SPORT_ICON: Record<string, string> = { running, cycling, swimming_pool: swimming, swimming_open: swimming, walking, strength }
 const STATE: Record<Tone, [string, string]> = { OK: ["ok", stateOk], CAUTION: ["caution", stateCaution], REST: ["rest", stateRest] }
 
 /** Si la pantalla es de ordenador (el mismo corte que styles.css). */
@@ -220,6 +219,7 @@ export function Today({ core, act, synced, openStrength }:
   { core: WebApp; act: Act; synced: (m: string | null) => void; openStrength: (date: string) => void }) {
   const wide = useWide()
   const screen: TodayScreen = JSON.parse(core.todayJson())
+  const changeGoal = () => { if (confirm("¿Cambiar de objetivo? El plan se rehará al momento.")) act(() => core.abandonGoal()) }
   const [tone, stateIcon] = STATE[screen.tone]
   return (
     <main className="wide">
@@ -228,14 +228,15 @@ export function Today({ core, act, synced, openStrength }:
           <h1>Hoy</h1>
           <p className="muted">{screen.dateLabel}</p>
         </div>
-        {screen.goalLine && <p className="muted goal">{screen.goalLine}</p>}
+        {screen.goalLine && <p className="muted goal">{screen.goalLine} · <button className="link" onClick={changeGoal}>Cambiar objetivo</button></p>}
       </header>
       <div className="layout">
       <div className="col">
       {screen.goalFinished && (
         <section className="module">
           <h3>Tu carrera ya pasó</h3>
-          <p className="muted">¿Qué quieres ahora? Otra carrera, mantener la forma o descansar unos días. Elígelo en Perfil → Cambiar objetivo.</p>
+          <p className="muted">¿Qué quieres ahora? Otra carrera, mantener la forma o descansar unos días.</p>
+          <button className="primary" onClick={() => act(() => core.abandonGoal())}>Elegir objetivo</button>
         </section>
       )}
       <section className={`state ${tone}`}>
@@ -271,7 +272,6 @@ export function Today({ core, act, synced, openStrength }:
         {screen.warnings.map((w) => <ReasonRow key={w} core={core} reason={{ text: w, evidence: null }} />)}
         {screen.info.map((t) => <p key={t} className="muted">{t}</p>)}
       </section>
-      <SyncCard core={core} onDone={synced} />
       </aside>
       </div>
     </main>

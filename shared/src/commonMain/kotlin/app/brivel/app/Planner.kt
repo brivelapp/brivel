@@ -298,7 +298,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
         val days = week.days.map { d ->
             val routine = data.routines.firstOrNull { r -> weekdayOf(LocalDate.parse(d.date)) in r.days && d.date >= r.since }
                 ?: return@map d
-            val s = routine.strength()
+            val s = routine.strength(data.customExercises)
             val item = routineItem(routine, s)
             val i = d.items.indexOfFirst { it.isStrength }
             val items = if (i >= 0) d.items.toMutableList().also { it[i] = item } else d.items + item

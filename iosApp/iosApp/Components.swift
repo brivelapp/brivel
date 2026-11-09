@@ -146,6 +146,25 @@ struct PrimaryStyle: ButtonStyle {
     }
 }
 
+/// Acción de texto: siempre subrayada, para que no se confunda con una etiqueta.
+struct TextActionStyle: ButtonStyle {
+    var color: Color = Palette.ok
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.underline().foregroundStyle(configuration.role == .destructive ? Palette.danger : color)
+            .opacity(configuration.isPressed ? 0.6 : 1)
+    }
+}
+
+/// Flecha de una fila que se despliega o, con `open` nulo, chevron de una fila que abre algo.
+struct RowChevron: View {
+    var open: Bool? = nil
+    var body: some View {
+        Glyph(name: "chevron_right", size: 18, color: Palette.muted)
+            .rotationEffect(.degrees(open == nil ? 0 : open! ? 270 : 90))
+            .accessibilityHidden(true)
+    }
+}
+
 struct SecondaryStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.font(.ui(15, .semibold)).padding(.horizontal, 18).frame(minHeight: 50)

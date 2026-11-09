@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.brivel.app.goalLabel
 import app.brivel.app.DayView
 import app.brivel.app.Reason
 import app.brivel.app.SPORT_LABEL
@@ -32,16 +36,30 @@ import app.brivel.app.BrivelApp
 import app.brivel.app.dateLabel
 import androidx.compose.ui.Alignment
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayTab(app: BrivelApp, version: Int, act: Act, openGoal: () -> Unit) {
     val screen = remember(version) { app.todayScreen() }
     val day = screen.day
+    var goalOpen by remember { mutableStateOf(false) }
+    if (goalOpen) ModalBottomSheet(onDismissRequest = { goalOpen = false }, containerColor = Palette.surface) {
+        Column(Modifier.navigationBarsPadding().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(app.data.goal?.let { goalLabel(it) } ?: "Sin objetivo", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Secondary("Puedes cambiarlo o abandonarlo cuando quieras; el plan se rehace al momento.")
+            OutlinedButton(onClick = { goalOpen = false; openGoal() }) { Text("Cambiar objetivo") }
+            OtherRaces(app, act)
+        }
+    }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         ScreenTitle("Hoy", subtitle = screen.dateLabel)
-        screen.goalLine?.let { Secondary(it) }
+        screen.goalLine?.let {
+            Secondary(it)
+            TextButton(onClick = { goalOpen = true }) { LinkText("Tu objetivo") }
+        }
         if (screen.goalFinished) {
             Module {
                 SectionTitle("Tu carrera ya pasó")
@@ -107,7 +125,7 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
                     SportBadge(alt.sport, 32.dp)
                     Spacer(Modifier.width(10.dp))
                     Text("${alt.title} · ${alt.durationMin}′", modifier = Modifier.weight(1f), fontSize = 14.sp)
-                    TextButton(onClick = { act.run { app.chooseAlternative(day.date, item.slot, alt.sport) } }) { Text("Haré esta") }
+                    TextButton(onClick = { act.run { app.chooseAlternative(day.date, item.slot, alt.sport) } }) { LinkText("Haré esta") }
                 }
             }
             if (today && linked) {
@@ -116,14 +134,14 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
                 } }) {
                     Glyph(R.drawable.ic_watch, 18.dp, Palette.ok)
                     Spacer(Modifier.width(6.dp))
-                    Text("Enviar al reloj")
+                    LinkText("Enviar al reloj")
                 }
             }
-            if (item.chosen) TextButton(onClick = { act.run { app.clearChoice(day.date) } }) { Text("Volver a la planificada") }
+            if (item.chosen) TextButton(onClick = { act.run { app.clearChoice(day.date) } }) { LinkText("Volver a la planificada") }
             item.movedFrom?.let { Secondary("La has movido aquí desde el ${dateLabel(it).lowercase()}.") }
             val targets = remember(day, item.slot) { if (done || day.isPast) emptyList() else app.moveTargets(day.date, item.slot) }
             var moving by remember { mutableStateOf(false) }
-            if (targets.isNotEmpty()) TextButton(onClick = { moving = !moving }) { Text(if (moving) "No moverla" else "Moverla a otro día") }
+            if (targets.isNotEmpty()) TextButton(onClick = { moving = !moving }) { LinkText(if (moving) "No moverla" else "Moverla a otro día") }
             if (moving) ChipRow {
                 targets.forEach { t ->
                     OutlinedButton(onClick = { moving = false; act.run { app.moveSession(day.date, item.slot, t) } }) {
@@ -136,7 +154,7 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
     day.matches.forEach { ReasonRow(Reason(it.text, null), if (it.counts) Palette.ok else Palette.caution) }
     if (!today || day.adjustments.isNotEmpty()) day.reasons.forEach { ReasonRow(it, Palette.ok) }  // en Hoy, sin ajuste, ya van en la tarjeta de estado
     if (changeable && day.items.isNotEmpty()) {
-        TextButton(onClick = { act.run { app.changeDay(day.date, 0) } }) { Text(if (today) "Hoy no puedo entrenar" else "Este día no puedo entrenar", color = Palette.muted) }
+        TextButton(onClick = { act.run { app.changeDay(day.date, 0) } }) { LinkText(if (today) "Hoy no puedo entrenar" else "Este día no puedo entrenar", color = Palette.muted) }
     }
 }
 

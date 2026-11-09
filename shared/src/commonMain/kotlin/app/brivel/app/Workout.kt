@@ -60,8 +60,8 @@ private val DOSE = Regex("""(\d+)(?:[–-]\d+)? × (\d+)[–-](\d+)""")
  * carrera), de la dosis de la sesión ("3–4 × 4–8 RM"; los saltos, de su parte "3 × 5–8 saltos"). Con una horquilla de
  * series, la menor. null: no se apunta serie a serie (equilibrio).
  */
-fun prescription(line: String, dose: String?): Prescription? {
-    val info = EXERCISES[exerciseName(line)] ?: return null
+fun prescription(line: String, dose: String?, custom: List<CustomExercise> = emptyList()): Prescription? {
+    val info = exerciseInfo(exerciseName(line), custom) ?: return null
     val own = DOSE.find(line.substringAfter(":", ""))
     val m = own ?: dose?.let { d ->
         if (info.pattern == "salto") Regex("""(\d+) × (\d+)[–-](\d+) saltos""").find(d) ?: return null else DOSE.find(d)
@@ -108,24 +108,25 @@ data class StrengthExercise(
 data class StrengthScreen(val date: String, val title: String, val minutes: Int, val exercises: List<StrengthExercise>,
     val other: List<String>, val notes: String?)  // other: lo que no se apunta serie a serie (equilibrio)
 
-fun strengthScreen(item: PlanItem, date: String, sets: List<SetLog>): StrengthScreen {
+fun strengthScreen(item: PlanItem, date: String, sets: List<SetLog>, custom: List<CustomExercise>): StrengthScreen {
     val all = latestSets(sets)
     val before = all.filter { it.date < date }
     val dose = item.raceStrength?.dose
     // Plan de salud: su RIR (nivel, objetivo y tope del cuestionario); carrera: RIR = 10 − RPE planificado, la misma
     // equivalencia que usa la carga de HealthPlan [Inferencia: Zourdos 2016, escala RPE basada en RIR]
     val target = item.healthStrength?.rir ?: item.raceStrength?.let { 10 - it.rpePlanned }
-    val (logged, other) = item.exercises.partition { prescription(it, dose) != null }
+    val (logged, other) = item.exercises.partition { prescription(it, dose, custom) != null }
     val exercises = logged.map { line ->
-        val p = prescription(line, dose)!!
+        val p = prescription(line, dose, custom)!!
         val name = exerciseName(line)
-        val rir = target.takeUnless { p.timed || EXERCISES[name]!!.pattern == "salto" }
+        val pattern = exerciseInfo(name, custom)!!.pattern
+        val rir = target.takeUnless { p.timed || pattern == "salto" }
         val hint = liftHint(daySummaries(before), line, p.range.takeUnless { p.timed }, rir)
         val previousDate = before.filter { it.exercise == name }.maxOfOrNull { it.date }
         fun day(d: String?) = all.filter { it.date == d && it.exercise == name }.sortedBy { it.set }
             .map { LoggedSet(it.set, it.weightKg, it.reps, it.rir) }
-        StrengthExercise(name, EXERCISES[name]!!.pattern, p.sets, p.range.first, p.range.last, p.timed,
-            restSeconds(p, EXERCISES[name]!!.pattern), rir, hint.suggestion, hint.weightKg, day(previousDate), day(date))
+        StrengthExercise(name, pattern, p.sets, p.range.first, p.range.last, p.timed,
+            restSeconds(p, pattern), rir, hint.suggestion, hint.weightKg, day(previousDate), day(date))
     }
     return StrengthScreen(date, item.title, item.durationMin, exercises, other, item.notes)
 }

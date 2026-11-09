@@ -18,6 +18,7 @@ private struct ExerciseRow: View {
                     Secondary(detail)
                 }
                 Spacer()
+                RowChevron()
             }.contentShape(Rectangle())
         }.buttonStyle(.plain)
     }
@@ -26,6 +27,7 @@ private struct ExerciseRow: View {
 /// La ficha: patrón, material y claves de técnica. Con `onSwap`, también por cuáles se puede cambiar (mismo patrón) y,
 /// si ya es un cambio (`original`), volver al del plan.
 struct ExerciseSheet: View {
+    @EnvironmentObject var model: AppModel
     let name: String
     let original: String?
     let onSwap: ((String) -> Void)?
@@ -34,7 +36,7 @@ struct ExerciseSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                if let card = LibraryKt.exerciseCard(name: name) {
+                if let card = model.core.exerciseCard(name: name) {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 12) {
                             ExerciseFigure(pattern: card.figure).frame(width: 64, height: 64)
@@ -48,7 +50,7 @@ struct ExerciseSheet: View {
                             if let original {
                                 Button("Volver a \(original)") { onSwap(original); dismiss() }.buttonStyle(SecondaryStyle())
                             }
-                            ForEach(LibraryKt.swapOptions(name: original ?? name).filter { $0.name != name }, id: \.name) { o in
+                            ForEach(model.core.swapOptions(name: original ?? name).filter { $0.name != name }, id: \.name) { o in
                                 ExerciseRow(card: o, detail: o.equipment.joined(separator: ", ")) { onSwap(o.name); dismiss() }
                             }
                             Secondary("El cambio vale desde esta sesión; las anteriores siguen con el que hiciste.")
@@ -65,6 +67,7 @@ struct ExerciseSheet: View {
 
 /// En Perfil: todos los ejercicios, con búsqueda y filtros de patrón y de material.
 struct LibrarySection: View {
+    @EnvironmentObject var model: AppModel
     @State private var open = false
     @State private var query = ""
     @State private var pattern: String?
@@ -74,7 +77,7 @@ struct LibrarySection: View {
     var body: some View {
         Module {
             Text("Biblioteca de ejercicios").font(.section)
-            Secondary("Los ejercicios de tus sesiones de fuerza, con cómo hacerlos.")
+            Secondary("Busca entre todos los ejercicios por tipo o material.")
             if !open {
                 Button("Ver los ejercicios") { open = true }.buttonStyle(SecondaryStyle())
             } else {
@@ -87,7 +90,7 @@ struct LibrarySection: View {
                     Text("Cualquier material").tag(String?.none)
                     ForEach(LibraryKt.EQUIPMENT, id: \.self) { Text($0).tag(String?.some($0)) }
                 }
-                let list = LibraryKt.library(query: query, pattern: pattern, equipment: equipment)
+                let list = model.core.library(query: query, pattern: pattern, equipment: equipment)
                 if list.isEmpty { Secondary("Ningún ejercicio con esos filtros.") }
                 ForEach(list, id: \.name) { c in ExerciseRow(card: c, detail: c.patternLabel) { shown = c.name } }
             }

@@ -63,20 +63,13 @@ import app.brivel.app.dateLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileTab(app: BrivelApp, version: Int, act: Act, changeGoal: () -> Unit) {
+fun ProfileTab(app: BrivelApp, version: Int, act: Act) {
     val context = LocalContext.current
     var draft by remember(version) { mutableStateOf(app.data.profile ?: UserProfile()) }
     var confirmDelete by remember { mutableStateOf(false) }
     var editingWeek by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Perfil", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Module {
-            SectionTitle("Tu objetivo")
-            Text(app.data.goal?.let { goalLabel(it) } ?: "Sin objetivo", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Secondary("Puedes cambiarlo o abandonarlo cuando quieras; el plan se rehace al momento.")
-            OutlinedButton(onClick = changeGoal) { Text("Cambiar objetivo") }
-            OtherRaces(app, act)
-        }
         // Se guarda solo: cada cambio rehace el plan al momento (lienzo de Pulso, opción B)
         fun save(p: UserProfile) {
             draft = p
@@ -109,6 +102,8 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, changeGoal: () -> Unit) {
             SectionTitle("Tu nivel")
             Segmented(LEVEL_CHOICES.map { it.first to it.second }, draft.level) { save(draft.copy(level = it)) }
         }
+        RoutinesCard(app, act, version)
+        LibraryCard(app)
         Module {
             var year by remember(version) { mutableStateOf(draft.birthYear) }
             SectionTitle("Año de nacimiento")
@@ -121,10 +116,8 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, changeGoal: () -> Unit) {
         ReminderCard(app, act, version)
         HealthCard(app, act, version)
         IntervalsCard(app, act, version)
-        SyncCard(app, act, version)
         GarminCard(app, act, version)
-        RoutinesCard(app, act, version)
-        LibraryCard()
+        SyncCard(app, act, version)
         Module {
             SectionTitle("Tus datos")
             Secondary(PRIVACY_NOTE)
@@ -150,9 +143,9 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, changeGoal: () -> Unit) {
         Secondary("Brivel es gratis y de código abierto (AGPL-3.0). Sin niveles de pago, sin anuncios y sin notificaciones comerciales.")
         val links = LocalUriHandler.current
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            TextButton(onClick = { links.openUri(PRIVACY_URL) }) { Text("Privacidad") }
-            TextButton(onClick = { links.openUri(TERMS_URL) }) { Text("Términos") }
-            TextButton(onClick = { links.openUri(SOURCE_URL) }) { Text("Código fuente") }
+            TextButton(onClick = { links.openUri(PRIVACY_URL) }) { LinkText("Privacidad") }
+            TextButton(onClick = { links.openUri(TERMS_URL) }) { LinkText("Términos") }
+            TextButton(onClick = { links.openUri(SOURCE_URL) }) { LinkText("Código fuente") }
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -167,7 +160,7 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, changeGoal: () -> Unit) {
 
 /** Carreras preparatorias (B o C) antes de la principal: el plan afina unos días antes y recupera después. */
 @Composable
-private fun OtherRaces(app: BrivelApp, act: Act) {
+internal fun OtherRaces(app: BrivelApp, act: Act) {
     val goal = app.data.goal ?: return
     val main = goal.race?.takeIf { goal.kind == GoalKind.RACE } ?: return
     var adding by remember { mutableStateOf(false) }
@@ -179,14 +172,14 @@ private fun OtherRaces(app: BrivelApp, act: Act) {
                 Text(r.name, fontWeight = FontWeight.Medium)
                 Secondary("${dateLabel(r.date)} · ${if (r.priority == "B") "importante" else "de preparación"}")
             }
-            TextButton(onClick = { act.run { app.removeRace(r.date) } }) { Text("Quitar") }
+            TextButton(onClick = { act.run { app.removeRace(r.date) } }) { LinkText("Quitar") }
         }
     }
     if (adding) {
         RaceForm(extra) { extra = it }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { act.run("Carrera añadida") { app.addRace(extra); adding = false; extra = RaceInfo("", main.sport, "", "C") } }) { Text("Añadir") }
-            TextButton(onClick = { adding = false }) { Text("Cancelar") }
+            TextButton(onClick = { adding = false }) { LinkText("Cancelar") }
         }
     } else {
         Secondary("El plan afina unos días antes de cada una y te deja recuperar después. Elige importante (B) o de preparación (C).")

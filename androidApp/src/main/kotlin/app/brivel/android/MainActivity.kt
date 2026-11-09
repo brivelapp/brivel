@@ -198,7 +198,7 @@ fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null
                 0 -> TodayTab(app, version, act) { act.run { app.abandonGoal() } }
                 1 -> CalendarTab(app, version, act)
                 2 -> ProgressTab(app, version) { tab = 3 }
-                else -> ProfileTab(app, version, act) { act.run { app.abandonGoal() } }
+                else -> ProfileTab(app, version, act)
             }
         }
     }

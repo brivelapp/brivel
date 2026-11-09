@@ -19,6 +19,7 @@ export interface StrengthExercise { name: string; pattern: string; sets: number;
 export interface ExerciseCard { name: string; pattern: string; patternLabel: string; equipment: string[]; timed: boolean
   cues: string[]; cueSource: string; figure: string }
 export interface StrengthScreen { date: string; title: string; exercises: StrengthExercise[]; other: string[] }
+export interface CustomExercise { name: string; pattern: string; timed: boolean }
 export interface RoutineExercise { name: string; sets: number; low: number; high: number }
 export interface Routine { id: string; name: string; exercises: RoutineExercise[]; days: string[]; rir: number; since: string }
 export interface FigureLines { head: [number, number]; body: number[][]; work: number[][] }

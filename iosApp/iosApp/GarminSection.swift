@@ -25,7 +25,7 @@ struct GarminSection: View {
             }
             if core.garminConnected {
                 Secondary(TextsKt.garminStatus(syncedAt: core.garminSyncedAt()))
-                Button("Desconectar Garmin", role: .destructive) { confirm = true }.font(.small)
+                Button("Desconectar Garmin", role: .destructive) { confirm = true }.font(.small).buttonStyle(TextActionStyle())
             } else if !asking {
                 Secondary(TextsKt.GARMIN_INTRO)
                 Button("Conectar Garmin Connect™") { asking = true }.buttonStyle(SecondaryStyle())

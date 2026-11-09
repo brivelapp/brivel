@@ -63,6 +63,7 @@ fun merge(base: AppData, local: AppData, remote: AppData): Merged {
         moves = items(base.moves, local.moves, remote.moves),
         // Editar una rutina en dos dispositivos a la vez: se queda una por id (la del servidor)
         routines = items(base.routines, local.routines, remote.routines).distinctBy { it.id },
+        customExercises = items(base.customExercises, local.customExercises, remote.customExercises).distinctBy { it.name },
     )
     return Merged(data, conflicts)
 }

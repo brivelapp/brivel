@@ -29,12 +29,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.brivel.app.BrivelApp
 import app.brivel.app.EQUIPMENT
 import app.brivel.app.ExerciseCard
 import app.brivel.app.PATTERN_LABEL
-import app.brivel.app.exerciseCard
-import app.brivel.app.library
-import app.brivel.app.swapOptions
 
 // Biblioteca de ejercicios (Library.kt del núcleo), como web/src/Library.tsx
 
@@ -49,6 +47,7 @@ private fun ExerciseRow(card: ExerciseCard, detail: String, onClick: () -> Unit)
             Text(card.name, fontWeight = FontWeight.Bold)
             Secondary(detail)
         }
+        RowChevron()
     }
 }
 
@@ -57,8 +56,8 @@ private fun ExerciseRow(card: ExerciseCard, detail: String, onClick: () -> Unit)
  * si ya es un cambio (`original`), volver al del plan.
  */
 @Composable
-fun ExerciseSheet(name: String, original: String?, dismiss: () -> Unit, onSwap: ((String) -> Unit)?) {
-    val card = remember(name) { exerciseCard(name) } ?: return dismiss()
+fun ExerciseSheet(app: BrivelApp, name: String, original: String?, dismiss: () -> Unit, onSwap: ((String) -> Unit)?) {
+    val card = remember(name) { app.exerciseCard(name) } ?: return dismiss()
     AlertDialog(onDismissRequest = dismiss, containerColor = Palette.surface,
         title = { Text(card.name) },
         text = {
@@ -74,7 +73,7 @@ fun ExerciseSheet(name: String, original: String?, dismiss: () -> Unit, onSwap: 
                 if (onSwap != null) {
                     SectionTitle("Cambiar por")
                     original?.let { o -> OutlinedButton(onClick = { onSwap(o) }) { Text("Volver a $o") } }
-                    swapOptions(original ?: name).filter { it.name != name }.forEach { o ->
+                    app.swapOptions(original ?: name).filter { it.name != name }.forEach { o ->
                         ExerciseRow(o, o.equipment.joinToString(", ")) { onSwap(o.name) }
                     }
                     Secondary("El cambio vale desde esta sesión; las anteriores siguen con el que hiciste.")
@@ -86,7 +85,7 @@ fun ExerciseSheet(name: String, original: String?, dismiss: () -> Unit, onSwap: 
 
 /** En Perfil: todos los ejercicios, con búsqueda y filtros de patrón y de material. */
 @Composable
-fun LibraryCard() {
+fun LibraryCard(app: BrivelApp) {
     var open by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     var pattern by remember { mutableStateOf<String?>(null) }
@@ -94,7 +93,7 @@ fun LibraryCard() {
     var shown by remember { mutableStateOf<String?>(null) }
     Module {
         SectionTitle("Biblioteca de ejercicios")
-        Secondary("Los ejercicios de tus sesiones de fuerza, con cómo hacerlos.")
+        Secondary("Busca entre todos los ejercicios por tipo o material.")
         if (!open) OutlinedButton(onClick = { open = true }) { Text("Ver los ejercicios") }
         else {
             OutlinedTextField(query, { query = it }, label = { Text("Buscar") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -108,10 +107,10 @@ fun LibraryCard() {
                     FilterChip(selected = equipment == t, label = { Text(t) }, onClick = { equipment = if (equipment == t) null else t })
                 }
             }
-            val list = library(query, pattern, equipment)
+            val list = app.library(query, pattern, equipment)
             if (list.isEmpty()) Secondary("Ningún ejercicio con esos filtros.")
             list.forEach { c -> ExerciseRow(c, c.patternLabel) { shown = c.name } }
         }
     }
-    shown?.let { ExerciseSheet(it, null, { shown = null }, null) }
+    shown?.let { ExerciseSheet(app, it, null, { shown = null }, null) }
 }

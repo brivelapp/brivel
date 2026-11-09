@@ -90,6 +90,12 @@ button:disabled { opacity: 0.5; cursor: default; }
 button.secondary { background: var(--chip); color: var(--text); font-weight: 600; }
 button.text { background: none; min-height: 44px; padding: 0 6px; color: var(--ok); font-weight: 600; align-self: flex-start; }
 button.text.muted { color: var(--muted); }
+/* Lo que se pulsa se ve: acción de texto subrayada, fila que abre algo con chevron, fila que se despliega con flecha */
+button.text { text-decoration: underline; text-underline-offset: 3px; }
+button.option::after { content: "›" / ""; color: var(--muted); font-size: 24px; line-height: 1; margin-left: 8px; }
+button.metric { position: relative; padding-right: 26px; }
+.metric::after { content: "›" / ""; position: absolute; right: 4px; top: 8px; color: var(--muted); font-size: 20px; line-height: 1; transform: rotate(90deg); transition: transform .15s; }
+.metric[aria-expanded=true]::after { transform: rotate(270deg); }
 .tag { min-height: 0; margin-top: 4px; padding: 2px 8px; border-radius: 8px; background: var(--chip); color: var(--muted);
   font-size: 11px; font-weight: 600; }
 fieldset { border: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -164,7 +170,8 @@ tr.done .tick { background: var(--ok); color: var(--on-ok); }
 }
 @media (hover: hover) {
   button:hover { filter: brightness(1.06); }
-  button.text:hover, .tag:hover { text-decoration: underline; filter: none; }
+  button.text:hover { filter: none; opacity: .75; }
+  .tag:hover { text-decoration: underline; filter: none; }
 }
 
 /* Piezas comunes de la bienvenida y el Perfil (ProfileParts.tsx), como en las apps */
@@ -180,6 +187,9 @@ tr.done .tick { background: var(--ok); color: var(--on-ok); }
 .bars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; user-select: none; -webkit-user-select: none; }
 .bar-col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .bar-area { width: 100%; height: 262px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; border-radius: 10px; }
+.bars:not(.editable) .bar-area { height: 130px; }
+.day-chips { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.day-chips .chip { padding-inline: 0; }
 .bars.editable .bar-area { cursor: ns-resize; touch-action: none; }
 .bar-area:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
 .bar-value { font-size: 12px; font-weight: 600; }

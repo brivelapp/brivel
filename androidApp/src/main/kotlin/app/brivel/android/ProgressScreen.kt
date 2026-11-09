@@ -153,6 +153,7 @@ private fun RecentRow(r: RecentActivity) {
                 Text(dateLabel(r.date), fontSize = 12.sp, color = Palette.muted)
             }
             Text("${r.minutes}′", fontFamily = Mono, fontSize = 15.sp)
+            RowChevron(open)
         }
         if (open) {
             r.detail?.let { Secondary(it) }
@@ -180,6 +181,7 @@ private fun MetricRow(m: Metric, first: Boolean) {
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = if (first) 0.dp else 6.dp)) {
             Text(m.label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             Text(format(latest) + if (m.unit.isNotEmpty()) " ${m.unit}" else "", fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            RowChevron(open)
         }
         m.source?.let { Source(it) }
         if (low != null && high != null && latest != null && format(high) != format(low)) {

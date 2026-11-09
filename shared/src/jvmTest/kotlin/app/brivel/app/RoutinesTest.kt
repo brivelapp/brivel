@@ -37,6 +37,27 @@ class RoutinesTest {
         assertTrue(screen.exercises.last().timed)
     }
 
+    @Test fun customExercisesWorkInRoutinesAndLibrary() {
+        val a = app()
+        val hold = a.saveCustomExercise(CustomExercise("  Plancha con TRX ", "core", timed = true))
+        assertEquals("Plancha con TRX", hold.name)
+        assertEquals(hold.name, a.library("trx", null, null).single().name)
+        assertTrue(hold.name in a.swapOptions("Plancha frontal").map { it.name })
+        val r = a.saveRoutine(torso.copy(exercises = listOf(RoutineExercise(hold.name, 3, 20, 40), RoutineExercise("Curl con barra", 3, 8, 12))))
+        val screen = a.strengthScreen(today.toString())!!
+        assertEquals(listOf("core", "brazos"), screen.exercises.map { it.pattern })
+        assertTrue(screen.exercises.first().timed)
+        assertTrue(a.exerciseCard("Curl con barra")!!.cues.isEmpty())  // sin fuente verificada, sin claves
+        // Mismo nombre (sin tildes ni mayúsculas), dos puntos o tipo inventado
+        for (bad in listOf(CustomExercise("PLANCHA con trx", "core"), CustomExercise("Curl: raro", "brazos"), CustomExercise("Otro", "inventado")))
+            assertFailsWith<IllegalArgumentException> { a.saveCustomExercise(bad) }
+        // No se borra mientras el plan lo use
+        assertFailsWith<IllegalArgumentException> { a.deleteCustomExercise(hold.name) }
+        a.deleteRoutine(r.id)
+        a.deleteCustomExercise(hold.name)
+        assertTrue(a.customExercises.isEmpty())
+    }
+
     @Test fun daysBelongToOneRoutineAndPastStays() {
         val a = app()
         val first = a.saveRoutine(torso)

@@ -55,7 +55,7 @@ fun GarminCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: 
         when {
             app.garminConnected -> {
                 Secondary(garminStatus(app.garminSyncedAt()))
-                TextButton(onClick = { confirm = true }) { Text("Desconectar Garmin", color = Palette.danger) }
+                TextButton(onClick = { confirm = true }) { LinkText("Desconectar Garmin", color = Palette.danger) }
             }
             !asking -> {
                 Secondary(GARMIN_INTRO)

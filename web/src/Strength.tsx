@@ -8,7 +8,7 @@ import { ExerciseSheet } from "./Library"
 import check from "../../iosApp/iosApp/Assets.xcassets/check.imageset/check.svg"
 import back from "../../iosApp/iosApp/Assets.xcassets/chevron_left.imageset/chevron_left.svg"
 
-const kgText = (w: number | null) => (w == null ? "Tu peso" : String(w).replace(".", ","))
+const kgText = (w: number | null) => (w == null ? "Sin peso" : String(w).replace(".", ","))
 const amount = (reps: number, timed: boolean) => (timed ? `${reps}″` : String(reps))
 const setText = (s: LoggedSet, timed: boolean) => (s.weightKg != null ? `${kgText(s.weightKg)} × ` : "") + amount(s.reps, timed)
 const effort = (rir: number) => (rir === 0 ? "Hasta no poder más" : `Termina con ${rir} en reserva`)
@@ -139,7 +139,7 @@ function SetView({ core, e, setNo, next, done, swap }: { core: WebApp; e: Streng
         {Array.from({ length: Math.max(e.sets, e.done.length) }, (_, i) => <span key={i} className={e.done.some((d) => d.set === i + 1) ? "on" : ""} />)}
       </div>
       <div className="row">
-        <span className="figure-box"><Figure core={core} pattern={e.pattern} /></span>
+        {core.figureJson(e.pattern) && <span className="figure-box"><Figure core={core} pattern={e.pattern} /></span>}
         <div className="grow">
           <h2>{e.name}</h2>
           <p className="muted small-text">Serie {setNo} de {e.sets} · {e.repsLow}–{e.repsHigh} {e.timed ? "segundos" : "repeticiones"}</p>
@@ -157,7 +157,7 @@ function SetView({ core, e, setNo, next, done, swap }: { core: WebApp; e: Streng
       <div className="steppers">
         <div className="stepper">
           <label className="muted small" htmlFor="set-weight">kg</label>
-          <input id="set-weight" className="mono stepper-value" inputMode="decimal" placeholder="Tu peso" value={weight}
+          <input id="set-weight" className="mono stepper-value" inputMode="decimal" placeholder="Sin peso" value={weight}
             onChange={(ev) => setWeight(ev.target.value.replace(/[^\d.,]/g, ""))} />
           <div className="row">
             <button aria-label="Menos peso" onClick={() => setW(w == null ? null : w - 2.5)}>−</button>

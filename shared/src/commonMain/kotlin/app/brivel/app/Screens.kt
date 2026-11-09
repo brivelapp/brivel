@@ -19,6 +19,10 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.number
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.sqrt
 
 /** "Viernes 23 de octubre". */
@@ -156,7 +160,8 @@ fun buildMonth(data: AppData, today: LocalDate, year: Int, month: Int): MonthScr
     val planner = Planner(data, today)
     val first = LocalDate(year, month, 1)
     var monday = mondayOf(first)
-    val activities = data.deviceData(today)?.activities ?: emptyList()
+    val device = data.deviceData(today)
+    val activities = device?.activities ?: emptyList()
     val weeks = mutableListOf<List<CalendarDay>>()
     while (monday.month.number == month || monday < first) {
         val week = planner.week(monday)
@@ -168,7 +173,7 @@ fun buildMonth(data: AppData, today: LocalDate, year: Int, month: Int): MonthScr
                 planned = if (d.date < (data.goal?.since ?: "")) emptyList() else d.items, doneSports = d.doneSports,
                 done = activities.filter { it.date() == d.date && HEALTH_ACTIVITY_SPORTS[it["type"].str()] != null }
                     .map { a ->
-                        DoneActivity(title = activityTitle(a) ?: a["name"].str() ?: "Actividad",
+                        DoneActivity(title = activityTitle(a) ?: a["name"].str() ?: titleFromHr(a, device!!.athlete),
                             sport = HEALTH_ACTIVITY_SPORTS[a["type"].str()]!!,
                             minutes = ((a["moving_time"].num() ?: 0.0) / 60).toInt(),
                             start = a["start_date_local"].str()?.drop(11)?.take(5), source = a["brivel_source"].str())
@@ -179,6 +184,25 @@ fun buildMonth(data: AppData, today: LocalDate, year: Int, month: Int): MonthScr
         monday = monday.plusDays(7)
     }
     return MonthScreen("${MONTH_LABEL[month - 1].replaceFirstChar { it.uppercase() }} $year", year, month, weeks)
+}
+
+/**
+ * Título sin zonas (Salud, Garmin sin desglose), con la FC media frente a tu umbral. La media de unas series engaña, así
+ * que dice cuánto costó y no qué sesión fue. Sin FC o sin umbral, solo el deporte. Cortes del 85 % y 95 %: [Inferencia].
+ */
+private fun titleFromHr(a: JsonObject, athlete: JsonObject): String {
+    val label = SPORT_LABEL[HEALTH_ACTIVITY_SPORTS[a["type"].str()]] ?: "Entrenamiento"
+    val lthr = (athlete["sportSettings"] as? JsonArray)?.map { it.jsonObject }
+        ?.firstOrNull { s -> (s["types"] as? JsonArray)?.any { it.jsonPrimitive.content == a["type"].str() } == true }?.get("lthr").num()
+    val avg = a["average_heartrate"].num()
+    if (lthr == null || lthr <= 0 || avg == null) return label
+    val easy = avg < 0.85 * lthr
+    return "$label · " + when {
+        easy && (a["moving_time"].num() ?: 0.0) >= 90 * 60 -> "Larga a ritmo cómodo"
+        easy -> "Ritmo cómodo"
+        avg < 0.95 * lthr -> "Ritmo medio"
+        else -> "Ritmo alto"
+    }
 }
 
 // ---------------------------------------------------------------- Progreso
@@ -329,7 +353,7 @@ fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScre
     val recent = cache.activities.filter { !it["start_date_local"].str().isNullOrEmpty() }
         .sortedByDescending { it["start_date_local"].str() }.take(10).map { a ->
             val sport = HEALTH_ACTIVITY_SPORTS[a["type"].str()] ?: "other"
-            RecentActivity(a.date(), a["name"].str()?.takeIf { it.isNotBlank() } ?: activityTitle(a) ?: (SPORT_LABEL[sport] ?: "Entrenamiento"),
+            RecentActivity(a.date(), a["name"].str()?.takeIf { it.isNotBlank() } ?: activityTitle(a) ?: titleFromHr(a, cache.athlete),
                 sport, pyRound((a["moving_time"].num() ?: 0.0) / 60), a["icu_training_load"].num()?.let { pyRound(it) },
                 activityDetail(sport, a["distance"].num(), a["moving_time"].num(), a["average_heartrate"].num(), a["icu_training_load"].num()),
                 a["icu_hr_zone_times"].nums().takeIf { it.sum() > 0 }?.map { pyRound(it / 60) } ?: emptyList(),

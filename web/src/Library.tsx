@@ -9,7 +9,7 @@ function Card({ core, card }: { core: WebApp; card: ExerciseCard }) {
   return (
     <>
       <div className="row">
-        <span className="figure-box"><Figure core={core} pattern={card.figure} /></span>
+        {core.figureJson(card.figure) && <span className="figure-box"><Figure core={core} pattern={card.figure} /></span>}
         <div className="grow">
           <h2>{card.name}</h2>
           <p className="muted small-text">{card.patternLabel} · {card.equipment.join(", ")} · {card.timed ? "por tiempo" : "por repeticiones"}</p>
@@ -41,7 +41,7 @@ export function ExerciseSheet({ core, name, close, swap }: { core: WebApp; name:
           {swap.original && <button className="secondary" onClick={() => swap.choose(swap.original!)}>Volver a {swap.original}</button>}
           {options.filter((o) => o.name !== name).map((o) => (
             <button key={o.name} className="row option" onClick={() => swap.choose(o.name)}>
-              <span className="figure-box"><Figure core={core} pattern={o.figure} size={36} /></span>
+              {core.figureJson(o.figure) && <span className="figure-box"><Figure core={core} pattern={o.figure} size={36} /></span>}
               <span className="grow">{o.name}<span className="muted small"> · {o.equipment.join(", ")}</span></span>
             </button>
           ))}
@@ -65,7 +65,7 @@ export function LibraryCard({ core }: { core: WebApp }) {
   return (
     <section className="module">
       <h3>Biblioteca de ejercicios</h3>
-      <p className="muted">Los ejercicios de tus sesiones de fuerza, con cómo hacerlos.</p>
+      <p className="muted">Busca entre todos los ejercicios por tipo o material.</p>
       {!open
         ? <button className="secondary" onClick={() => setOpen(true)}>Ver los ejercicios</button>
         : (
@@ -88,7 +88,7 @@ export function LibraryCard({ core }: { core: WebApp }) {
             {list.length === 0 && <p className="muted">Ningún ejercicio con esos filtros.</p>}
             {list.map((c) => (
               <button key={c.name} className="row option" onClick={() => setShown(c.name)}>
-                <span className="figure-box"><Figure core={core} pattern={c.figure} size={36} /></span>
+                {core.figureJson(c.figure) && <span className="figure-box"><Figure core={core} pattern={c.figure} size={36} /></span>}
                 <span className="grow">{c.name}<span className="muted small"> · {c.patternLabel}</span></span>
               </button>
             ))}

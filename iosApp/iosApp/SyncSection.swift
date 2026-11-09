@@ -39,8 +39,8 @@ struct SyncSection: View {
                 }
                 Button("Dejar de sincronizar aquí") {
                     model.run("Este móvil ya no sincroniza. La copia sigue en el servidor") { core.forgetSync() }
-                }.font(.small)
-                Button("Borrar la copia del servidor", role: .destructive) { confirmDelete = true }.font(.small)
+                }.font(.small).buttonStyle(TextActionStyle())
+                Button("Borrar la copia del servidor", role: .destructive) { confirmDelete = true }.font(.small).buttonStyle(TextActionStyle())
             } else if step == .idle {
                 Text(allowCreate ? "Usar en otros dispositivos" : "¿Ya usas Brivel en otro dispositivo?").font(.section)
                 Secondary(allowCreate ? TextsKt.SYNC_INTRO : "Únete con su código y tendrás aquí los mismos datos.")

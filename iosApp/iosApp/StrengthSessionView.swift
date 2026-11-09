@@ -33,7 +33,7 @@ struct ExerciseFigure: View {
     }
 }
 
-private func kgText(_ w: Double?) -> String { w.map { LiftsKt.kg(v: $0).replacingOccurrences(of: " kg", with: "") } ?? "Tu peso" }
+private func kgText(_ w: Double?) -> String { w.map { LiftsKt.kg(v: $0).replacingOccurrences(of: " kg", with: "") } ?? "Sin peso" }
 private func amount(_ reps: Int, timed: Bool) -> String { timed ? "\(reps)″" : "\(reps)" }
 private func setText(_ s: LoggedSet, timed: Bool) -> String {
     (s.weightKg.map { "\(kgText($0.doubleValue)) × " } ?? "") + amount(Int(s.reps), timed: timed)
@@ -119,7 +119,7 @@ struct StrengthSessionView: View {
             if !notifyOk {
                 Button("Avisarme al acabar el descanso si salgo de la app") {
                     Task { notifyOk = (try? await Reminders.requestAccess()) == true }
-                }.font(.ui(14, .bold))
+                }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
             }
             RestView(left: left, total: restTotal, e: e, setNo: setNo, logged: logged,
                      adjust: { s in restEnd = restEnd.map { $0.addingTimeInterval(TimeInterval(s)) }; if let r = restEnd, r <= .now { restEnd = nil } },
@@ -207,8 +207,8 @@ private struct SetView: View {
             }
         }
         HStack(spacing: 16) {
-            Button("Cómo se hace") { sheet = "card" }.font(.ui(14, .bold))
-            if swap != nil { Button("Cambiar ejercicio") { sheet = "swap" }.font(.ui(14, .bold)) }
+            Button("Cómo se hace") { sheet = "card" }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
+            if swap != nil { Button("Cambiar ejercicio") { sheet = "swap" }.font(.ui(14, .bold)).buttonStyle(TextActionStyle()) }
         }
         .sheet(isPresented: Binding(get: { sheet != nil }, set: { if !$0 { sheet = nil } })) {
             ExerciseSheet(name: e.name, original: e.original, onSwap: sheet == "swap" ? swap : nil)
@@ -250,7 +250,7 @@ private struct Stepper: View {
     var body: some View {
         VStack(spacing: 6) {
             Secondary(label)
-            // Misma altura con "Tu peso" que con un número, para que las dos tarjetas queden parejas
+            // Misma altura con "Sin peso" que con un número, para que las dos tarjetas queden parejas
             Text(value).font(.mono(value.count > 5 ? 26 : 38, .semibold, relativeTo: .largeTitle)).frame(height: 48)
                 .onTapGesture { onTap?() }
                 .accessibilityAddTraits(onTap != nil ? .isButton : [])

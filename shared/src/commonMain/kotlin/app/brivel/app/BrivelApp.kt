@@ -172,7 +172,7 @@ class BrivelApp(
      */
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
     fun saveRoutine(routine: Routine): Routine {
-        val r = validRoutine(routine).copy(id = routine.id.ifBlank { kotlin.random.Random.nextLong().toULong().toString(36) },
+        val r = validRoutine(routine, data.customExercises).copy(id = routine.id.ifBlank { kotlin.random.Random.nextLong().toULong().toString(36) },
             since = today().toString())
         val others = data.routines.filter { it.id != r.id }.map { it.copy(days = it.days - r.days.toSet()) }
         save(data.copy(routines = others + r))
@@ -180,6 +180,34 @@ class BrivelApp(
     }
 
     fun deleteRoutine(id: String) = save(data.copy(routines = data.routines.filter { it.id != id }))
+
+    // ------------------------------------------------------------ biblioteca y ejercicios propios (Library.kt)
+
+    val customExercises: List<CustomExercise> get() = data.customExercises
+
+    fun library(query: String, pattern: String?, equipment: String?): List<ExerciseCard> =
+        library(query, pattern, equipment, data.customExercises)
+
+    fun exerciseCard(name: String): ExerciseCard? = exerciseCard(name, data.customExercises)
+
+    fun swapOptions(name: String): List<ExerciseCard> = swapOptions(name, data.customExercises)
+
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun saveCustomExercise(exercise: CustomExercise): CustomExercise {
+        val e = validCustomExercise(exercise, data.customExercises)
+        save(data.copy(customExercises = data.customExercises + e))
+        return e
+    }
+
+    /** Lo ya apuntado se queda en el historial con su nombre; solo se impide si el plan aún lo usa. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun deleteCustomExercise(name: String) {
+        data.routines.firstOrNull { r -> r.exercises.any { it.name == name } }?.let {
+            throw IllegalArgumentException("Está en la rutina «${it.name}»: quítalo de ahí antes")
+        }
+        require(data.swaps.none { swapped(it.original, data.swaps, "9999-12-31") == name }) { "Está cambiado por otro en tu plan: deshaz el cambio antes" }
+        save(data.copy(customExercises = data.customExercises.filter { it.name != name }))
+    }
 
     /** "Hoy no puedo" (0) o "puedo entrenar este día" (minutos): la semana se recalcula desde hoy. */
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
@@ -336,7 +364,7 @@ class BrivelApp(
         val date = day.date.toString()
         return items.map { item ->
             item.session?.let { watchWorkout(it, date, physio) }
-                ?: watchStrength(strengthScreen(item, date, data.sets), "Brivel · ${item.title}").let { w ->
+                ?: watchStrength(strengthScreen(item, date, data.sets, data.customExercises), "Brivel · ${item.title}").let { w ->
                     // Sin ejercicios que se apunten serie a serie (equilibrio): un paso abierto con la lista
                     if (w.blocks.isNotEmpty()) w else w.copy(blocks = listOf(WatchBlock(1,
                         listOf(WatchStep("active", seconds = item.durationMin * 60, note = item.hint.take(500))))))
@@ -399,7 +427,7 @@ class BrivelApp(
     /** La sesión de fuerza de ese día serie a serie, o null si ese día no tiene fuerza. */
     fun strengthScreen(date: String): StrengthScreen? =
         day(date).items.firstOrNull { it.isStrength }?.let { item ->
-            val s = strengthScreen(item, date, data.sets)
+            val s = strengthScreen(item, date, data.sets, data.customExercises)
             s.copy(exercises = s.exercises.map { e -> e.copy(original = originalOf(e.name, date)) })
         }
 
@@ -419,7 +447,7 @@ class BrivelApp(
         require(canSwapExercises(date)) { "Solo se puede cambiar en las sesiones de hoy en adelante" }
         val original = originalOf(current, date) ?: current
         val to = replacement?.takeIf { it != original }
-        require(to == null || swapOptions(original).any { it.name == to }) { "Ese ejercicio no es del mismo tipo" }
+        require(to == null || swapOptions(original, data.customExercises).any { it.name == to }) { "Ese ejercicio no es del mismo tipo" }
         save(data.copy(swaps = data.swaps.filterNot { it.original == original && it.since == date } +
             ExerciseSwap(date, original, to)))
     }

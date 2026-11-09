@@ -14,5 +14,7 @@ Brivel (AGPL-3.0-only) incluye o usa los siguientes componentes con licencias co
 | Tailwind CSS | Estilos | MIT |
 | FastAPI, Pydantic, httpx, Uvicorn | Backend | MIT / BSD-3-Clause |
 
+La selección de la biblioteca de ejercicios se apoya en [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (Unlicense); los nombres en español son propios y no se usan sus textos ni imágenes.
+
 Las dependencias completas y sus licencias están en `prototype/web/package-lock.json` y `prototype/backend/pyproject.toml`.
 Los iconos de deporte son propios del proyecto, salvo la bici y las olas de natación (Lucide, ISC).

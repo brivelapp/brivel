@@ -17,16 +17,18 @@ export function Profile({ core, act, synced }: { core: WebApp; act: Act; synced:
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => { if (editingWeek) dialog.current?.showModal(); else dialog.current?.close() }, [editingWeek])
 
+  const exportData = () => {
+    const a = document.createElement("a")
+    a.href = URL.createObjectURL(new Blob([core.exportJson()], { type: "application/json" }))
+    a.download = "brivel-datos.json"
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
   return (
     <main className="wide">
       <h1>Perfil</h1>
       <div className="profile-grid">
-        <section className="module">
-          <h3>Tu objetivo</h3>
-          <p className="big">{core.goalLabel}</p>
-          <p className="muted">Puedes cambiarlo o abandonarlo cuando quieras; el plan se rehace al momento.</p>
-          <button className="secondary" onClick={() => act(() => core.abandonGoal())}>Cambiar objetivo</button>
-        </section>
         <section className="module">
           <h3>Qué haces además de caminar</h3>
           <SportPicker core={core} cardio={profile.cardio} onChange={(cardio) => save({ ...profile, cardio })} />
@@ -44,6 +46,8 @@ export function Profile({ core, act, synced }: { core: WebApp; act: Act; synced:
           <Segmented options={LEVEL_CHOICES.map(([k, l]) => [k, l])} selected={profile.level} label="Nivel"
             onSelect={(level) => save({ ...profile, level })} />
         </section>
+        <RoutinesCard core={core} act={act} />
+        <LibraryCard core={core} />
         <section className="module">
           <h3>Año de nacimiento</h3>
           <label className="field">Para calcular tus zonas de pulso
@@ -56,10 +60,16 @@ export function Profile({ core, act, synced }: { core: WebApp; act: Act; synced:
           {year != null && year >= 1000 && !core.ageOk(year) && <p className="caution-text">Hace falta tener al menos {core.minAge} años.</p>}
         </section>
         <IntervalsCard core={core} onDone={synced} />
-        <SyncCard core={core} onDone={synced} />
         <GarminCard core={core} onDone={synced} />
-        <RoutinesCard core={core} act={act} />
-        <LibraryCard core={core} />
+        <SyncCard core={core} onDone={synced} />
+        <section className="module">
+          <h3>Tus datos</h3>
+          <label className="row"><input type="checkbox" checked={profile.renameActivities !== false}
+            onChange={(e) => save({ ...profile, renameActivities: e.target.checked })} /> Poner a tus actividades de intervals.icu un título que diga lo que fueron</label>
+          <button className="secondary" onClick={exportData}>Exportar todos mis datos (JSON)</button>
+          <h3>Aviso de salud</h3>
+          <p className="muted small-text">{core.healthNotice}</p>
+        </section>
       </div>
       {/* En un diálogo: en el móvil, dentro de la página, desplazarla movería las barras */}
       <dialog ref={dialog} className="sheet" onClose={() => setEditingWeek(false)} aria-label="Tu semana">

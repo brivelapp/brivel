@@ -89,7 +89,7 @@ struct WeekBars: View {
                             }
                             .coordinateSpace(name: d)
                         }
-                        .frame(height: 262)  // 240 de barra (5 h: cada paso de 15 son 12 pt) y 22 de minutos
+                        .frame(height: editable ? 262 : 130)  // 240 de barra (5 h: cada paso de 15 son 12 pt) y 22 de minutos
                         .sensoryFeedback(.selection, trigger: m)  // un toque suave en cada paso de 15 minutos
                         .accessibilityElement()
                         .accessibilityLabel(TextsKt.WEEKDAY_LABEL[d] ?? d)

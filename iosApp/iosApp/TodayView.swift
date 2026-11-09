@@ -4,6 +4,7 @@ import Shared
 struct TodayView: View {
     @EnvironmentObject var model: AppModel
     let openGoal: () -> Void
+    @State private var goalOpen = false
 
     var body: some View {
         let _ = model.version
@@ -12,7 +13,10 @@ struct TodayView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 ScreenTitle(text: "Hoy", subtitle: screen.dateLabel)
-                if let goal = screen.goalLine { Secondary(goal) }
+                if let goal = screen.goalLine {
+                    Secondary(goal)
+                    Button("Tu objetivo") { goalOpen = true }.buttonStyle(TextActionStyle())
+                }
                 if screen.goalFinished {
                     Module {
                         Text("Tu carrera ya pasó").font(.section)
@@ -45,6 +49,16 @@ struct TodayView: View {
                 }
             }.padding(.horizontal, 18).padding(.vertical, 16)
         }.background(Palette.bg)
+        .sheet(isPresented: $goalOpen) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(model.core.data.goal.map { TextsKt.goalLabel(goal: $0) } ?? "Sin objetivo").font(.screenTitle)
+                    Secondary("Puedes cambiarlo o abandonarlo cuando quieras; el plan se rehace al momento.")
+                    Button("Cambiar objetivo") { goalOpen = false; openGoal() }.buttonStyle(SecondaryStyle())
+                    OtherRacesView()
+                }.padding(20)
+            }.background(Palette.surface)
+        }
     }
 }
 
@@ -82,7 +96,7 @@ struct DayContent: View {
                 ForEach(Array(day.reasons.enumerated()), id: \.offset) { _, r in ReasonRow(reason: r, color: Palette.ok) }
             }
             if changeable && !day.items.isEmpty {
-                Button(today ? "Hoy no puedo entrenar" : "Este día no puedo entrenar") { model.run { try core.changeDay(date: day.date, minutes: 0) } }
+                Button(today ? "Hoy no puedo entrenar" : "Este día no puedo entrenar") { model.run { try core.changeDay(date: day.date, minutes: 0) } }.buttonStyle(TextActionStyle(color: Palette.muted))
                     .font(.ui(14, .semibold)).foregroundStyle(Palette.muted)
             }
         }
@@ -126,7 +140,7 @@ private struct SessionItem: View {
                         Spacer()
                         Button("Haré esta") {
                             model.run { try core.chooseAlternative(date: day.date, plannedSport: item.slot, chosenSport: alt.sport) }
-                        }.font(.ui(14, .bold))
+                        }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
                     }
                 }
             }
@@ -137,13 +151,13 @@ private struct SessionItem: View {
                     }
                 } label: {
                     HStack(spacing: 6) { Glyph(name: "watch", size: 18, color: Palette.ok); Text("Enviar al reloj") }
-                }.font(.ui(14, .bold))
+                }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
             }
-            if item.chosen { Button("Volver a la planificada") { model.run { core.clearChoice(date: day.date) } }.font(.ui(14, .bold)) }
+            if item.chosen { Button("Volver a la planificada") { model.run { core.clearChoice(date: day.date) } }.font(.ui(14, .bold)).buttonStyle(TextActionStyle()) }
             if let from = item.movedFrom { Secondary("La has movido aquí desde el \(ScreensKt.dateLabel(date: from).lowercased()).") }
             let targets = done || day.isPast ? [] : core.moveTargets(date: day.date, slot: item.slot)
             if !targets.isEmpty {
-                Button(moving ? "No moverla" : "Moverla a otro día") { moving.toggle() }.font(.ui(14, .bold))
+                Button(moving ? "No moverla" : "Moverla a otro día") { moving.toggle() }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
             }
             if moving {
                 ForEach(targets, id: \.self) { t in

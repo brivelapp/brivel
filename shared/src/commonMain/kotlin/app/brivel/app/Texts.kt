@@ -70,7 +70,7 @@ fun activityTitle(activity: JsonObject): String? {
     val sport = app.brivel.intervals.HEALTH_ACTIVITY_SPORTS[
         (activity["type"] as? JsonPrimitive)?.content] ?: return null
     val label = SPORT_LABEL[sport] ?: return null
-    if (sport == "strength") return "$label · Fuerza"
+    if (sport == "strength") return label
     val zones = (activity["icu_hr_zone_times"] as? kotlinx.serialization.json.JsonArray)
         ?.map { (it as? JsonPrimitive)?.doubleOrNull ?: 0.0 } ?: return null
     val total = zones.sum()

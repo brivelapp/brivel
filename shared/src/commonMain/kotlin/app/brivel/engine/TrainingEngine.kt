@@ -293,6 +293,7 @@ fun adjust(sessionType: String, state: DayState): Triple<String, Double, List<St
     val shortNight = sleep == null && hours != null && usual != null && hours < 6 && hours <= usual - 1
     if ((sleep != null && sleep < 50) || shortNight) {
         // Mal sueño quita la calidad; sumado a HRV fuera de rango, el día pasa a recuperación
+        if (status == "outside_swc" && (type == "long" || type == "neuromuscular")) type = "aerobic"  // no son QUALITY: el bloque de VFC no los ha bajado
         if (type in QUALITY || status == "outside_swc") type = DOWNGRADE[type]!!
         volume = 0.7
         reasons += if (sleep != null) "Sueño ${fmt(sleep, 0)}/100: -30 % de carga y sin calidad [Inferencia]"

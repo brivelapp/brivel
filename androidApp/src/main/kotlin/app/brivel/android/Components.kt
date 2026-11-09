@@ -35,12 +35,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.brivel.app.EVIDENCE_MEANING
@@ -103,6 +106,17 @@ fun sportIcon(sport: String): Int = when (sport) {
 @Composable
 fun Glyph(@DrawableRes id: Int, size: Dp = 22.dp, tint: Color = Palette.text, label: String? = null) =
     Icon(painterResource(id), contentDescription = label, tint = tint, modifier = Modifier.size(size))
+
+/** Acción de texto: siempre subrayada, para que no se confunda con una etiqueta. */
+@Composable
+fun LinkText(text: String, color: Color = Color.Unspecified, fontSize: TextUnit = TextUnit.Unspecified) =
+    Text(text, color = color, fontSize = fontSize, textDecoration = TextDecoration.Underline)
+
+/** Flecha de una fila que se despliega o, con `open` nulo, chevron de una fila que abre algo. */
+@Composable
+fun RowChevron(open: Boolean? = null) =
+    Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null, tint = Palette.muted,
+        modifier = Modifier.size(18.dp).rotate(when (open) { null -> 0f; true -> 270f; false -> 90f }))
 
 /** Icono de deporte en su pastilla, como en la cabecera de la sesión. */
 @Composable
@@ -215,7 +229,7 @@ fun SessionCard(item: PlanItem, done: Boolean, actions: @Composable ColumnScope.
             }
         }
         actions()
-        TextButton(onClick = { details = !details }) { Text(if (details) "Menos detalles" else "Más detalles", fontSize = 13.sp) }
+        TextButton(onClick = { details = !details }) { LinkText(if (details) "Menos detalles" else "Más detalles", fontSize = 13.sp) }
         if (details) {
             Secondary("Nombre técnico: ${item.technicalName}")
             item.notes?.let { Secondary(it) }

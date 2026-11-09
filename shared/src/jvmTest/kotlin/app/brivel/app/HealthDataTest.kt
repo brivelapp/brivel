@@ -2,6 +2,7 @@ package app.brivel.app
 
 import app.brivel.engine.plusDays
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.number
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -203,5 +204,18 @@ class HealthDataTest {
         assertEquals(null, buildProgress(app.data.copy(garmin = null, health = phone), today).metrics.first().source)
         app.clearGarmin()
         assertEquals(null, app.data.garmin)
+    }
+
+    @Test fun calendarTitleFromHeartRateWithoutZones() {
+        fun title(sport: String, minutes: Double, avgHr: Double?): String {
+            val s = HealthSnapshot("Health Connect", emptyList(), listOf(Workout("t", sport, "${today}T07:30:00", minutes, avgHr = avgHr),
+                Workout("race", "running", "${today.plusDays(-5)}T09:00:00", 40.0, avgHr = 170.0, maxHr = 186.0)), "${today}T08:00:00")
+            return buildMonth(AppData(health = s), today, today.year, today.month.number).weeks.flatten().first { it.date == today.toString() }.done.single().title
+        }
+        assertEquals("${SPORT_LABEL["running"]} · Ritmo cómodo", title("running", 45.0, 130.0))
+        assertEquals("${SPORT_LABEL["running"]} · Larga a ritmo cómodo", title("running", 100.0, 130.0))
+        assertEquals("${SPORT_LABEL["running"]} · Ritmo medio", title("running", 45.0, 150.0))
+        assertEquals("${SPORT_LABEL["running"]} · Ritmo alto", title("running", 45.0, 168.0))
+        assertEquals(SPORT_LABEL["running"], title("running", 45.0, null))  // sin pulso, solo el deporte
     }
 }
