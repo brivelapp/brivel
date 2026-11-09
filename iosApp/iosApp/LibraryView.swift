@@ -41,7 +41,7 @@ struct ExerciseSheet: View {
                         HStack(spacing: 12) {
                             ExerciseFigure(pattern: card.figure).frame(width: 64, height: 64)
                                 .background(Palette.band).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                            Secondary("\(card.patternLabel) · \(card.equipment.joined(separator: ", ")) · \(card.timed ? "por tiempo" : "por repeticiones")")
+                            Secondary([card.patternLabel, card.equipment.joined(separator: ", "), card.timed ? "por tiempo" : "por repeticiones"].filter { !$0.isEmpty }.joined(separator: " · "))
                         }
                         ForEach(card.cues, id: \.self) { Text("• \($0)").font(.small) }
                         Source(text: card.cueSource)

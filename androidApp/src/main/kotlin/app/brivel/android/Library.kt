@@ -66,7 +66,7 @@ fun ExerciseSheet(app: BrivelApp, name: String, original: String?, dismiss: () -
                     Box(Modifier.size(64.dp).clip(RoundedCornerShape(18.dp)).background(Palette.band), contentAlignment = Alignment.Center) {
                         ExerciseFigure(card.figure, 52.dp)
                     }
-                    Secondary("${card.patternLabel} · ${card.equipment.joinToString(", ")} · ${if (card.timed) "por tiempo" else "por repeticiones"}")
+                    Secondary(listOf(card.patternLabel, card.equipment.joinToString(", "), if (card.timed) "por tiempo" else "por repeticiones").filter { it.isNotEmpty() }.joinToString(" · "))
                 }
                 card.cues.forEach { Text("• $it", fontSize = 15.sp) }
                 Source(card.cueSource)

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -43,6 +44,10 @@ import app.brivel.app.WEEKDAY_LABEL
 
 private val DAYS = listOf("MON" to "L", "TUE" to "M", "WED" to "X", "THU" to "J", "FRI" to "V", "SAT" to "S", "SUN" to "D")
 
+/** El aviso general queda detrás de la hoja: los errores al guardar se enseñan dentro de ella. */
+private inline fun attempt(onError: (String?) -> Unit, block: () -> Unit) =
+    try { block() } catch (e: IllegalArgumentException) { onError(e.message) }
+
 private fun daysText(days: List<String>) =
     if (days.isEmpty()) "sin días: no entra en el plan"
     else DAYS.filter { it.first in days }.joinToString(", ") { WEEKDAY_LABEL.getValue(it.first).lowercase() }
@@ -59,21 +64,22 @@ private fun RoutineEditor(app: BrivelApp, act: Act, start: Routine, close: () ->
     var r by remember { mutableStateOf(start) }
     var picking by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
     val all = remember { app.library("", null, null) }
     fun timed(name: String) = all.firstOrNull { it.name == name }?.timed == true
     fun setEx(i: Int, e: RoutineExercise) { r = r.copy(exercises = r.exercises.mapIndexed { j, x -> if (j == i) e else x }) }
     ModalBottomSheet(onDismissRequest = close, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = Palette.surface) {
-        Column(Modifier.navigationBarsPadding().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+        Column(Modifier.imePadding().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(if (start.id.isEmpty()) "Nueva rutina" else "Editar rutina", fontSize = 22.sp, fontWeight = FontWeight.Bold)
             OutlinedTextField(r.name, { r = r.copy(name = it) }, label = { Text("Nombre") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             SectionTitle("Qué días la haces")
-            ChipRow {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 DAYS.forEach { (k, l) ->
                     val on = k in r.days
-                    FilterChip(selected = on, label = { Text(l) }, onClick = { r = r.copy(days = if (on) r.days - k else r.days + k) })
+                    FilterChip(selected = on, label = { Text(l) }, modifier = Modifier.weight(1f), onClick = { r = r.copy(days = if (on) r.days - k else r.days + k) })
                 }
             }
             Secondary("Esos días sustituye a la fuerza de tu plan. Un día solo puede tener una rutina.")
@@ -100,7 +106,8 @@ private fun RoutineEditor(app: BrivelApp, act: Act, start: Routine, close: () ->
                 }
             }
             Secondary("Brivel te propone el peso con lo que apuntes, sin subir nunca más de un 10 % de una vez.")
-            Button(onClick = { act.run("Rutina guardada") { app.saveRoutine(r); close() } }, modifier = Modifier.fillMaxWidth()) { Text("Guardar") }
+            error?.let { Text(it, color = Palette.danger) }
+            Button(onClick = { attempt({ error = it }) { app.saveRoutine(r); act.run("Rutina guardada") { close() } } }, modifier = Modifier.fillMaxWidth()) { Text("Guardar") }
             if (start.id.isNotEmpty()) TextButton(onClick = { confirmDelete = true }) { LinkText("Borrar rutina") }
         }
     }
@@ -115,6 +122,7 @@ private fun RoutineEditor(app: BrivelApp, act: Act, start: Routine, close: () ->
                         Text(c.name, modifier = Modifier.fillMaxWidth().clickable {
                             r = r.copy(exercises = r.exercises + if (c.timed) RoutineExercise(c.name, 3, 20, 40) else RoutineExercise(c.name, 3, 8, 12))
                             picking = false
+                            query = ""
                         }.padding(vertical = 10.dp))
                     }
                 }
@@ -127,25 +135,30 @@ private fun RoutineEditor(app: BrivelApp, act: Act, start: Routine, close: () ->
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancelar") } })
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NewExercise(app: BrivelApp, act: Act, close: () -> Unit) {
     var name by remember { mutableStateOf("") }
     var pattern by remember { mutableStateOf(PATTERN_LABEL.keys.first()) }
     var timed by remember { mutableStateOf(false) }
-    AlertDialog(onDismissRequest = close, containerColor = Palette.surface, title = { Text("Nuevo ejercicio") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(name, { name = it }, label = { Text("Nombre") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                SectionTitle("Tipo")
-                ChipRow { PATTERN_LABEL.forEach { (k, l) -> FilterChip(selected = pattern == k, label = { Text(l) }, onClick = { pattern = k }) } }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Va por tiempo, no por repeticiones", modifier = Modifier.weight(1f))
-                    Switch(timed, { timed = it })
-                }
+    var error by remember { mutableStateOf<String?>(null) }
+    ModalBottomSheet(onDismissRequest = close, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = Palette.surface) {
+        Column(Modifier.imePadding().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Nuevo ejercicio", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            OutlinedTextField(name, { name = it }, label = { Text("Nombre") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            SectionTitle("Tipo")
+            ChipRow { PATTERN_LABEL.forEach { (k, l) -> FilterChip(selected = pattern == k, label = { Text(l) }, onClick = { pattern = k }) } }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Va por tiempo, no por repeticiones", modifier = Modifier.weight(1f))
+                Switch(timed, { timed = it })
             }
-        },
-        confirmButton = { TextButton(onClick = { act.run("Ejercicio guardado") { app.saveCustomExercise(CustomExercise(name, pattern, timed)); close() } }) { Text("Guardar") } },
-        dismissButton = { TextButton(onClick = close) { Text("Cancelar") } })
+            error?.let { Text(it, color = Palette.danger) }
+            Button(onClick = { attempt({ error = it }) { app.saveCustomExercise(CustomExercise(name, pattern, timed)); act.run("Ejercicio guardado") { close() } } },
+                modifier = Modifier.fillMaxWidth()) { Text("Guardar") }
+        }
+    }
 }
 
 /** En Perfil: las rutinas propias y el botón para crear otra. */

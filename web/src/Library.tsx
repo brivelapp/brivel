@@ -12,7 +12,7 @@ function Card({ core, card }: { core: WebApp; card: ExerciseCard }) {
         {core.figureJson(card.figure) && <span className="figure-box"><Figure core={core} pattern={card.figure} /></span>}
         <div className="grow">
           <h2>{card.name}</h2>
-          <p className="muted small-text">{card.patternLabel} · {card.equipment.join(", ")} · {card.timed ? "por tiempo" : "por repeticiones"}</p>
+          <p className="muted small-text">{[card.patternLabel, card.equipment.join(", "), card.timed ? "por tiempo" : "por repeticiones"].filter(Boolean).join(" · ")}</p>
         </div>
       </div>
       <ul>{card.cues.map((c) => <li key={c}>{c}</li>)}</ul>

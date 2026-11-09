@@ -2,6 +2,7 @@ package app.brivel.app
 
 import app.brivel.engine.plusDays
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.number
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -54,8 +55,12 @@ class LiftsTest {
         app.setGoal(GoalKind.STRENGTH)
         val day = (0 until 7).map { app.day(LocalDate(2026, 10, 19).plusDays(it).toString()) }
             .first { d -> d.date <= today.toString() && d.items.any { it.isStrength } }
-        val ex = day.items.first { it.isStrength }.exercises.first()
-        app.logLift(day.date, ex, 50.0, 10, 3)
+        val lines = day.items.first { it.isStrength }.exercises.filter { prescription(it, null) != null }
+        app.logLift(day.date, lines.first(), 50.0, 10, 1)  // una serie suelta no hace la sesión
+        kotlin.test.assertTrue("strength" !in app.day(day.date).doneSports)
+        lines.forEach { app.logLift(day.date, it, 50.0, 10, prescription(it, null)!!.sets) }
         kotlin.test.assertTrue("strength" in app.day(day.date).doneSports)
+        val date = LocalDate.parse(day.date)
+        kotlin.test.assertTrue("strength" in app.month(date.year, date.month.number).weeks.flatten().first { it.date == day.date }.manual)
     }
 }

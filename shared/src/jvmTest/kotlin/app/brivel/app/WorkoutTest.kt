@@ -68,7 +68,7 @@ class WorkoutTest {
         app.logSet(date, first.name, 1, 42.5, first.repsLow, null)  // corregir sustituye
         assertEquals(listOf(LoggedSet(1, 42.5, first.repsLow), LoggedSet(2, 42.0, first.repsLow)),
             app.strengthScreen(date)!!.exercises.first().done)
-        assertTrue("strength" in app.day(date).doneSports)
+        assertTrue("strength" !in app.day(date).doneSports)  // dos series no son la mayoría de la sesión
         assertEquals(42.0, app.strengthScreen(date)!!.exercises.first().weightKg)  // lo de hoy no cambia lo propuesto hoy
 
         app.deleteSet(date, first.name, 1)

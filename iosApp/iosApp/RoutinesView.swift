@@ -42,6 +42,7 @@ private struct RoutineEditor: View {
     @State private var exercises: [DraftExercise] = []
     @State private var rir = 2
     @State private var picking = false
+    @State private var saveError: String?
     @State private var query = ""
     @State private var confirmDelete = false
     @State private var loaded = false
@@ -84,6 +85,7 @@ private struct RoutineEditor: View {
                         ForEach(0...5, id: \.self) { n in Text(n == 0 ? "Hasta no poder más" : "\(n) repeticiones").tag(n) }
                     }
                     Secondary("Brivel te propone el peso con lo que apuntes, sin subir nunca más de un 10 % de una vez.")
+                    if let saveError { Text(saveError).foregroundStyle(Palette.danger) }
                     Button("Guardar") { save() }.buttonStyle(PrimaryStyle())
                     if start != nil { Button("Borrar rutina", role: .destructive) { confirmDelete = true }.buttonStyle(TextActionStyle()) }
                 }.padding(18)
@@ -119,6 +121,7 @@ private struct RoutineEditor: View {
                                 exercises.append(c.timed ? DraftExercise(name: c.name, sets: 3, low: 20, high: 40)
                                                          : DraftExercise(name: c.name, sets: 3, low: 8, high: 12))
                                 picking = false
+                                query = ""
                             }
                         }
                     }
@@ -134,9 +137,10 @@ private struct RoutineEditor: View {
         let routine = Routine(id: start?.id ?? "", name: name,
                               exercises: exercises.map { RoutineExercise(name: $0.name, sets: Int32($0.sets), low: Int32($0.low), high: Int32($0.high)) },
                               days: selected, rir: Int32(rir), since: "")
-        var saved = false
-        model.run("Rutina guardada") { _ = try model.core.saveRoutine(routine: routine); saved = true }
-        if saved { dismiss() }
+        // El aviso general no se ve con la hoja abierta: el error se enseña dentro de ella
+        do { _ = try model.core.saveRoutine(routine: routine) } catch { saveError = error.localizedDescription; return }
+        model.run("Rutina guardada") {}
+        dismiss()
     }
 }
 
@@ -146,6 +150,7 @@ private struct NewExercise: View {
     @State private var name = ""
     @State private var pattern = "sentadilla"
     @State private var timed = false
+    @State private var saveError: String?
 
     var body: some View {
         NavigationStack {
@@ -155,6 +160,7 @@ private struct NewExercise: View {
                     ForEach(LibraryKt.PATTERN_LABEL.sorted { $0.value < $1.value }, id: \.key) { Text($0.value).tag($0.key) }
                 }
                 Toggle("Va por tiempo, no por repeticiones", isOn: $timed)
+                if let saveError { Text(saveError).foregroundStyle(Palette.danger) }
                 Button("Guardar") { save() }.buttonStyle(PrimaryStyle())
                 Spacer()
             }
@@ -165,9 +171,9 @@ private struct NewExercise: View {
     }
 
     private func save() {
-        var saved = false
-        model.run("Ejercicio guardado") { _ = try model.core.saveCustomExercise(exercise: CustomExercise(name: name, pattern: pattern, timed: timed)); saved = true }
-        if saved { dismiss() }
+        do { _ = try model.core.saveCustomExercise(exercise: CustomExercise(name: name, pattern: pattern, timed: timed)) } catch { saveError = error.localizedDescription; return }
+        model.run("Ejercicio guardado") {}
+        dismiss()
     }
 }
 

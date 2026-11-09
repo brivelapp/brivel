@@ -12,6 +12,12 @@ const EMPTY: Routine = { id: "", name: "", exercises: [], days: [], rir: 2, sinc
 const daysText = (days: string[]) =>
   days.length ? DAYS.filter(([k]) => days.includes(k)).map(([k]) => DAY_NAME[k]).join(", ") : "sin días: no entra en el plan"
 
+/** El aviso general queda detrás del diálogo: los errores al guardar se enseñan dentro de él. */
+function attempt(save: () => unknown, fail: (m: string) => void, done: () => void) {
+  try { save() } catch (x) { return fail(x instanceof Error ? x.message : String(x)) }
+  done()
+}
+
 function Num({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
   return (
     <label className="field small-field">{label}
@@ -30,6 +36,7 @@ function Editor({ core, act, start, close }: { core: WebApp; act: Act; start: Ro
   const add = (name: string) => setR({ ...r, exercises: [...r.exercises, timed(name)
     ? { name, sets: 3, low: 20, high: 40 } : { name, sets: 3, low: 8, high: 12 }] })
   const [query, setQuery] = useState("")
+  const [error, setError] = useState<string | null>(null)
   const found: ExerciseCard[] = JSON.parse(core.libraryJson(query, null, null))
   const groups = [...new Set(found.map((c) => c.patternLabel))]
   return (
@@ -81,7 +88,8 @@ function Editor({ core, act, start, close }: { core: WebApp; act: Act; start: Ro
         </select>
       </label>
       <p className="muted small">Brivel te propone el peso con lo que apuntes, sin subir nunca más de un 10 % de una vez.</p>
-      <button className="primary" onClick={() => act(() => { core.saveRoutineJson(JSON.stringify(r)); close() }, "Rutina guardada")}>Guardar</button>
+      {error && <p className="caution-text" role="alert">{error}</p>}
+      <button className="primary" onClick={() => attempt(() => core.saveRoutineJson(JSON.stringify(r)), setError, () => act(close, "Rutina guardada"))}>Guardar</button>
       {start.id && <button className="link" onClick={() => confirm(`¿Borrar la rutina «${start.name}»?`)
         && act(() => { core.deleteRoutine(start.id); close() }, "Rutina borrada")}>Borrar rutina</button>}
       <button className="secondary" onClick={close}>Cancelar</button>
@@ -94,6 +102,7 @@ function NewExercise({ core, act, close }: { core: WebApp; act: Act; close: () =
   useEffect(() => { dialog.current?.showModal() }, [])
   const patterns: [string, string][] = Object.entries(JSON.parse(core.patternLabelsJson()))
   const [e, setE] = useState<CustomExercise>({ name: "", pattern: patterns[0][0], timed: false })
+  const [error, setError] = useState<string | null>(null)
   return (
     <dialog ref={dialog} className="sheet" onClose={close} aria-label="Nuevo ejercicio">
       <h2>Nuevo ejercicio</h2>
@@ -106,7 +115,8 @@ function NewExercise({ core, act, close }: { core: WebApp; act: Act; close: () =
         </select>
       </label>
       <label className="row"><input type="checkbox" checked={e.timed} onChange={(v) => setE({ ...e, timed: v.target.checked })} /> Va por tiempo, no por repeticiones</label>
-      <button className="primary" onClick={() => act(() => { core.saveCustomExerciseJson(JSON.stringify(e)); close() }, "Ejercicio guardado")}>Guardar</button>
+      {error && <p className="caution-text" role="alert">{error}</p>}
+      <button className="primary" onClick={() => attempt(() => core.saveCustomExerciseJson(JSON.stringify(e)), setError, () => act(close, "Ejercicio guardado"))}>Guardar</button>
       <button className="secondary" onClick={close}>Cancelar</button>
     </dialog>
   )

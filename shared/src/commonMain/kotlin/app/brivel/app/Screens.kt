@@ -178,7 +178,9 @@ fun buildMonth(data: AppData, today: LocalDate, year: Int, month: Int): MonthScr
                             minutes = ((a["moving_time"].num() ?: 0.0) / 60).toInt(),
                             start = a["start_date_local"].str()?.drop(11)?.take(5), source = a["brivel_source"].str())
                     },
-                manual = data.manualDone.filter { it.date == d.date }.map { it.sport },
+                // La fuerza terminada apuntando series también lleva su marca en el mes
+                manual = (data.manualDone.filter { it.date == d.date }.map { it.sport } +
+                    listOfNotNull("strength".takeIf { s -> s in d.doneSports && activities.none { it.date() == d.date && HEALTH_ACTIVITY_SPORTS[it["type"].str()] == s } })).distinct(),
             )
         }
         monday = monday.plusDays(7)

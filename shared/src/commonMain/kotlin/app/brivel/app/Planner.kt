@@ -145,6 +145,8 @@ class Planner(private val data: AppData, private val today: LocalDate) {
     private val feltToday: String? = data.readiness[today.toString()]?.let { readiness(it.sleep, it.energy, it.soreness) }
         ?.takeIf { it != "normal" }
 
+    private val strengthFromSets = mutableSetOf<String>()  // días cuya fuerza hecha sale solo de las series apuntadas
+
     private val done: Map<String, List<Done>> = run {
         val all = (cache?.let { watchSessions(it.activities) } ?: emptyMap()).mapValues { it.value.toMutableList() }
             .toMutableMap()
@@ -152,7 +154,10 @@ class Planner(private val data: AppData, private val today: LocalDate) {
         // Apuntar lo levantado también cuenta como fuerza hecha ese día, aunque no se pulse "hecha"
         for (date in data.sets.map { it.date }.toSet()) {
             val day = all.getOrPut(date) { mutableListOf() }
-            if (day.none { it.sport == "strength" }) day += Done("strength", "manual")
+            if (day.none { it.sport == "strength" }) {
+                day += Done("strength", "manual")
+                strengthFromSets += date
+            }
         }
         all
     }
@@ -351,7 +356,10 @@ class Planner(private val data: AppData, private val today: LocalDate) {
     private fun dayView(date: String, weekday: String, items: List<PlanItem>, note: String?, availableMin: Int?,
                         reasons: List<Reason>, adjustments: List<Reason>, phase: String?): DayView {
         val planned: List<Planned> = items.map { it.planned() }
-        val matches = matchDay(planned, done[date] ?: emptyList())
+        // En pantalla, hecha con la mayoría de las series; la adherencia sí cuenta el trabajo parcial [Inferencia]
+        val due = items.filter { it.isStrength }.sumOf { i -> i.exercises.sumOf { prescription(it, i.raceStrength?.dose, data.customExercises)?.sets ?: 0 } }
+        val unfinished = date in strengthFromSets && 2 * latestSets(data.sets).count { it.date == date } <= due
+        val matches = matchDay(planned, (done[date] ?: emptyList()).filterNot { unfinished && it.sport == "strength" })
         return DayView(date, weekday, date == today.toString(), date < today.toString(), items, note, availableMin,
             reasons, adjustments, matches.map { MatchView(it.why, it.matched != null) },
             matches.mapNotNull { it.matched }.toSet(), phase)
