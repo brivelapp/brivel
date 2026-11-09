@@ -63,6 +63,7 @@ final class AppModel: ObservableObject {
 
     /// Con la sincronización activada, sube los cambios poco después (varios seguidos, de una vez). Sin red, calla.
     func syncSoon() {
+        Task { try? await core.retireFromWatch() }  // sin red, se reintenta en el próximo cambio o al abrir
         guard core.syncCode != nil else { return }
         pending?.cancel()
         pending = Task {
@@ -83,6 +84,7 @@ final class AppModel: ObservableObject {
     func refreshAll() async {
         if core.linkedAthlete != nil { try? await core.sync() }
         if core.data.health != nil { try? await HealthKitReader.shared.sync(core) }
+        try? await core.retireFromWatch()
         do { _ = try await core.pullGarmin() } catch {
             // Solo lo que responde el relevo (desconectado desde Garmin Connect); sin conexión, en la próxima vez
             if (error as NSError).userInfo["KotlinException"] is GarminException { message = error.localizedDescription }

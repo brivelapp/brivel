@@ -36,6 +36,7 @@ export function App() {
   // Con la sincronización activada, cada cambio se sube poco después (varios seguidos, de una vez)
   const syncTimer = useRef<number | undefined>(undefined)
   const syncSoon = () => {
+    core.retireFromWatch().catch(() => {})  // sin red, se reintenta en el próximo cambio o al abrir
     if (!core.syncActive) return
     clearTimeout(syncTimer.current)
     syncTimer.current = window.setTimeout(() => core.syncNow().then(
@@ -53,6 +54,7 @@ export function App() {
     // Lo que Garmin dejó en el buzón: al abrir y cada vez que se vuelve a la pestaña; sin conexión no hace nada
     const pull = () => {
       pullGarmin(core).then((n) => { if (n) { refresh(); syncSoon() } }, () => {})
+      core.retireFromWatch().catch(() => {})
       if (core.intervalsAthlete) core.syncIntervals().then(refresh, () => {})
     }
     if (location.pathname === "/intervals") {

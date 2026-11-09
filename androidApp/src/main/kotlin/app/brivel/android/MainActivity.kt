@@ -106,6 +106,7 @@ class Act(val app: BrivelApp, private val scope: CoroutineScope, private val sna
 
     /** Con la sincronización activada, sube los cambios poco después (varios seguidos, de una vez). Sin red, calla. */
     fun syncSoon() {
+        scope.launch { runCatching { app.retireFromWatch() } }  // sin red, se reintenta en el próximo cambio o al abrir
         if (app.syncCode == null) return
         pending?.cancel()
         pending = scope.launch {
@@ -151,6 +152,7 @@ fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null
         if (app.linkedAthlete != null) runCatching { app.sync() }
         if (app.data.health != null) runCatching { HealthConnectReader(context).sync(app) }
         // Solo lo que responde el relevo (desconectado desde Garmin Connect); sin conexión, en la próxima vez
+        runCatching { app.retireFromWatch() }
         (runCatching { app.pullGarmin() }.exceptionOrNull() as? GarminException)?.message?.let { scope.launch { snackbar.showSnackbar(it) } }
         runCatching { app.syncDevices() }.getOrNull()?.let { scope.launch { snackbar.showSnackbar(it) } }
         version += 1

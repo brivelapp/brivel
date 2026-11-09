@@ -42,6 +42,9 @@ class GarminException(val status: Int, message: String) : Exception(message)
 @Serializable private class Inbox(val items: List<Item>, val more: Boolean)
 @Serializable private class AckBody(val upTo: Long)
 
+@Serializable
+private class PruneBody(val date: String, val daySports: List<String>)
+
 private val INFO = "brivel-garmin-1".encodeToByteArray()
 private val b64 = Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT_OPTIONAL)
 
@@ -114,6 +117,15 @@ internal class GarminClient(private val base: String, engine: HttpClientEngine? 
             auth(token)
             contentType(ContentType.Application.Json)
             setBody(workouts)
+        })
+    }
+
+    /** Quita de Garmin lo que Brivel mandó ese día y ya no está entre `daySports`. */
+    suspend fun pruneWorkouts(token: String, date: String, daySports: List<String>) {
+        ok(http.post("$base/workouts/prune") {
+            auth(token)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(PruneBody(date, daySports)))
         })
     }
 

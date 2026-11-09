@@ -41,6 +41,7 @@ private const val GARMIN_URL = "https://brivel.app/api/garmin"
 private const val GARMIN_KEY = "garmin.key"  // en el almacén seguro mientras se conecta; después, en AppData.garminLink
 private const val GARMIN_PUB = "garmin.pub"
 private const val GARMIN_STATE = "garmin.state"
+private const val WATCH_SENT_KEY = "garmin.sent"  // lo mandado hoy a Garmin desde este dispositivo: fecha|deporte,deporte
 private const val GARMIN_CONSENT_KEY = "brivel.garminConsent"  // fecha y versión de la política aceptadas (CUMPLIMIENTO #6)
 
 /**
@@ -362,14 +363,41 @@ class BrivelApp(
         check(items.isNotEmpty()) { "Hoy no hay sesiones que enviar" }
         val physio = planner.physiology ?: Profile(activeSports = listOf("running"))
         val date = day.date.toString()
+        val daySports = day.items.map { WATCH_SPORT[it.sport] ?: "other" }.distinct()
         return items.map { item ->
-            item.session?.let { watchWorkout(it, date, physio) }
+            (item.session?.let { watchWorkout(it, date, physio) }
                 ?: watchStrength(strengthScreen(item, date, data.sets, data.customExercises), "Brivel · ${item.title}").let { w ->
                     // Sin ejercicios que se apunten serie a serie (equilibrio): un paso abierto con la lista
                     if (w.blocks.isNotEmpty()) w else w.copy(blocks = listOf(WatchBlock(1,
                         listOf(WatchStep("active", seconds = item.durationMin * 60, note = item.hint.take(500))))))
-                }
+                }).copy(daySports = daySports)
         }
+    }
+
+    private fun sentToday(): Set<String> = store.read(WATCH_SENT_KEY)?.takeIf { it.startsWith(today().toString() + "|") }
+        ?.substringAfter("|")?.split(",")?.filter { it.isNotEmpty() }?.toSet() ?: emptySet()
+
+    private fun rememberSent(date: String, sports: Set<String>) = store.write(WATCH_SENT_KEY, "$date|${sports.joinToString(",")}")
+
+    /**
+     * Quita de Garmin lo enviado hoy que ya no está en el plan (sesión movida, «hoy no puedo», otro deporte sin reenviar).
+     * Sin nada que quitar no llama a la red. shortcut: solo conoce lo enviado desde este dispositivo; si hiciera falta
+     * en todos, guardarlo en AppData (cambia el formato).
+     */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    suspend fun retireFromWatch() {
+        val link = data.garminLink ?: return
+        val sent = sentToday()
+        if (sent.isEmpty()) return
+        val plan = Planner(data, today()).day(today()).items.map { WATCH_SPORT[it.sport] ?: "other" }.toSet()
+        if ((sent - plan).isEmpty()) return
+        try {
+            garminClient.pruneWorkouts(link.token, today().toString(), plan.toList())
+        } catch (e: GarminException) {
+            if (e.status == 401) clearGarminLink()
+            throw e
+        }
+        rememberSent(today().toString(), sent intersect plan)
     }
 
     /** Envía al reloj las sesiones de hoy o solo la del deporte indicado: por Garmin Connect o por intervals.icu. */
@@ -383,6 +411,7 @@ class BrivelApp(
                 if (e.status == 401) clearGarminLink()  // desconectado desde Garmin Connect o desde otro dispositivo
                 throw e
             }
+            rememberSent(workouts.first().date, sentToday() + workouts.map { it.sport })
             return workouts.map { it.name.removePrefix("Brivel · ") }
         }
         val c = client() ?: throw IllegalStateException("Vincula primero tu cuenta de intervals.icu o conecta Garmin")

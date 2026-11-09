@@ -111,6 +111,7 @@ class WebApp {
     }
 
     /** Devuelve el aviso si los dos dispositivos cambiaron lo mismo; null si no. */
+    fun retireFromWatch(): Promise<Unit> = promise { app.retireFromWatch() }
     fun syncNow(): Promise<String?> = promise {
         conflictMessage(checkNotNull(syncer) { "La sincronización no está activada" }.sync().conflicts)
     }

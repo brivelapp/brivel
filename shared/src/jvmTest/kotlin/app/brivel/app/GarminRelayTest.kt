@@ -13,6 +13,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import app.brivel.engine.plusDays
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -46,6 +47,8 @@ private class FakeRelay {
     var pendingClaims = 1  // un 202 antes del token, como mientras Garmin aún no ha vuelto
     val inbox = mutableListOf<Pair<Long, ByteArray>>()
     var disconnected = false
+    val sent = mutableListOf<String>()
+    val pruned = mutableListOf<String>()
 
     val engine = MockEngine { request ->
         val path = request.url.encodedPath.removePrefix("/api/garmin")
@@ -66,6 +69,8 @@ private class FakeRelay {
                 respond("", HttpStatusCode.NoContent)
             }
             "/disconnect" -> respond("", HttpStatusCode.NoContent).also { disconnected = true; inbox.clear() }
+            "/workouts" -> respond("", HttpStatusCode.NoContent).also { sent += request.body.toByteArray().decodeToString() }
+            "/workouts/prune" -> respond("", HttpStatusCode.NoContent).also { pruned += request.body.toByteArray().decodeToString() }
             else -> respond("", HttpStatusCode.NotFound)
         }
     }
@@ -115,5 +120,35 @@ class GarminRelayTest {
         relay.disconnected = true  // el usuario quitó el permiso en Garmin Connect
         assertEquals(401, assertFailsWith<GarminException> { app.pullGarmin() }.status)
         assertFalse(app.garminConnected)
+    }
+
+    @Test
+    fun whatLeavesThePlanLeavesTheWatch() = runTest {
+        val relay = FakeRelay()
+        val sunday = LocalDate(2026, 10, 25)
+        fun freeDay(a: BrivelApp, from: LocalDate, slot: String) = generateSequence(from.plusDays(1)) { it.plusDays(1) }
+            .takeWhile { it <= sunday }.firstOrNull { d -> a.day(d.toString()).items.none { it.slot == slot } }
+        val (app, today, item) = (0..5).firstNotNullOf { d ->
+            val date = LocalDate(2026, 10, 19).plusDays(d)
+            val a = BrivelApp(MemoryStore(), MemoryStore(), { date }, relay.engine)
+            a.saveProfile(UserProfile(birthYear = 1990, level = "intermediate", strength = "none", cardio = listOf("running"),
+                days = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN").associateWith { 60 }))
+            a.setGoal(GoalKind.FITNESS)
+            a.setGarminLink("a", "b", "buzon")
+            a.day(date.toString()).items.firstOrNull { freeDay(a, date, it.slot) != null }?.let { Triple(a, date, it) }
+        }
+        app.retireFromWatch()  // nada enviado: no llama
+        app.sendToday()
+        assertEquals(1, relay.sent.size)
+        app.retireFromWatch()  // sigue en el plan: no llama
+        assertTrue(relay.pruned.isEmpty())
+        app.moveSession(today.toString(), item.slot, freeDay(app, today, item.slot).toString())
+        assertTrue(app.day(today.toString()).items.none { it.slot == item.slot })
+        app.retireFromWatch()
+        assertEquals(1, relay.pruned.size)
+        assertTrue("\"date\":\"$today\"" in relay.pruned.single())
+        assertFalse("\"${WATCH_SPORT[item.sport]}\"" in relay.pruned.single())
+        app.retireFromWatch()  // ya retirada: no repite
+        assertEquals(1, relay.pruned.size)
     }
 }

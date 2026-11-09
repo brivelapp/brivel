@@ -3,6 +3,7 @@ package app.brivel.app
 import app.brivel.engine.Block
 import app.brivel.engine.Profile
 import app.brivel.engine.Session
+import app.brivel.engine.plusDays
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -54,5 +55,21 @@ class WatchTest {
             note = "8–12 repeticiones · deja 2 en reserva"), w.blocks[0].steps[0])
         assertEquals(WatchStep("rest", seconds = 120), w.blocks[0].steps[1])
         assertEquals(45, w.blocks[1].steps[0].seconds)
+    }
+
+    @Test fun daySportsFollowTheChosenSession() {
+        val monday = kotlinx.datetime.LocalDate(2026, 10, 19)
+        val (app, date, item) = (0..6).firstNotNullOf { d ->
+            val a = BrivelApp(MemoryStore(), MemoryStore(), { monday.plusDays(d) })
+            a.saveProfile(UserProfile(birthYear = 1990, level = "intermediate", strength = "none", cardio = listOf("running", "cycling"),
+                days = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN").associateWith { 60 }))
+            a.setGoal(GoalKind.FITNESS)
+            a.day(monday.plusDays(d).toString()).items.firstOrNull { it.alternatives.isNotEmpty() }?.let { Triple(a, monday.plusDays(d).toString(), it) }
+        }
+        val alt = item.alternatives.first { WATCH_SPORT[it.sport] != WATCH_SPORT[item.sport] }
+        assertTrue(WATCH_SPORT[item.sport] in app.watchWorkouts().first().daySports)
+        app.chooseAlternative(date, item.sport, alt.sport)  // bici → carrera: lo enviado de bici sobra
+        val days = app.watchWorkouts().first().daySports
+        assertTrue(WATCH_SPORT[alt.sport] in days && WATCH_SPORT[item.sport] !in days)
     }
 }

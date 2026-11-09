@@ -36,12 +36,15 @@ data class WatchStep(
 @Serializable
 data class WatchBlock(val times: Int, val steps: List<WatchStep>)
 
-/** `sport`: running, cycling, swimming, strength, walking u other. */
+/**
+ * `sport`: running, cycling, swimming, strength, walking u other. `daySports`: los deportes del plan de ese día, para que
+ * el relevo quite del reloj lo que ya mandó y ha dejado de tocar.
+ */
 @Serializable
 data class WatchWorkout(val date: String, val sport: String, val name: String, val description: String,
-    val blocks: List<WatchBlock>)
+    val blocks: List<WatchBlock>, val daySports: List<String> = emptyList())
 
-private val WATCH_SPORT = mapOf("running" to "running", "cycling" to "cycling", "swimming_pool" to "swimming",
+internal val WATCH_SPORT = mapOf("running" to "running", "cycling" to "cycling", "swimming_pool" to "swimming",
     "swimming_open" to "swimming", "walking" to "walking", "strength" to "strength")
 
 /** Sesión de resistencia → pasos; los objetivos, los mismos que se mandan a intervals.icu (`stepTarget`). */
