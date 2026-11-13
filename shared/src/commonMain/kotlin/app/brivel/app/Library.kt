@@ -11,6 +11,7 @@ val PATTERN_LABEL = mapOf(
     "salto" to "Saltos", "empuje horizontal" to "Empuje horizontal", "empuje vertical" to "Empuje vertical",
     "tracción horizontal" to "Tracción horizontal", "tracción vertical" to "Tracción vertical", "core" to "Core",
     "brazos" to "Brazos", "hombros" to "Hombros (aislamiento)", "pierna aislada" to "Pierna (aislamiento)",
+    "acondicionamiento" to "Cuerpo completo y cardio", "movilidad" to "Movilidad y estiramientos", "yoga" to "Yoga y pilates",
 )
 
 /**
@@ -84,12 +85,17 @@ private val EXERCISE_EQUIPMENT = mapOf(
 )
 
 /** Las etiquetas del filtro de material, en orden. */
-val EQUIPMENT = listOf("peso corporal", "mancuernas", "barra", "banco o cajón", "polea o máquina", "goma", "barra de dominadas", "pesa rusa")
+val EQUIPMENT = listOf("peso corporal", "mancuernas", "barra", "banco o cajón", "polea o máquina", "goma", "barra de dominadas", "pesa rusa",
+    "balón medicinal", "fitball", "suspensión o anillas", "comba", "rodillo de espuma", "otro material")
 
-/** La ficha de un ejercicio. `figure`: el patrón cuya figura lo dibuja (FIGURES). */
+/**
+ * La ficha de un ejercicio. `figure`: el patrón cuya figura lo dibuja (FIGURES). `zone`, `muscles` y `description` salen de
+ * reglas sobre el patrón, el material y el nombre (ExerciseGuide.kt).
+ */
 @Serializable
 data class ExerciseCard(val name: String, val pattern: String, val patternLabel: String, val equipment: List<String>,
-    val timed: Boolean, val cues: List<String>, val cueSource: String, val figure: String)
+    val timed: Boolean, val cues: List<String>, val cueSource: String, val figure: String,
+    val zone: String = "", val muscles: List<String> = emptyList(), val description: String = "")
 
 const val CUE_SOURCE = "Pautas generales de técnica de la NSCA (Haff y Triplett, 2016). No sustituyen a un entrenador."
 
@@ -103,14 +109,21 @@ data class CustomExercise(val name: String, val pattern: String, val timed: Bool
 fun exerciseInfo(name: String, custom: List<CustomExercise>): ExerciseInfo? =
     LIBRARY[name] ?: custom.firstOrNull { it.name == name }?.let { ExerciseInfo(it.pattern, it.timed) }
 
-fun exerciseCard(name: String, custom: List<CustomExercise> = emptyList()): ExerciseCard? = exerciseInfo(name, custom)?.let { info ->
+private val CARDS = mutableMapOf<String, ExerciseCard>()  // las fichas de la biblioteca no cambian: se calculan una vez
+
+fun exerciseCard(name: String, custom: List<CustomExercise> = emptyList()): ExerciseCard? =
+    if (name in LIBRARY) CARDS.getOrPut(name) { buildCard(name, custom)!! } else buildCard(name, custom)
+
+private fun buildCard(name: String, custom: List<CustomExercise>): ExerciseCard? = exerciseInfo(name, custom)?.let { info ->
     val cues = PATTERN_CUES[info.pattern]
     ExerciseCard(name, info.pattern, PATTERN_LABEL[info.pattern]!!, EXERCISE_EQUIPMENT[name] ?: CATALOG_EQUIPMENT[name] ?: emptyList(), info.timed,
         cues ?: emptyList(), if (cues != null) CUE_SOURCE else NO_CUES, info.pattern)
+        .let { c -> c.copy(zone = PATTERN_ZONE[c.pattern] ?: "", muscles = muscles(name, c.pattern),
+            description = describeExercise(name, c.pattern, c.equipment, c.timed)) }
 }
 
 /** Sin tildes ni mayúsculas, para buscar «busqueda» y encontrar «búsqueda». */
-private fun plain(s: String) = s.lowercase().map { c -> "áàäâéèëêíìïîóòöôúùüûñ".indexOf(c).let { if (it < 0) c else "aaaaeeeeiiiioooouuuun"[it] } }
+internal fun plain(s: String) = s.lowercase().map { c -> "áàäâéèëêíìïîóòöôúùüûñ".indexOf(c).let { if (it < 0) c else "aaaaeeeeiiiioooouuuun"[it] } }
     .joinToString("")
 
 /** Comprueba un ejercicio nuevo; devuelve el mismo con el nombre limpio. El «:» separa el nombre de la dosis en el plan. */
@@ -123,12 +136,23 @@ fun validCustomExercise(e: CustomExercise, custom: List<CustomExercise>): Custom
     return e.copy(name = name)
 }
 
-/** Buscar por nombre o patrón y filtrar por patrón y por material; primero los propios y luego por patrón. */
-fun library(query: String = "", pattern: String? = null, equipment: String? = null, custom: List<CustomExercise> = emptyList()): List<ExerciseCard> {
+/** Las zonas del cuerpo, en el orden del filtro. */
+val ZONES = listOf("pierna", "pecho", "espalda", "hombro", "brazos", "core", "cuerpo completo", "movilidad")
+
+/** Si el ejercicio se puede hacer con ese material; el peso corporal siempre se tiene. */
+fun doable(card: ExerciseCard, owned: Collection<String>): Boolean = card.equipment.all { it == "peso corporal" || it in owned }
+
+/**
+ * Buscar por nombre, patrón o zona y filtrar por patrón, por material y por zona; primero los propios y luego por patrón.
+ * `owned`: solo lo que se puede hacer con ese material (null: todo).
+ */
+fun library(query: String = "", pattern: String? = null, equipment: String? = null, custom: List<CustomExercise> = emptyList(),
+            zone: String? = null, owned: Collection<String>? = null): List<ExerciseCard> {
     val words = plain(query).split(' ').filter { it.isNotBlank() }
     return (custom.map { it.name } + LIBRARY.keys).mapNotNull { exerciseCard(it, custom) }.filter { c ->
         (pattern == null || c.pattern == pattern) && (equipment == null || equipment in c.equipment) &&
-            words.all { w -> plain(c.name).contains(w) || plain(c.patternLabel).contains(w) }
+            (zone == null || c.zone == zone) && (owned == null || doable(c, owned)) &&
+            words.all { w -> plain(c.name).contains(w) || plain(c.patternLabel).contains(w) || plain(c.zone).contains(w) }
     }
 }
 

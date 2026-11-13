@@ -346,6 +346,28 @@ Carga: `rTSS = (RPE/10)² × horas × 100` [Memoria 8.1]. El RPE real introducid
 
 ---
 
+### 5.4 Variantes, calentamiento y material (capa de la app, 2026-11-13)
+
+Los motores siguen proponiendo los ejercicios de §5.2. Sobre eso, la app (`ExerciseGuide.kt`, `Planner.applyChoice`):
+
+- **Rotación de variantes.** Cada ejercicio del plan tiene de 1 a 4 variantes del mismo patrón, la misma forma de medirlo
+  y el mismo material (`ROTATION`). La variante se mantiene un bloque de 4 semanas (el del plan sin fecha, con su descarga;
+  cuatro semanas de calendario en el plan de carrera) y cambia con el bloque; dos sesiones de la misma semana usan
+  variantes distintas. [Práctica: variar el ejercicio manteniendo el patrón; Fonseca et al. 2014, J Strength Cond Res
+  28(11):3085–3092, comparan variar ejercicios con variar solo la carga. Cuatro semanas por variante: Inferencia]
+- **Quién no rota.** Nivel principiante, menores de 18, mayores de 64 o tope de intensidad del cuestionario de salud por
+  debajo de vigorosa: se quedan con el ejercicio del motor. [Inferencia: prudencia]
+- **Lo que manda el usuario.** Sus rutinas no rotan. Un ejercicio que cambia o fija a mano deja de rotar. Con su material
+  indicado (`AppData.equipment`, esquema 9), solo salen variantes que puede hacer.
+- **Historial caducado.** Si hace más de 56 días que no hace un ejercicio, la propuesta es un 10 % menos de su último peso
+  en vez de «mismo peso y una repetición más». [Inferencia]
+- **Calentamiento.** Los 10 minutos que ya cuenta la sesión llevan contenido: cardio suave, dos ejercicios de movilidad
+  según la zona del día y series de aproximación. [Práctica: NSCA, Haff y Triplett 2016]
+- **Series por zona.** La semana enseña las series de fuerza por zona del cuerpo y avisa si empuje y tracción van a más
+  del doble una de otra. [Inferencia]
+- **Descripciones y músculos** de la biblioteca: salen de reglas sobre patrón, material y nombre, no de un texto por
+  ejercicio. [Inferencia: anatomía funcional general]
+
 ## 6. Estructura semanal
 
 ### 6.1 Plantilla por fase (deporte único)

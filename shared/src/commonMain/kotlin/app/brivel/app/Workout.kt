@@ -121,7 +121,7 @@ fun strengthScreen(item: PlanItem, date: String, sets: List<SetLog>, custom: Lis
         val name = exerciseName(line)
         val pattern = exerciseInfo(name, custom)!!.pattern
         val rir = target.takeUnless { p.timed || pattern == "salto" }
-        val hint = liftHint(daySummaries(before), line, p.range.takeUnless { p.timed }, rir)
+        val hint = liftHint(daySummaries(before), line, p.range.takeUnless { p.timed }, rir, date)
         val previousDate = before.filter { it.exercise == name }.maxOfOrNull { it.date }
         fun day(d: String?) = all.filter { it.date == d && it.exercise == name }.sortedBy { it.set }
             .map { LoggedSet(it.set, it.weightKg, it.reps, it.rir) }

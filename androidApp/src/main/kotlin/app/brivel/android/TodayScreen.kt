@@ -128,15 +128,7 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
                     TextButton(onClick = { act.run { app.chooseAlternative(day.date, item.slot, alt.sport) } }) { LinkText("Haré esta") }
                 }
             }
-            if (today && linked) {
-                TextButton(onClick = { act.suspend(app.watchSentText) {
-                    app.sendToday(item.sport)
-                } }) {
-                    Glyph(R.drawable.ic_watch, 18.dp, Palette.ok)
-                    Spacer(Modifier.width(6.dp))
-                    LinkText("Enviar al reloj")
-                }
-            }
+            if (today) SendToWatch(app, act, item.sport)
             if (item.chosen) TextButton(onClick = { act.run { app.clearChoice(day.date) } }) { LinkText("Volver a la planificada") }
             item.movedFrom?.let { Secondary("La has movido aquí desde el ${dateLabel(it).lowercase()}.") }
             val targets = remember(day, item.slot) { if (done || day.isPast) emptyList() else app.moveTargets(day.date, item.slot) }

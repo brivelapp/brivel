@@ -111,6 +111,17 @@ private struct SessionItem: View {
     let today: Bool
     @State private var open = false
     @State private var moving = false
+    @State private var choosingWatch = false
+
+    private func sendToRoute() {
+        model.runAsync(model.core.watchSentText) { _ = try await model.core.sendToday(sport: item.sport) }
+    }
+
+    private func sendToAppleWatch() {
+        model.runAsync("Enviada al Apple Watch: la tienes en la app Entreno del reloj") {
+            _ = try await AppleWatchSender.send(try model.core.watchWorkouts(sport: item.sport))
+        }
+    }
 
     var body: some View {
         let core = model.core
@@ -144,14 +155,18 @@ private struct SessionItem: View {
                     }
                 }
             }
-            if today && linked {
+            // Un solo botón: si hay más de un destino (Apple Watch y Garmin Connect o intervals.icu), pregunta adónde
+            if today && (linked || AppleWatchSender.supported) {
                 Button {
-                    model.runAsync(core.watchSentText) {
-                        _ = try await core.sendToday(sport: item.sport)
-                    }
+                    if linked && AppleWatchSender.supported { choosingWatch = true } else if linked { sendToRoute() } else { sendToAppleWatch() }
                 } label: {
                     HStack(spacing: 6) { Glyph(name: "watch", size: 18, color: Palette.ok); Text("Enviar al reloj") }
                 }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
+                .confirmationDialog("¿Adónde la envías?", isPresented: $choosingWatch, titleVisibility: .visible) {
+                    Button("Apple Watch") { sendToAppleWatch() }
+                    Button(core.watchRoute ?? "Reloj") { sendToRoute() }
+                    Button("Cancelar", role: .cancel) {}
+                }
             }
             if item.chosen { Button("Volver a la planificada") { model.run { core.clearChoice(date: day.date) } }.font(.ui(14, .bold)).buttonStyle(TextActionStyle()) }
             if let from = item.movedFrom { Secondary("La has movido aquí desde el \(ScreensKt.dateLabel(date: from).lowercased()).") }

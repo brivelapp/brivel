@@ -17,7 +17,7 @@ export interface StrengthExercise { name: string; pattern: string; sets: number;
   restSeconds: number; rir: number | null; suggestion: string | null; weightKg: number | null; previous: LoggedSet[]; done: LoggedSet[]
   original: string | null }
 export interface ExerciseCard { name: string; pattern: string; patternLabel: string; equipment: string[]; timed: boolean
-  cues: string[]; cueSource: string; figure: string }
+  cues: string[]; cueSource: string; figure: string; zone: string; muscles: string[]; description: string }
 export interface StrengthScreen { date: string; title: string; exercises: StrengthExercise[]; other: string[] }
 export interface CustomExercise { name: string; pattern: string; timed: boolean }
 export interface RoutineExercise { name: string; sets: number; low: number; high: number }

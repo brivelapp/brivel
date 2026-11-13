@@ -69,6 +69,7 @@ data class PlanItem(
     @Transient internal val session: Session? = null,  // la web recibe la pantalla en JSON: lo interno no sale
     @Transient internal val healthStrength: HealthStrength? = null,
     @Transient internal val raceStrength: RaceStrength? = null,
+    @Transient internal val rotatedFrom: Map<String, String> = emptyMap(),  // variante puesta por la rotación → ejercicio del plan
 ) {
     val isStrength: Boolean get() = sport == "strength"
 }
@@ -201,7 +202,11 @@ class Planner(private val data: AppData, private val today: LocalDate) {
         val adherence = history.take(block)
         val change = data.weekChanges[monday.toString()]
         val plan = weekWithHistory(p, monday, adherence, week, change?.steps() ?: emptyList())
+        val rotate = rotates(p.level, p.age, p.intensityCap)
+        var slot = 0  // orden de la sesión de fuerza en la semana, según el plan (antes de los ajustes de hoy)
         val days = plan.days.map { d ->
+            val mine = slot
+            if (d.sessions.any { it is HealthStrength || it is RaceStrengthItem }) slot++
             var sessions: List<Planned> = d.sessions
             var note = d.note
             val adjustments = mutableListOf<Reason>()
@@ -225,7 +230,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
                     is RaceStrengthItem -> raceStrengthItem(s.strength)
                 }
             }
-            dayView(d.date, d.weekday, applyChoice(d.date, items), note, d.availableMin, emptyList(), adjustments, null)
+            dayView(d.date, d.weekday, applyChoice(d.date, items, block, mine, rotate), note, d.availableMin, emptyList(), adjustments, null)
         }
         return WeekView(monday.toString(), days, activeMinutes(days), days.count { d -> d.items.any { it.isStrength } },
             plan.warnings, plan.info, block, week, plan.changed == true)
@@ -269,11 +274,16 @@ class Planner(private val data: AppData, private val today: LocalDate) {
                 else -> fromToday.firstOrNull { it.date == date.toString() } ?: proposeDay(date, raceProfileFor(base, date), raceGoal)
             }
         }
+        // Quien prepara una carrera ya entrena: su nivel no frena la rotación; la edad y el cuestionario de salud, sí
+        val rotate = healthProfile.let { rotates("fitness", it.age, it.intensityCap) }
+        var slot = 0
         val days = engineDays.map { d ->
+            val mine = slot
+            if (d.strength != null) slot++
             val items = listOfNotNull(d.main?.let { cardioItem(it, d.alternatives) }, d.strength?.let { raceStrengthItem(it) })
             val reasons = d.reasons.filter { it !in d.adjustments }.map { splitEvidence(it).let { (t, e) -> Reason(t, e) } }
             val adjustments = d.adjustments.map { splitEvidence(it).let { (t, e) -> Reason(t, e) } }
-            dayView(d.date, d.weekday, applyChoice(d.date, items), null, null, reasons, adjustments, d.phase)
+            dayView(d.date, d.weekday, applyChoice(d.date, items, rotationBlock(monday), mine, rotate), null, null, reasons, adjustments, d.phase)
         }
         return WeekView(monday.toString(), days, activeMinutes(days), days.count { d -> d.items.any { it.isStrength } },
             rp.warnings, emptyList(), null, null, data.weekChanges.containsKey(monday.toString()))
@@ -284,6 +294,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
     fun week(monday: LocalDate): WeekView {
         val race = raceGoal()
         val week = moveSessions(applyRoutines(if (race != null && race.date >= today) raceWeek(monday, race) else healthWeek(monday)))
+            .let { w -> zoneLine(w)?.let { w.copy(info = w.info + it) } ?: w }
         val s = screening ?: return week
         return when (s.clearance) {
             // Síntomas con actividad: nada de ejercicio hasta que lo valore un médico
@@ -292,6 +303,28 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             "none" -> week
             else -> week.copy(warnings = listOf(s.message) + week.warnings)
         }
+    }
+
+    /** Series de fuerza de la semana por zona del cuerpo y, si empuje y tracción van muy desiguales, el aviso. [Inferencia] */
+    private fun zoneLine(week: WeekView): String? {
+        val sets = linkedMapOf<String, Int>()
+        val byPattern = mutableMapOf<String, Int>()
+        for (item in week.days.flatMap { it.items }.filter { it.isStrength }) for (line in item.exercises) {
+            val p = prescription(line, item.raceStrength?.dose, data.customExercises) ?: continue
+            val pattern = exerciseInfo(exerciseName(line), data.customExercises)?.pattern ?: continue
+            val zone = PATTERN_ZONE[pattern] ?: continue
+            sets[zone] = (sets[zone] ?: 0) + p.sets
+            byPattern[pattern] = (byPattern[pattern] ?: 0) + p.sets
+        }
+        if (sets.isEmpty()) return null
+        val push = (byPattern["empuje horizontal"] ?: 0) + (byPattern["empuje vertical"] ?: 0)
+        val pull = (byPattern["tracción horizontal"] ?: 0) + (byPattern["tracción vertical"] ?: 0)
+        val uneven = when {
+            push >= 2 * pull && push - pull >= 4 -> " Empujas el doble de lo que tiras: añade remos o jalones."
+            pull >= 2 * push && pull - push >= 4 -> " Tiras el doble de lo que empujas: añade algún press."
+            else -> ""
+        }
+        return "Fuerza de la semana por zona: " + ZONES.filter { it in sets }.joinToString(", ") { "$it ${sets[it]} series" } + "." + uneven
     }
 
     /**
@@ -365,9 +398,21 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             matches.mapNotNull { it.matched }.toSet(), phase)
     }
 
-    /** La alternativa elegida y los ejercicios cambiados en la biblioteca. */
-    private fun applyChoice(date: String, items: List<PlanItem>): List<PlanItem> = choose(date, items).map {
-        if (it.isStrength && data.swaps.isNotEmpty()) it.copy(exercises = swapLines(it.exercises, data.swaps, date)) else it
+    /**
+     * La alternativa elegida, la variante de cada ejercicio que toca en este bloque (ExerciseGuide.kt) y los ejercicios
+     * cambiados en la biblioteca. No rota lo que el usuario ha cambiado o fijado él mismo, ni lo que no puede hacer con
+     * su material.
+     */
+    private fun applyChoice(date: String, items: List<PlanItem>, block: Int, slot: Int, rotate: Boolean): List<PlanItem> = choose(date, items).map {
+        if (!it.isStrength) return@map it
+        val keep = data.swaps.map { s -> s.original }.distinct().filter { o ->
+            data.swaps.filter { s -> s.original == o && s.since <= date }.maxByOrNull { s -> s.since }?.replacement != null
+        }.toSet()
+        val (lines, from) = if (!rotate) it.exercises to emptyMap() else rotateLines(it.exercises, block, slot, keep) { name ->
+            data.equipment.isEmpty() || exerciseCard(name)?.let { c -> doable(c, data.equipment) } == true
+        }
+        val notes = listOfNotNull(it.notes, ROTATION_NOTE.takeIf { from.isNotEmpty() }).joinToString(" ").ifEmpty { null }
+        it.copy(exercises = swapLines(lines, data.swaps, date), notes = notes, rotatedFrom = from)
     }
 
     /** La alternativa elegida pasa a ser la sesión del día; la planificada queda entre las alternativas. */
@@ -400,14 +445,15 @@ class Planner(private val data: AppData, private val today: LocalDate) {
 
     private fun strengthItem(s: HealthStrength) = PlanItem(
         sport = "strength", kind = "strength", title = "Fuerza", hint = PLAIN_SESSION["strength"]!!.second,
-        technicalName = "Fuerza", durationMin = s.durationMin, steps = emptyList(), exercises = s.exercises, notes = s.notes,
+        technicalName = "Fuerza", durationMin = s.durationMin, steps = emptyList(), exercises = s.exercises,
+        notes = listOfNotNull(warmup(s.exercises), s.notes).joinToString(" "),
         alternatives = emptyList(), chosen = false, slot = "strength", session = null, healthStrength = s, raceStrength = null,
     )
 
     private fun raceStrengthItem(s: RaceStrength) = PlanItem(
         sport = "strength", kind = "strength", title = "Fuerza", hint = s.dose, technicalName = "Fuerza",
         durationMin = s.durationMin, steps = emptyList(), exercises = s.exercises,
-        notes = "Hazla ${s.order}.", alternatives = emptyList(), chosen = false, slot = "strength",
+        notes = "${warmup(s.exercises)} Hazla ${s.order}.", alternatives = emptyList(), chosen = false, slot = "strength",
         session = null, healthStrength = null, raceStrength = s,
     )
 
@@ -419,4 +465,22 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             "peak" to "Afinando", "taper" to "Puesta a punto")
         fun weekdayOf(date: LocalDate): String = date.weekday()
     }
+}
+
+/** Lo que se dice en la sesión cuando la rotación ha puesto alguna variante. */
+const val ROTATION_NOTE = "Este bloque de cuatro semanas, algunos ejercicios son variantes del mismo tipo para variar el estímulo; " +
+    "si prefieres el de siempre, toca el ejercicio y vuelve al del plan."
+
+/**
+ * Qué hacer en los 10 minutos de calentamiento que ya cuenta la sesión, según lo que se trabaja ese día.
+ * [Práctica: calentamiento general, movilidad dinámica y series de aproximación; NSCA, Haff y Triplett 2016]
+ */
+fun warmup(exercises: List<String>): String {
+    val zones = exercises.mapNotNull { LIBRARY[exerciseName(it)]?.pattern?.let { p -> PATTERN_ZONE[p] } }.toSet()
+    val drills = buildList {
+        if ("pierna" in zones) { add("balanceo de pierna adelante y atrás"); add("zancada con codo al pie") }
+        if (zones.any { it in setOf("pecho", "espalda", "hombro", "brazos") }) { add("círculos de brazos"); add("rotación torácica en cuadrupedia") }
+        if (isEmpty()) add("gato-camello")
+    }
+    return "Calentamiento (10 min): 3–5 min de cardio suave, ${drills.joinToString(", ")} y una o dos series ligeras del primer ejercicio."
 }

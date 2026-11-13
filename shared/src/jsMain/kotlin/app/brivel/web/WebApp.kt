@@ -25,6 +25,7 @@ import app.brivel.app.toggleCardio as toggleCardioCore
 import app.brivel.app.dateLabel as dateLabelCore
 import app.brivel.app.conflictMessage
 import app.brivel.app.FIGURES
+import app.brivel.app.ZONES
 import app.brivel.app.polylines
 import app.brivel.app.EQUIPMENT
 import app.brivel.app.PATTERN_LABEL
@@ -199,6 +200,11 @@ class WebApp {
     fun swapOptionsJson(name: String): String = json.encodeToString(app.swapOptions(name))
     fun patternLabelsJson(): String = json.encodeToString(PATTERN_LABEL)
     fun equipmentJson(): String = json.encodeToString(EQUIPMENT)
+    fun zonesJson(): String = json.encodeToString(ZONES)
+    fun libraryByZoneJson(query: String, zone: String?, equipment: String?, mine: Boolean): String =
+        json.encodeToString(app.libraryByZone(query, zone, equipment, mine))
+    fun myEquipmentJson(): String = json.encodeToString(app.equipment)
+    fun setEquipmentJson(text: String) = app.setEquipment(read.decodeFromString<List<String>>(text))
     fun swapExercise(date: String, current: String, replacement: String) = app.swapExercise(date, current, replacement)
 
     /** Apunta o corrige una serie; `weight` vacío: con tu peso corporal; `rir` null: sin apuntar la reserva. */

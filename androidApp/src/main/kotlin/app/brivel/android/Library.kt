@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.sp
 import app.brivel.app.BrivelApp
 import app.brivel.app.EQUIPMENT
 import app.brivel.app.ExerciseCard
-import app.brivel.app.PATTERN_LABEL
+import app.brivel.app.ZONES
 
 // Biblioteca de ejercicios (Library.kt del núcleo), como web/src/Library.tsx
 
@@ -68,6 +68,8 @@ fun ExerciseSheet(app: BrivelApp, name: String, original: String?, dismiss: () -
                     }
                     Secondary(listOf(card.patternLabel, card.equipment.joinToString(", "), if (card.timed) "por tiempo" else "por repeticiones").filter { it.isNotEmpty() }.joinToString(" · "))
                 }
+                if (card.muscles.isNotEmpty()) Secondary("Zona: ${card.zone} · Músculos: ${card.muscles.joinToString(", ")}")
+                if (card.description.isNotEmpty()) Text(card.description, fontSize = 15.sp)
                 card.cues.forEach { Text("• $it", fontSize = 15.sp) }
                 Source(card.cueSource)
                 if (onSwap != null) {
@@ -83,33 +85,49 @@ fun ExerciseSheet(app: BrivelApp, name: String, original: String?, dismiss: () -
         confirmButton = { TextButton(onClick = dismiss) { Text("Cerrar") } })
 }
 
-/** En Perfil: todos los ejercicios, con búsqueda y filtros de patrón y de material. */
+private const val PAGE = 60
+
+/** En Perfil: todos los ejercicios, con búsqueda y filtros de zona y de material, y el material que tienes. */
 @Composable
 fun LibraryCard(app: BrivelApp) {
     var open by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
-    var pattern by remember { mutableStateOf<String?>(null) }
+    var zone by remember { mutableStateOf<String?>(null) }
     var equipment by remember { mutableStateOf<String?>(null) }
+    var mine by remember { mutableStateOf(false) }
+    var owned by remember { mutableStateOf(app.equipment) }
+    var limit by remember { mutableStateOf(PAGE) }
     var shown by remember { mutableStateOf<String?>(null) }
     Module {
         SectionTitle("Biblioteca de ejercicios")
-        Secondary("Busca entre todos los ejercicios por tipo o material.")
+        Secondary("Busca entre todos los ejercicios por zona del cuerpo o material.")
         if (!open) OutlinedButton(onClick = { open = true }) { Text("Ver los ejercicios") }
         else {
-            OutlinedTextField(query, { query = it }, label = { Text("Buscar") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            Secondary("Tu material (el peso corporal siempre cuenta). Brivel solo te propone variantes que puedas hacer con él.")
             ChipRow {
-                PATTERN_LABEL.forEach { (k, label) ->
-                    FilterChip(selected = pattern == k, label = { Text(label) }, onClick = { pattern = if (pattern == k) null else k })
+                EQUIPMENT.filter { it != "peso corporal" }.forEach { t ->
+                    FilterChip(selected = t in owned, label = { Text(t) }, onClick = {
+                        app.setEquipment(if (t in owned) owned - t else owned + t)
+                        owned = app.equipment
+                    })
+                }
+            }
+            OutlinedTextField(query, { query = it; limit = PAGE }, label = { Text("Buscar") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            ChipRow {
+                ZONES.forEach { z ->
+                    FilterChip(selected = zone == z, label = { Text(z) }, onClick = { zone = if (zone == z) null else z; limit = PAGE })
                 }
             }
             ChipRow {
+                if (owned.isNotEmpty()) FilterChip(selected = mine, label = { Text("Solo con mi material") }, onClick = { mine = !mine; limit = PAGE })
                 EQUIPMENT.forEach { t ->
-                    FilterChip(selected = equipment == t, label = { Text(t) }, onClick = { equipment = if (equipment == t) null else t })
+                    FilterChip(selected = equipment == t, label = { Text(t) }, onClick = { equipment = if (equipment == t) null else t; limit = PAGE })
                 }
             }
-            val list = app.library(query, pattern, equipment)
-            if (list.isEmpty()) Secondary("Ningún ejercicio con esos filtros.")
-            list.forEach { c -> ExerciseRow(c, c.patternLabel) { shown = c.name } }
+            val list = remember(query, zone, equipment, mine, owned) { app.libraryByZone(query, zone, equipment, mine) }
+            Secondary("${list.size} ejercicios")
+            list.take(limit).forEach { c -> ExerciseRow(c, c.patternLabel) { shown = c.name } }
+            if (list.size > limit) OutlinedButton(onClick = { limit += PAGE }) { Text("Ver más") }
         }
     }
     shown?.let { ExerciseSheet(app, it, null, { shown = null }, null) }

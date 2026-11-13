@@ -59,6 +59,7 @@ fun merge(base: AppData, local: AppData, remote: AppData): Merged {
         lifts = items(base.lifts, local.lifts, remote.lifts),
         sets = items(base.sets, local.sets, remote.sets),
         reminderHour = pick("reminderHour", base.reminderHour, local.reminderHour, remote.reminderHour),
+        equipment = pick("equipment", base.equipment, local.equipment, remote.equipment),
         swaps = items(base.swaps, local.swaps, remote.swaps),
         moves = items(base.moves, local.moves, remote.moves),
         // Editar una rutina en dos dispositivos a la vez: se queda una por id (la del servidor)

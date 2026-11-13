@@ -1,5 +1,6 @@
 package app.brivel.app
 
+import kotlinx.datetime.daysUntil
 // Registro de fuerza y progresión doble (punto 8 del roast): sin apuntar pesos, "sube el peso cuando llegues al máximo
 // de repeticiones" es una nota que nadie puede seguir.
 
@@ -40,7 +41,10 @@ fun latestSets(sets: List<SetLog>): List<SetLog> = sets.associateBy { Triple(it.
  * workload for one to two repetitions over the desired number"; Helms 2016, progresión por RIR; el 5 % y la bajada del
  * 10 % son Inferencia dentro de ese 2–10 %]
  */
-fun liftHint(lifts: List<LiftLog>, line: String, range: IntRange? = repRange(line), rir: Int? = null): LiftHint {
+/** Días sin hacer un ejercicio a partir de los cuales su último peso ya no vale como referencia. [Inferencia] */
+const val STALE_DAYS = 56
+
+fun liftHint(lifts: List<LiftLog>, line: String, range: IntRange? = repRange(line), rir: Int? = null, date: String? = null): LiftHint {
     val name = exerciseName(line)
     val history = lifts.filter { it.exercise == name }.sortedBy { it.date }
     val last = history.lastOrNull()
@@ -50,8 +54,12 @@ fun liftHint(lifts: List<LiftLog>, line: String, range: IntRange? = repRange(lin
     fun up(w: Double) = maxOf(kotlin.math.round(w * 1.05 * 2) / 2, w + 0.5)
     fun lighter(w: Double) = maxOf(kotlin.math.round(w * 0.9 * 2) / 2, 0.5)
     val w = last?.weightKg
+    val stale = last != null && date != null &&
+        kotlinx.datetime.LocalDate.parse(last.date).daysUntil(kotlinx.datetime.LocalDate.parse(date)) > STALE_DAYS
     val (suggestion, weight) = when {
         last == null || range == null -> null to w
+        stale && w != null -> "Hace más de 8 semanas que no lo haces: empieza con ${kg(lighter(w))} y vuelve a subir desde ${range.first}" to lighter(w)
+        stale -> "Hace más de 8 semanas que no lo haces: empieza por ${range.first} repeticiones" to null
         last.reps >= range.last && rir != null && last.rir != null && last.rir < rir ->
             "Llegaste al máximo, pero más cerca del fallo de lo indicado: repite ${w?.let { kg(it) } ?: "la variante"} " +
                 "hasta que te sobren $rir" to w

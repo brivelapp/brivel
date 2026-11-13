@@ -186,6 +186,19 @@ class BrivelApp(
 
     val customExercises: List<CustomExercise> get() = data.customExercises
 
+    /** El material que tiene el usuario (vacío: sin indicar). Filtra la rotación de ejercicios y «solo con mi material». */
+    val equipment: List<String> get() = data.equipment
+
+    @Throws(Exception::class)
+    fun setEquipment(tags: List<String>) {
+        require(tags.all { it in EQUIPMENT }) { "Material no válido" }
+        save(data.copy(equipment = EQUIPMENT.filter { it in tags }))
+    }
+
+    /** La biblioteca por zona del cuerpo; `mine`: solo lo que se puede hacer con el material del usuario. */
+    fun libraryByZone(query: String, zone: String?, equipment: String?, mine: Boolean): List<ExerciseCard> =
+        library(query, null, equipment, data.customExercises, zone, data.equipment.takeIf { mine && it.isNotEmpty() })
+
     fun library(query: String, pattern: String?, equipment: String?): List<ExerciseCard> =
         library(query, pattern, equipment, data.customExercises)
 
@@ -355,7 +368,8 @@ class BrivelApp(
     val watchSentText: String get() = if (garminConnected) "Enviada a Garmin Connect: llegará a tu reloj al sincronizarlo"
         else "Enviada a intervals.icu: llegará a tu reloj si tienes la sincronización activada"
 
-    /** Las sesiones de hoy (o solo la del deporte indicado) en el formato del reloj, para el relevo de Garmin. */
+    /** Las sesiones de hoy (o solo la del deporte indicado) en el formato del reloj: para el relevo de Garmin, el Apple Watch y Health Connect. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
     fun watchWorkouts(sport: String? = null): List<WatchWorkout> {
         val planner = Planner(data, today())
         val day = planner.day(today())
@@ -373,6 +387,9 @@ class BrivelApp(
                 }).copy(daySports = daySports)
         }
     }
+
+    /** El patrón de un ejercicio de `WatchStep.exercise`, para que cada plataforma elija su tipo de ejercicio más cercano. */
+    fun watchPattern(exercise: String): String? = exerciseInfo(exercise, data.customExercises)?.pattern
 
     private fun sentToday(): Set<String> = store.read(WATCH_SENT_KEY)?.takeIf { it.startsWith(today().toString() + "|") }
         ?.substringAfter("|")?.split(",")?.filter { it.isNotEmpty() }?.toSet() ?: emptySet()
@@ -466,17 +483,24 @@ class BrivelApp(
     /** El ejercicio del plan que `name` sustituye ese día, o null si no es un cambio. */
     private fun originalOf(name: String, date: String): String? =
         data.swaps.map { it.original }.distinct().firstOrNull { it != name && swapped(it, data.swaps, date) == name }
+            ?: rotationOrigin(name, date)
+
+    /** El ejercicio del plan del que `name` es la variante de este bloque, o null si no la puso la rotación. */
+    private fun rotationOrigin(name: String, date: String): String? =
+        day(date).items.firstOrNull { it.isStrength }?.rotatedFrom?.get(name)
 
     /**
      * Cambia `current` por `replacement` desde `date` (la sesión que se ve) en adelante; los días anteriores siguen con
-     * el que se hizo. `replacement` igual al ejercicio del plan, o null, vuelve a él.
+     * el que se hizo. `replacement` igual al ejercicio del plan, o null, vuelve a él. Si `current` es la variante que puso
+     * la rotación, el cambio se guarda sobre el ejercicio del plan: vale también en los bloques siguientes, y volver al del
+     * plan lo deja fijo (deja de rotar).
      */
     @Throws(Exception::class)
     fun swapExercise(date: String, current: String, replacement: String?) {
         require(canSwapExercises(date)) { "Solo se puede cambiar en las sesiones de hoy en adelante" }
         val original = originalOf(current, date) ?: current
-        val to = replacement?.takeIf { it != original }
-        require(to == null || swapOptions(original, data.customExercises).any { it.name == to }) { "Ese ejercicio no es del mismo tipo" }
+        val to = if (rotationOrigin(current, date) != null) replacement ?: original else replacement?.takeIf { it != original }
+        require(to == null || to == original || swapOptions(original, data.customExercises).any { it.name == to }) { "Ese ejercicio no es del mismo tipo" }
         save(data.copy(swaps = data.swaps.filterNot { it.original == original && it.since == date } +
             ExerciseSwap(date, original, to)))
     }

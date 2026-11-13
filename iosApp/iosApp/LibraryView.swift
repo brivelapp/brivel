@@ -43,6 +43,8 @@ struct ExerciseSheet: View {
                                 .background(Palette.band).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                             Secondary([card.patternLabel, card.equipment.joined(separator: ", "), card.timed ? "por tiempo" : "por repeticiones"].filter { !$0.isEmpty }.joined(separator: " · "))
                         }
+                        if !card.muscles.isEmpty { Secondary("Zona: \(card.zone) · Músculos: \(card.muscles.joined(separator: ", "))") }
+                        if !card.description.isEmpty { Text(card.description).font(.small) }
                         ForEach(card.cues, id: \.self) { Text("• \($0)").font(.small) }
                         Source(text: card.cueSource)
                         if let onSwap {
@@ -65,36 +67,52 @@ struct ExerciseSheet: View {
     }
 }
 
-/// En Perfil: todos los ejercicios, con búsqueda y filtros de patrón y de material.
+/// En Perfil: todos los ejercicios, con búsqueda y filtros de zona y de material, y el material que tienes.
 struct LibrarySection: View {
     @EnvironmentObject var model: AppModel
     @State private var open = false
     @State private var query = ""
-    @State private var pattern: String?
+    @State private var zone: String?
     @State private var equipment: String?
+    @State private var mine = false
+    @State private var limit = 60
     @State private var shown: String?
 
     var body: some View {
+        let _ = model.version
+        let owned = model.core.equipment
         Module {
             Text("Biblioteca de ejercicios").font(.section)
-            Secondary("Busca entre todos los ejercicios por tipo o material.")
+            Secondary("Busca entre todos los ejercicios por zona del cuerpo o material.")
             if !open {
                 Button("Ver los ejercicios") { open = true }.buttonStyle(SecondaryStyle())
             } else {
+                Secondary("Tu material (el peso corporal siempre cuenta). Brivel solo te propone variantes que puedas hacer con él.")
+                ForEach(LibraryKt.EQUIPMENT.filter { $0 != "peso corporal" }, id: \.self) { tag in
+                    Toggle(tag, isOn: Binding(get: { owned.contains(tag) }, set: { on in
+                        model.run { try model.core.setEquipment(tags: on ? owned + [tag] : owned.filter { $0 != tag }) }
+                    })).font(.small)
+                }
                 TextField("Buscar", text: $query).textFieldStyle(.roundedBorder)
-                Picker("Patrón", selection: $pattern) {
-                    Text("Todos los patrones").tag(String?.none)
-                    ForEach(LibraryKt.PATTERN_LABEL.sorted { $0.value < $1.value }, id: \.key) { Text($0.value).tag(String?.some($0.key)) }
+                Picker("Zona", selection: $zone) {
+                    Text("Todas las zonas").tag(String?.none)
+                    ForEach(LibraryKt.ZONES, id: \.self) { Text($0).tag(String?.some($0)) }
                 }
                 Picker("Material", selection: $equipment) {
                     Text("Cualquier material").tag(String?.none)
                     ForEach(LibraryKt.EQUIPMENT, id: \.self) { Text($0).tag(String?.some($0)) }
                 }
-                let list = model.core.library(query: query, pattern: pattern, equipment: equipment)
-                if list.isEmpty { Secondary("Ningún ejercicio con esos filtros.") }
-                ForEach(list, id: \.name) { c in ExerciseRow(card: c, detail: c.patternLabel) { shown = c.name } }
+                if !owned.isEmpty { Toggle("Solo con mi material", isOn: $mine).font(.small) }
+                let list = model.core.libraryByZone(query: query, zone: zone, equipment: equipment, mine: mine)
+                Secondary("\(list.count) ejercicios")
+                ForEach(Array(list.prefix(limit)), id: \.name) { c in ExerciseRow(card: c, detail: c.patternLabel) { shown = c.name } }
+                if list.count > limit { Button("Ver más") { limit += 60 }.buttonStyle(SecondaryStyle()) }
             }
         }
+        .onChange(of: query) { _, _ in limit = 60 }
+        .onChange(of: zone) { _, _ in limit = 60 }
+        .onChange(of: equipment) { _, _ in limit = 60 }
+        .onChange(of: mine) { _, _ in limit = 60 }
         .sheet(isPresented: Binding(get: { shown != nil }, set: { if !$0 { shown = nil } })) {
             if let shown { ExerciseSheet(name: shown, original: nil, onSwap: nil) }
         }

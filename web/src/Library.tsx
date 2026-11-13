@@ -15,6 +15,8 @@ function Card({ core, card }: { core: WebApp; card: ExerciseCard }) {
           <p className="muted small-text">{[card.patternLabel, card.equipment.join(", "), card.timed ? "por tiempo" : "por repeticiones"].filter(Boolean).join(" · ")}</p>
         </div>
       </div>
+      {card.muscles.length > 0 && <p className="muted small-text">Zona: {card.zone} · Músculos: {card.muscles.join(", ")}</p>}
+      {card.description && <p>{card.description}</p>}
       <ul>{card.cues.map((c) => <li key={c}>{c}</li>)}</ul>
       <p className="muted small source">{card.cueSource}</p>
     </>
@@ -53,45 +55,66 @@ export function ExerciseSheet({ core, name, close, swap }: { core: WebApp; name:
   )
 }
 
-/** En Perfil: todos los ejercicios, con búsqueda y filtros de patrón y de material. */
+const PAGE = 60
+
+/** En Perfil: todos los ejercicios, con búsqueda y filtros de zona y de material, y el material que tienes. */
 export function LibraryCard({ core }: { core: WebApp }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
-  const [pattern, setPattern] = useState("")
+  const [zone, setZone] = useState("")
   const [equipment, setEquipment] = useState("")
+  const [mine, setMine] = useState(false)
+  const [owned, setOwned] = useState<string[]>(() => JSON.parse(core.myEquipmentJson()))
+  const [limit, setLimit] = useState(PAGE)
   const [shown, setShown] = useState<string | null>(null)
-  const patterns: [string, string][] = Object.entries(JSON.parse(core.patternLabelsJson()))
-  const list: ExerciseCard[] = open ? JSON.parse(core.libraryJson(query, pattern || null, equipment || null)) : []
+  const tags: string[] = JSON.parse(core.equipmentJson())
+  const list: ExerciseCard[] = open ? JSON.parse(core.libraryByZoneJson(query, zone || null, equipment || null, mine)) : []
+  const filter = <T,>(set: (v: T) => void) => (v: T) => { set(v); setLimit(PAGE) }
+  const toggle = (t: string) => {
+    const next = owned.includes(t) ? owned.filter((o) => o !== t) : [...owned, t]
+    core.setEquipmentJson(JSON.stringify(next))
+    setOwned(JSON.parse(core.myEquipmentJson()))
+  }
   return (
     <section className="module">
       <h3>Biblioteca de ejercicios</h3>
-      <p className="muted">Busca entre todos los ejercicios por tipo o material.</p>
+      <p className="muted">Busca entre todos los ejercicios por zona del cuerpo o material.</p>
       {!open
         ? <button className="secondary" onClick={() => setOpen(true)}>Ver los ejercicios</button>
         : (
           <>
+            <p className="muted small-text">Tu material (sin el peso corporal, que siempre cuenta). Brivel solo te propone variantes que puedas hacer con él.</p>
+            <div className="chips">
+              {tags.filter((t) => t !== "peso corporal").map((t) => (
+                <button key={t} className={owned.includes(t) ? "chip selected" : "chip"} aria-pressed={owned.includes(t)} onClick={() => toggle(t)}>{t}</button>
+              ))}
+            </div>
             <label className="field">Buscar
-              <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Sentadilla, remo…" />
+              <input type="search" value={query} onChange={(e) => filter(setQuery)(e.target.value)} placeholder="Sentadilla, remo, espalda…" />
             </label>
-            <label className="field">Patrón
-                <select value={pattern} onChange={(e) => setPattern(e.target.value)}>
-                  <option value="">Todos</option>
-                  {patterns.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            <label className="field">Zona
+                <select value={zone} onChange={(e) => filter(setZone)(e.target.value)}>
+                  <option value="">Todas</option>
+                  {(JSON.parse(core.zonesJson()) as string[]).map((z) => <option key={z} value={z}>{z}</option>)}
                 </select>
             </label>
             <label className="field">Material
-                <select value={equipment} onChange={(e) => setEquipment(e.target.value)}>
+                <select value={equipment} onChange={(e) => filter(setEquipment)(e.target.value)}>
                   <option value="">Cualquiera</option>
-                  {(JSON.parse(core.equipmentJson()) as string[]).map((t) => <option key={t} value={t}>{t}</option>)}
+                  {tags.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
             </label>
-            {list.length === 0 && <p className="muted">Ningún ejercicio con esos filtros.</p>}
-            {list.map((c) => (
+            {owned.length > 0 && (
+              <label className="check"><input type="checkbox" checked={mine} onChange={(e) => filter(setMine)(e.target.checked)} /> Solo con mi material</label>
+            )}
+            <p className="muted small-text">{list.length} ejercicios</p>
+            {list.slice(0, limit).map((c) => (
               <button key={c.name} className="row option" onClick={() => setShown(c.name)}>
                 {core.figureJson(c.figure) && <span className="figure-box"><Figure core={core} pattern={c.figure} size={36} /></span>}
                 <span className="grow">{c.name}<span className="muted small"> · {c.patternLabel}</span></span>
               </button>
             ))}
+            {list.length > limit && <button className="secondary" onClick={() => setLimit(limit + PAGE)}>Ver más</button>}
           </>
         )}
       {shown && <ExerciseSheet core={core} name={shown} close={() => setShown(null)} />}
