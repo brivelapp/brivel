@@ -202,7 +202,7 @@ fun SendToWatch(app: BrivelApp, act: Act, sport: String) {
     val request = rememberLauncherForActivityResult(PermissionController.createRequestPermissionResultContract()) { granted ->
         if (planner.permission in granted) toHealthConnect()
     }
-    fun askHealthConnect() = act.suspend { if (planner.granted()) toHealthConnect() else request.launch(setOf(planner.permission)) }
+    fun askHealthConnect() = act.suspend(null) { if (planner.granted()) toHealthConnect() else request.launch(setOf(planner.permission)) }
     TextButton(onClick = { if (route != null && healthConnect) choosing = true else if (route != null) toRoute() else askHealthConnect() }) {
         Glyph(R.drawable.ic_watch, 18.dp, Palette.ok)
         Spacer(Modifier.width(6.dp))
