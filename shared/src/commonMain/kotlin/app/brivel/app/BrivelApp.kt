@@ -118,6 +118,8 @@ class BrivelApp(
     fun todayScreen(): TodayScreen = buildToday(data, today())
     fun month(year: Int, month: Int): MonthScreen = buildMonth(data, today(), year, month)
     fun progress(): ProgressScreen = buildProgress(data, today())
+    /** El plan entero, semana a semana (PlanOverview.kt); null sin objetivo. */
+    fun planOverview(): PlanOverview? = buildPlanOverview(data, today())
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
     fun day(date: String): DayView = Planner(data, today()).day(LocalDate.parse(date))
 

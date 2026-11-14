@@ -1,12 +1,38 @@
 // Calendario mensual, como CalendarScreen.kt: el pasado muestra lo que hiciste y el futuro, el plan; el día elegido, debajo
 import { useEffect, useRef, useState, type KeyboardEvent } from "react"
 import type { WebApp } from "brivel-shared"
-import type { DayView, MonthScreen } from "./types"
+import type { DayView, MonthScreen, PlanOverview } from "./types"
 import { DayContent, Icon, SPORT_ICON, type Act } from "./Today"
 import check from "../../iosApp/iosApp/Assets.xcassets/check.imageset/check.svg"
 
 const LETTERS = ["L", "M", "X", "J", "V", "S", "D"]
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+
+const hours = (min: number) => (min < 60 ? `${min} min` : `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ""}`)
+
+/** El plan entero de un vistazo: cada semana hasta la carrera (o lo que queda del bloque) con su fase y su carga. */
+function WholePlan({ core }: { core: WebApp }) {
+  const [open, setOpen] = useState(false)
+  const json = core.planOverviewJson()
+  const plan: PlanOverview | null = json ? JSON.parse(json) : null
+  if (!plan) return null
+  return (
+    <section className="module">
+      <h3>El plan entero</h3>
+      <p className="muted small-text">{plan.subtitle}</p>
+      {!open
+        ? <button className="secondary" onClick={() => setOpen(true)}>Ver semana a semana</button>
+        : plan.weeks.map((w) => (
+          <div key={w.monday} className="row between">
+            <span>{w.isCurrent ? <strong>Esta semana</strong> : `Semana del ${w.title}`}{w.phase && <span className="muted small"> · {w.phase}</span>}
+              <br /><span className="muted small">{w.race ? `Carrera: ${w.race}` : w.key ?? "Solo fuerza"}</span></span>
+            <span className="mono nowrap">{hours(w.minutes)}</span>
+          </div>
+        ))}
+      {open && <p className="muted small">Las semanas que vienen se ajustan a lo que vayas haciendo.</p>}
+    </section>
+  )
+}
 
 export function Calendar({ core, act, openStrength }: { core: WebApp; act: Act; openStrength: (date: string) => void }) {
   const now = new Date()
@@ -79,6 +105,7 @@ export function Calendar({ core, act, openStrength }: { core: WebApp; act: Act; 
             </section>
           ))}
           <DayContent key={selected} core={core} day={day} act={act} openStrength={openStrength} />
+          <WholePlan core={core} />
         </aside>
       </div>
     </main>

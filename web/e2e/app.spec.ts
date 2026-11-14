@@ -245,3 +245,15 @@ test("sesión propia: se monta por pasos, se guarda, se pone hoy y sale en Hoy",
   await page.reload()
   await expect(page.getByRole("heading", { name: "Series de 3 minutos" })).toBeVisible()  // sigue ahí al recargar
 })
+
+test("el Calendario enseña el plan entero, semana a semana", async ({ page }) => {
+  await signUp(page)
+  await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Calendario" }).click()
+  const plan = page.locator("section.module", { hasText: "El plan entero" })
+  await expect(plan.getByText(/^Bloque 1: lo que queda de sus cuatro semanas/)).toBeVisible()
+  await plan.getByRole("button", { name: "Ver semana a semana" }).click()
+  await expect(plan.getByText("Esta semana")).toBeVisible()
+  await expect(plan.getByText("Semana 1 de 4", { exact: false }).first()).toBeVisible()
+  await expect(plan.getByText(/Semana 4 de 4 \(más suave\)/)).toBeVisible()
+  await expect(plan.getByText(/^Semana del \d+ de (noviembre|diciembre)/)).toHaveCount(3)  // las tres que quedan del bloque
+})

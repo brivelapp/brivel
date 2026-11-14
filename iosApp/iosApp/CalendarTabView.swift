@@ -49,9 +49,57 @@ struct CalendarTabView: View {
                 }
                 DayDetail(date: selected, cell: screen.weeks.flatMap { $0 }.first { $0.date == selected })
                     .id(selected)  // sin arrastrar lo abierto de otro día
+                WholePlanSection()
             }.padding(16)
         }
         .background(Palette.bg)
+    }
+}
+
+private func hoursText(_ min: Int) -> String {
+    if min < 60 { return "\(min) min" }
+    return min % 60 > 0 ? "\(min / 60) h \(min % 60) min" : "\(min / 60) h"
+}
+
+private func weekTitle(_ w: PlanWeek) -> String {
+    let name = w.isCurrent ? "Esta semana" : "Semana del \(w.title)"
+    guard let phase = w.phase else { return name }
+    return "\(name) · \(phase)"
+}
+
+private func weekDetail(_ w: PlanWeek) -> String {
+    if let race = w.race { return "Carrera: \(race)" }
+    return w.key ?? "Solo fuerza"
+}
+
+/// El plan entero de un vistazo: cada semana hasta la carrera (o lo que queda del bloque) con su fase y su carga.
+private struct WholePlanSection: View {
+    @EnvironmentObject var model: AppModel
+    @State private var open = false
+
+    var body: some View {
+        let _ = model.version
+        if let plan = model.core.planOverview() {
+            Module {
+                Text("El plan entero").font(.section)
+                Secondary(plan.subtitle)
+                if !open {
+                    Button("Ver semana a semana") { open = true }.buttonStyle(SecondaryStyle())
+                } else {
+                    ForEach(plan.weeks, id: \.monday) { w in
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(weekTitle(w)).font(.ui(15, w.isCurrent ? .bold : .regular))
+                                Source(text: weekDetail(w))
+                            }
+                            Spacer()
+                            Text(hoursText(Int(w.minutes))).font(.mono(15, .semibold)).fixedSize()
+                        }
+                    }
+                    Source(text: "Las semanas que vienen se ajustan a lo que vayas haciendo.")
+                }
+            }
+        }
     }
 }
 

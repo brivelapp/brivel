@@ -140,6 +140,7 @@ class WebApp {
     fun monthJson(year: Int, month: Int): String = json.encodeToString(app.month(year, month))
     fun dayJson(date: String): String = json.encodeToString(app.day(date))
     fun progressJson(): String = json.encodeToString(app.progress())
+    fun planOverviewJson(): String? = app.planOverview()?.let { json.encodeToString(it) }
     fun dateLabel(date: String): String = dateLabelCore(date)
 
     // ------------------------------------------------------------ bienvenida y Perfil (en JSON, como las pantallas)

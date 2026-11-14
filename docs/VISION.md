@@ -205,7 +205,7 @@ peticiones al día, 5 GB de D1; [`SINCRONIZACION.md`](SINCRONIZACION.md)); solo 
 | 2 | C. Constructor de sesiones | Sesiones propias de resistencia al calendario y al reloj. **Programado el 2026-11-14** (rama `entrenar`, sin publicar); fuera: ponerla en un día futuro desde el calendario (hoy solo «Hoy» y días de la semana) | TrainingPeaks, intervals.icu, Garmin | M |
 | 3 | B. Actividades propias | Importar FIT, guardar la actividad con sus series, detalle (mapa, vueltas, gráficas, zonas), curvas de potencia y ritmo, umbrales propios | intervals.icu | L |
 | 4 | G. Grabar con el GPS del móvil | Añadido por Gabriel el 2026-11-14. Va detrás de B porque usa su almacén de actividades | Runna, Garmin | L |
-| 5 | D. Plan de carrera | Repasar la vista del plan entero hasta la carrera; los ritmos por sesión ya están | Runna | S |
+| 5 | D. Plan de carrera | La vista del plan entero hasta la carrera, en Calendario; los ritmos por sesión ya estaban. **Programado el 2026-11-14** (rama `entrenar`, sin publicar) | Runna | S |
 | 6 | E. Salud | Fases de sueño, estrés, SpO2, respiración, temperatura. Solo lo que miden reloj y báscula | Apple Health, Google Health, Garmin | M |
 | 7 | F. Material | Kilómetros por zapatilla y bici | Garmin, intervals.icu | S |
 

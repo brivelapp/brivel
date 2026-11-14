@@ -79,7 +79,35 @@ fun CalendarTab(app: BrivelApp, version: Int, act: Act) {
             }
         }
         key(selected) { DayContent(app, day, app.watchRoute != null, act, today = day.isToday) }  // sin arrastrar lo abierto de otro día
+        WholePlan(app, version)
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+private fun hours(min: Int) = if (min < 60) "$min min" else "${min / 60} h" + if (min % 60 > 0) " ${min % 60} min" else ""
+
+/** El plan entero de un vistazo: cada semana hasta la carrera (o lo que queda del bloque) con su fase y su carga. */
+@Composable
+private fun WholePlan(app: BrivelApp, version: Int) {
+    var open by remember { mutableStateOf(false) }
+    val plan = remember(version) { app.planOverview() } ?: return
+    Module {
+        SectionTitle("El plan entero")
+        Secondary(plan.subtitle)
+        if (!open) SecondaryButton("Ver semana a semana") { open = true }
+        else {
+            plan.weeks.forEach { w ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text((if (w.isCurrent) "Esta semana" else "Semana del ${w.title}") + (w.phase?.let { " · $it" } ?: ""),
+                            fontSize = 15.sp, fontWeight = if (w.isCurrent) FontWeight.Bold else FontWeight.Normal)
+                        Source(w.race?.let { "Carrera: $it" } ?: w.key ?: "Solo fuerza")
+                    }
+                    Text(hours(w.minutes), fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, softWrap = false)
+                }
+            }
+            Source("Las semanas que vienen se ajustan a lo que vayas haciendo.")
+        }
     }
 }
 
