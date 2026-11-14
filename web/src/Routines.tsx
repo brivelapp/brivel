@@ -5,20 +5,20 @@ import type { WebApp } from "brivel-shared"
 import type { Act } from "./Today"
 import type { CustomExercise, ExerciseCard, Routine, RoutineExercise } from "./types"
 
-const DAYS: [string, string][] = [["MON", "L"], ["TUE", "M"], ["WED", "X"], ["THU", "J"], ["FRI", "V"], ["SAT", "S"], ["SUN", "D"]]
-const DAY_NAME: Record<string, string> = { MON: "lunes", TUE: "martes", WED: "miércoles", THU: "jueves", FRI: "viernes", SAT: "sábado", SUN: "domingo" }
+export const DAYS: [string, string][] = [["MON", "L"], ["TUE", "M"], ["WED", "X"], ["THU", "J"], ["FRI", "V"], ["SAT", "S"], ["SUN", "D"]]
+export const DAY_NAME: Record<string, string> = { MON: "lunes", TUE: "martes", WED: "miércoles", THU: "jueves", FRI: "viernes", SAT: "sábado", SUN: "domingo" }
 const EMPTY: Routine = { id: "", name: "", exercises: [], days: [], rir: 2, since: "" }
 
-const daysText = (days: string[]) =>
+export const daysText = (days: string[]) =>
   days.length ? DAYS.filter(([k]) => days.includes(k)).map(([k]) => DAY_NAME[k]).join(", ") : "sin días: no entra en el plan"
 
 /** El aviso general queda detrás del diálogo: los errores al guardar se enseñan dentro de él. */
-function attempt(save: () => unknown, fail: (m: string) => void, done: () => void) {
+export function attempt(save: () => unknown, fail: (m: string) => void, done: () => void) {
   try { save() } catch (x) { return fail(x instanceof Error ? x.message : String(x)) }
   done()
 }
 
-function Num({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
+export function Num({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
   return (
     <label className="field small-field">{label}
       <input inputMode="numeric" value={value || ""} onChange={(e) => onChange(parseInt(e.target.value.replace(/\D/g, "").slice(0, 3)) || 0)} />

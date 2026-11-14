@@ -68,6 +68,7 @@ fun merge(base: AppData, local: AppData, remote: AppData): Merged {
         // Un entreno libre por día y una medida por día y tipo: si los dos dispositivos lo cambiaron, la del servidor
         workouts = items(base.workouts, local.workouts, remote.workouts).distinctBy { it.date },
         measurements = items(base.measurements, local.measurements, remote.measurements).distinctBy { it.date to it.kind },
+        ownSessions = items(base.ownSessions, local.ownSessions, remote.ownSessions).distinctBy { it.id },
     )
     return Merged(data, conflicts)
 }

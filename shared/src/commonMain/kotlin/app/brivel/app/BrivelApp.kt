@@ -256,6 +256,49 @@ class BrivelApp(
             sets = data.sets.filterNot { it.date == w.date && it.exercise in names }))
     }
 
+    // ------------------------------------------------------------ sesiones propias de resistencia (OwnSessions.kt)
+
+    val ownSessions: List<OwnSession> get() = data.ownSessions
+
+    /**
+     * Crea (id vacío) o cambia una sesión propia. Los días de la semana que se le asignan dejan de ser de las demás de su
+     * deporte. Cuenta desde hoy: lo pasado no cambia.
+     */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun saveOwnSession(session: OwnSession): OwnSession {
+        val old = data.ownSessions.firstOrNull { it.id == session.id }
+        val s = validOwnSession(session).copy(id = session.id.ifBlank { kotlin.random.Random.nextLong().toULong().toString(36) },
+            since = today().toString(), dates = old?.dates ?: emptyList())
+        val others = data.ownSessions.filter { it.id != s.id }.map { if (it.sport == s.sport) it.copy(days = it.days - s.days.toSet()) else it }
+        save(data.copy(ownSessions = others + s))
+        return s
+    }
+
+    fun deleteOwnSession(id: String) = save(data.copy(ownSessions = data.ownSessions.filter { it.id != id }))
+
+    /** Pone una sesión propia un día concreto, de hoy en adelante: ese día sustituye a la de su deporte. */
+    @Throws(Exception::class)
+    fun scheduleOwnSession(id: String, date: String) {
+        val s = data.ownSessions.firstOrNull { it.id == id } ?: throw IllegalArgumentException("Esa sesión ya no existe")
+        require(LocalDate.parse(date) >= today()) { "Solo se puede poner de hoy en adelante" }
+        // Ese día, las demás de su deporte puestas a mano le dejan el sitio
+        save(data.copy(ownSessions = data.ownSessions.map {
+            when {
+                it.id == id -> it.copy(dates = (it.dates + date).distinct().sorted())
+                it.sport == s.sport -> it.copy(dates = it.dates - date)
+                else -> it
+            }
+        }))
+    }
+
+    /** Pone una sesión propia hoy. */
+    @Throws(Exception::class)
+    fun doOwnSessionToday(id: String) = scheduleOwnSession(id, today().toString())
+
+    /** Quita una sesión propia de un día concreto en el que se puso a mano: ese día vuelve a su plan. */
+    fun unscheduleOwnSession(id: String, date: String) =
+        save(data.copy(ownSessions = data.ownSessions.map { if (it.id == id) it.copy(dates = it.dates - date) else it }))
+
     // ------------------------------------------------------------ biblioteca y ejercicios propios (Library.kt)
 
     val customExercises: List<CustomExercise> get() = data.customExercises

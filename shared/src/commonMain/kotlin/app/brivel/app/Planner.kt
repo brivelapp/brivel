@@ -294,7 +294,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
 
     fun week(monday: LocalDate): WeekView {
         val race = raceGoal()
-        val week = applyWorkouts(moveSessions(applyRoutines(if (race != null && race.date >= today) raceWeek(monday, race) else healthWeek(monday))))
+        val week = applyWorkouts(moveSessions(applyOwnSessions(applyRoutines(if (race != null && race.date >= today) raceWeek(monday, race) else healthWeek(monday)))))
             .let { w -> zoneLine(w)?.let { w.copy(info = w.info + it) } ?: w }
         val s = screening ?: return week
         return when (s.clearance) {
@@ -354,6 +354,28 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             withStrength(d, routineItem(r, r.strength(data.customExercises)).copy(kind = "free", hint = "Entreno libre"))
         }
         return week.copy(days = days, strengthDays = days.count { d -> d.items.any { it.isStrength } })
+    }
+
+    /**
+     * Sesiones propias de resistencia (OwnSessions.kt): el día que toca (su día de la semana desde `since`, o una fecha
+     * puesta a mano), sustituye a la sesión de ese deporte del plan; si no había, se añade. Si dos del mismo deporte
+     * coinciden, manda la puesta para esa fecha. Antes de mover sesiones: se puede mover como las del plan.
+     */
+    private fun applyOwnSessions(week: WeekView): WeekView {
+        if (data.ownSessions.isEmpty()) return week
+        val physio = (physiology ?: Profile(activeSports = listOf("running"))).copy(intensityCap = intensityCap)
+        val days = week.days.map { d ->
+            val own = data.ownSessions.filter { s -> d.date in s.dates || (weekdayOf(LocalDate.parse(d.date)) in s.days && d.date >= s.since) }
+            if (own.isEmpty()) return@map d
+            var items = d.items
+            for (s in own.sortedBy { d.date in it.dates }.associateBy { it.sport }.values) {
+                val item = cardioItem(s.session(physio), emptyList()).copy(title = s.name, hint = "Tu sesión", technicalName = s.name)
+                val i = items.indexOfFirst { it.slot == s.sport }
+                items = if (i >= 0) items.toMutableList().also { it[i] = item } else items + item
+            }
+            dayView(d.date, d.weekday, items, d.note.takeIf { items.isEmpty() }, d.availableMin, d.reasons, d.adjustments, d.phase)
+        }
+        return week.copy(days = days, activeMinutes = activeMinutes(days))
     }
 
     /** El día con esa sesión como su fuerza: en el sitio de la que tuviera, o añadida. */

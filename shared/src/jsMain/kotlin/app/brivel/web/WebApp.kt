@@ -30,6 +30,9 @@ import app.brivel.app.polylines
 import app.brivel.app.EQUIPMENT
 import app.brivel.app.PATTERN_LABEL
 import app.brivel.app.MEASURES
+import app.brivel.app.OWN_SPORTS
+import app.brivel.app.OWN_ZONES
+import app.brivel.app.OwnSession
 import app.brivel.app.SET_KINDS
 import app.brivel.sync.SyncCode
 import app.brivel.sync.Syncer
@@ -225,6 +228,15 @@ class WebApp {
     fun changeWorkoutSets(name: String, delta: Int) = app.changeWorkoutSets(name, delta)
     fun linkWorkoutExercise(name: String, linked: Boolean) = app.linkWorkoutExercise(name, linked)
     fun discardWorkout() = app.discardWorkout()
+
+    // Sesiones propias de resistencia (OwnSessions.kt): la web las manda y las recibe en JSON
+    fun ownSessionsJson(): String = json.encodeToString(app.ownSessions)
+    fun saveOwnSessionJson(text: String): String = json.encodeToString(app.saveOwnSession(read.decodeFromString<OwnSession>(text)))
+    fun deleteOwnSession(id: String) = app.deleteOwnSession(id)
+    fun doOwnSessionToday(id: String) = app.doOwnSessionToday(id)
+    fun unscheduleOwnSession(id: String, date: String) = app.unscheduleOwnSession(id, date)
+    fun ownSportsJson(): String = json.encodeToString(OWN_SPORTS)
+    fun ownZonesJson(): String = json.encodeToString(OWN_ZONES.map { (k, label) -> listOf(k, label) })
 
     // Medidas corporales (Training.kt): [clave, nombre, unidad]
     fun measuresJson(): String = json.encodeToString(MEASURES.map { (k, m) -> listOf(k, m.label, m.unit) })

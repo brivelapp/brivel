@@ -1,6 +1,8 @@
 package app.brivel.web
 
 import app.brivel.app.NextSet
+import app.brivel.app.OwnSession
+import app.brivel.app.OwnStep
 import app.brivel.app.GoalKind
 import app.brivel.app.library
 import app.brivel.app.Routine
@@ -69,7 +71,8 @@ class WebTypesTest {
         val screens = listOf(json.encodeToString(app.month(2026, 10)), json.encodeToString(app.progress()),
             json.encodeToString(library()), json.encodeToString(app.routines),  // la biblioteca y las rutinas, en Entrenar
             json.encodeToString(app.exerciseHistory("Flexiones")), json.encodeToString(app.startWorkout(null)),
-            json.encodeToString(NextSet(0, 1)))
+            json.encodeToString(NextSet(0, 1)),
+            json.encodeToString(app.saveOwnSession(OwnSession("", "Series", "running", listOf(OwnStep("Rápido", 3.0, "Z4", 5, 2.0)), listOf("TUE"), since = ""))))
         val all = sent + screens.flatMap { keys(Json.parseToJsonElement(it)) }
         val types = fs.readFileSync(js("process.env.WEB_TYPES"), "utf8") as String
         val declared = Regex("""(\w+)\??:\s""").findAll(types.substringAfter("export type Tone")).map { it.groupValues[1] }.toSet()

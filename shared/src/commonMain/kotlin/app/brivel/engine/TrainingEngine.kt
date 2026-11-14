@@ -493,6 +493,12 @@ fun buildSession(kind: String, sport: String, profile: Profile, volume: Double =
         Block(block = c.block, reps = reps[i], minutes = minutes ?: max(total - fixed, 5.0), zone = capped(c.zone),
             restMinutes = c.rest, restZone = if (c.rest != null) "Z1" else null, detail = c.detail, duty = c.duty)
     }
+    return finishSession(entry.id, sport, kind, NAMES[kind]!!, GOALS[kind]!!, blocks, profile)
+}
+
+/** Lo común a una sesión del catálogo y a una del usuario: metros de natación, RPE, objetivos por zona, techo de FC y carga. */
+internal fun finishSession(id: String, sport: String, kind: String, name: String, goal: String, blocks: List<Block>,
+                           profile: Profile): Session {
     val css = profile.css?.takeIf { it != 0.0 }
     for (b in blocks) {
         if (sport in SWIM && css != null && kind != "test") b.meters = swimMeters(b.minutes, b.zone, css)
@@ -515,7 +521,7 @@ fun buildSession(kind: String, sport: String, profile: Profile, volume: Double =
         if (targets["Z1"] != null && z2Lo > hrCap) targets["Z1"] = "< $hrCap ppm"
     }
     val model = profile.runModel
-    if (sport == "running" && model != null && lthr != null && lthr != 0.0 && kind != "test" && !entry.id.startsWith("T-")) {
+    if (sport == "running" && model != null && lthr != null && lthr != 0.0 && kind != "test" && !id.startsWith("T-")) {
         // Como Garmin: ritmos desde tus zonas de FC con tu propia relación FC-velocidad (§13)
         val fmtPace = { sec: Double -> "${floorDiv(sec, 60.0).toInt()}:${twoDigits(pyRound(sec % 60))}" }
         targets = targets.mapValues { (z, t) ->
@@ -528,12 +534,30 @@ fun buildSession(kind: String, sport: String, profile: Profile, volume: Double =
         }.toMutableMap()
     }
     return Session(
-        id = entry.id, sport = sport, type = kind, name = NAMES[kind]!!, goal = GOALS[kind]!!,
+        id = id, sport = sport, type = kind, name = name, goal = goal,
         durationMin = pyRound(blocks.sumOf { it.reps * (it.minutes + (it.restMinutes ?: 0.0)) }),
         tss = pyRound(blocksTss(blocks)), blocks = blocks,
         targets = targets.filterValues { !it.isNullOrEmpty() }.mapValues { it.value!! }, hrCap = hrCap,
         ifBad = NOTES[kind]!!.first, ifGood = NOTES[kind]!!.second,
     )
+}
+
+/** El tipo de sesión del catálogo al que equivale una sesión del usuario, por su zona más alta. [Inferencia] */
+private val OWN_KIND = mapOf("Z1" to "recovery", "Z2" to "aerobic", "Z3" to "tempo", "Z4" to "threshold", "Z5" to "vo2max")
+
+/**
+ * Sesión montada por el usuario (MOTOR §4.4): sus pasos, con los objetivos, el techo del cribado y la carga calculados
+ * como en las del catálogo. Se trata como el tipo de su zona más alta (Z2 → aeróbica, Z4 → umbral…), para que el
+ * reloj, las notas y el reparto de la carga la lean igual. `steps`: nombre, repeticiones, minutos, zona y descanso.
+ */
+fun ownSession(id: String, name: String, sport: String, steps: List<Block>, profile: Profile): Session {
+    val top = mapOf("moderate" to "Z3", "light_moderate" to "Z2")[profile.intensityCap]
+    val blocks = steps.map { s ->
+        val rest = s.restMinutes?.takeIf { it > 0 && s.reps > 1 }
+        Block(block = s.block, reps = s.reps, minutes = s.minutes, zone = if (top != null && s.zone > top) top else s.zone,
+            restMinutes = rest, restZone = if (rest != null) "Z1" else null)
+    }
+    return finishSession("OWN-$id", sport, OWN_KIND.getValue(blocks.maxOf { it.zone }), name, "Tu sesión", blocks, profile)
 }
 
 /** Fuerza por fase (MOTOR §5). Carga = rTSS con el RPE planificado. */

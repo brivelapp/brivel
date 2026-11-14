@@ -215,3 +215,33 @@ test("Progreso guarda las medidas corporales y rechaza las imposibles", async ({
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Progreso" }).click()
   await expect(page.locator("section.module", { hasText: "Tus medidas" }).getByRole("button", { name: /Cintura.*82,5 cm/ })).toBeVisible()
 })
+
+test("sesión propia: se monta por pasos, se guarda, se pone hoy y sale en Hoy", async ({ page }) => {
+  await signUp(page)
+  const nav = page.getByRole("navigation", { name: "Secciones" })
+  await nav.getByRole("button", { name: "Entrenar" }).click()
+  const card = page.locator("section.module", { hasText: "Tus sesiones" })
+  await card.getByRole("button", { name: "Nueva sesión" }).click()
+  const editor = page.getByRole("dialog", { name: "Nueva sesión" })
+  await editor.getByRole("button", { name: "Guardar" }).click()  // sin nombre no se guarda, y dice por qué
+  await expect(editor.getByRole("alert")).toHaveText("Ponle un nombre a la sesión (60 letras como mucho)")
+  await editor.getByLabel("Nombre", { exact: true }).fill("Series de 3 minutos")
+  await editor.getByLabel("Minutos").fill("15")
+  await editor.getByRole("button", { name: "Añadir paso" }).click()
+  const step = editor.locator(".routine-exercise").nth(1)
+  await step.getByLabel("Intensidad").selectOption("Z4")
+  await step.getByLabel("Minutos").fill("3")
+  await step.getByLabel("Veces").fill("5")
+  await step.getByLabel("Descanso (min)").fill("2")
+  await expect(editor.getByText(/^Total: 40 min/)).toBeVisible()  // 15 + 5 × (3 + 2)
+  await editor.getByRole("button", { name: "Guardar" }).click()
+  await expect(page.getByRole("status")).toHaveText("Sesión guardada")
+  await expect(card.getByRole("button", { name: /Series de 3 minutos · Carrera · 40 min · sin días fijos/ })).toBeVisible()
+
+  await card.getByRole("button", { name: "Hacer Series de 3 minutos hoy" }).click()
+  await nav.getByRole("button", { name: "Hoy" }).click()
+  await expect(page.getByRole("heading", { name: "Series de 3 minutos" })).toBeVisible()
+  await expect(page.getByText("Tu sesión")).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole("heading", { name: "Series de 3 minutos" })).toBeVisible()  // sigue ahí al recargar
+})

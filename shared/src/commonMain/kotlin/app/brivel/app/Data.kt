@@ -136,7 +136,8 @@ data class AppData(
     val customExercises: List<CustomExercise> = emptyList(),  // ejercicios creados por el usuario (Library.kt)
     val equipment: List<String> = emptyList(),  // el material que tiene (etiquetas de EQUIPMENT); vacío: sin indicar
     val workouts: List<FreeWorkout> = emptyList(),  // entrenos libres, uno por día (Planner.applyWorkouts)
-    val measurements: List<BodyMeasure> = emptyList(),  // medidas corporales apuntadas a mano (Measures.kt)
+    val measurements: List<BodyMeasure> = emptyList(),  // medidas corporales apuntadas a mano (Training.kt)
+    val ownSessions: List<OwnSession> = emptyList(),  // sesiones propias de resistencia (OwnSessions.kt)
 )
 
 /**
@@ -145,8 +146,8 @@ data class AppData(
  * v3 → v4: añade `garmin` (vacío). Sube para que un dispositivo sin actualizar no sincronice: descartaría `garmin` al
  * leerlo (ignoreUnknownKeys) y lo borraría también en los demás al subir su copia. v4 → v5: añade `swaps` (vacío), por
  * lo mismo. v5 → v6: añade `moves` (vacío), por lo mismo. v6 → v7: añade `routines` (vacío), por lo mismo. v7 → v8: añade
- * `customExercises` (vacío), por lo mismo. v8 → v9: añade `equipment` (vacío), por lo mismo. v9 → v10: añade `workouts` y
- * `measurements` (vacíos), el tipo de cada serie y las superseries de las rutinas, por lo mismo.
+ * `customExercises` (vacío), por lo mismo. v8 → v9: añade `equipment` (vacío), por lo mismo. v9 → v10: añade `workouts`,
+ * `measurements` y `ownSessions` (vacíos), el tipo de cada serie y las superseries de las rutinas, por lo mismo.
  */
 fun migrate(data: AppData): AppData = when {
     data.schema >= SCHEMA && data.lifts.isEmpty() -> data

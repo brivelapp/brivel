@@ -24,6 +24,9 @@ export interface RoutineExercise { name: string; sets: number; low: number; high
 // Entrenar (Training.kt): entreno libre de hoy, la serie que toca y el historial de un ejercicio
 export interface FreeWorkout { date: string; name: string; exercises: RoutineExercise[]; rir: number }
 export interface NextSet { exercise: number; set: number }
+// Sesiones propias de resistencia (OwnSessions.kt)
+export interface OwnStep { name: string; minutes: number; zone: string; reps: number; restMinutes: number }
+export interface OwnSession { id: string; name: string; sport: string; steps: OwnStep[]; days: string[]; dates: string[]; since: string }
 export interface ExerciseDay { date: string; best: string; sets: number; volumeKg: number; e1rm: number | null }
 export interface ExerciseHistory { name: string; days: ExerciseDay[]; chart: Metric | null; records: Milestone[] }
 export interface Routine { id: string; name: string; exercises: RoutineExercise[]; days: string[]; rir: number; since: string }

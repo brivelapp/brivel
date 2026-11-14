@@ -1,9 +1,10 @@
-// Entrenar (docs/VISION.md §5): empezar un entreno sin plan, tus rutinas y la biblioteca de ejercicios
+// Entrenar (docs/VISION.md §5): empezar un entreno sin plan, tus sesiones de resistencia, tus rutinas y la biblioteca
 import type { WebApp } from "brivel-shared"
 import type { Act } from "./Today"
 import type { FreeWorkout, Routine } from "./types"
 import { RoutinesCard } from "./Routines"
 import { LibraryCard } from "./Library"
+import { SessionsCard } from "./Sessions"
 
 export function Train({ core, act, openStrength }: { core: WebApp; act: Act; openStrength: (date: string) => void }) {
   const json = core.workoutTodayJson()
@@ -33,6 +34,7 @@ export function Train({ core, act, openStrength }: { core: WebApp; act: Act; ope
             </>
           )}
         </section>
+        <SessionsCard core={core} act={act} />
         <RoutinesCard core={core} act={act} />
         <LibraryCard core={core} />
       </div>
