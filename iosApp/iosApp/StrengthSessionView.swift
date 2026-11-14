@@ -56,6 +56,9 @@ struct StrengthSessionView: View {
     @State private var restView = false
     @Environment(\.scenePhase) private var phase
     @State private var notifyOk = true  // se puede avisar al acabar el descanso con la app cerrada
+    @State private var picking = false  // entreno libre: eligiendo un ejercicio que añadir
+    @State private var confirmDiscard = false
+    @State private var removing: String?  // ejercicio con series que se va a quitar
 
     var body: some View {
         let _ = model.version
@@ -78,7 +81,7 @@ struct StrengthSessionView: View {
                     VStack(spacing: 0) {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 14) {
-                                content(exercises, other: screen.other, notes: screen.notes, left: left)
+                                content(exercises, other: screen.other, notes: screen.notes, left: left, free: screen.free)
                             }.padding(.horizontal, 18).padding(.vertical, 14)
                         }
                         if restEnd != nil && (mode == "session" || !restView) { RestBar(left: left, total: restTotal) }
@@ -102,19 +105,50 @@ struct StrengthSessionView: View {
                 if p == .background, let end = restEnd { RestAlert.schedule(at: end) } else if p == .active { RestAlert.cancel() }
             }
             .task { notifyOk = await RestAlert.allowed() }
+            .sheet(isPresented: $picking) {
+                ExercisePicker { name in
+                    restView = false
+                    edit { try model.core.addWorkoutExercise(name: name) }
+                }
+            }
+            .confirmationDialog("¿Quitar \(removing ?? "") y sus series de hoy?",
+                                isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }), titleVisibility: .visible) {
+                Button("Quitar", role: .destructive) {
+                    if let name = removing { edit("Ejercicio quitado") { try model.core.removeWorkoutExercise(name: name) } }
+                    removing = nil
+                }
+            }
+            // Descartar borra también las series apuntadas hoy en ese entreno: se pregunta antes
+            .confirmationDialog("¿Descartar el entreno de hoy?", isPresented: $confirmDiscard, titleVisibility: .visible) {
+                Button("Descartar", role: .destructive) {
+                    model.run("Entreno descartado: hoy vuelve a tu plan") { model.core.discardWorkout() }
+                    close()
+                }
+            } message: { Text("Se borran también las series que has apuntado en él.") }
         } else {
             Color.clear.onAppear(perform: close)
         }
     }
 
     @ViewBuilder
-    private func content(_ exercises: [StrengthExercise], other: [String], notes: String?, left: Int) -> some View {
+    private func content(_ exercises: [StrengthExercise], other: [String], notes: String?, left: Int, free: Bool) -> some View {
         let e = exercises.indices.contains(current) ? exercises[current] : nil
         let pending = exercises.firstIndex { $0.done.count < Int($0.sets) }
-        if mode == "session" {
+        if free && exercises.isEmpty {
+            Module { Secondary("Tu entreno está vacío. Añade el primer ejercicio y apunta cada serie.") }
+        } else if mode == "session" {
             if let notes { Secondary(notes) }  // calentamiento y esfuerzo, como en la tarjeta de Hoy
             ForEach(Array(exercises.enumerated()), id: \.offset) { i, ex in
-                SessionRows(e: ex, isCurrent: i == current, currentSet: setNo) { set in current = i; setNo = set; mode = "set"; restView = false }
+                SessionRows(e: ex, isCurrent: i == current, currentSet: setNo, controls: free ? FreeControls(
+                    canRemoveSet: Int(ex.sets) > max(1, ex.done.count),
+                    linked: i > 0 ? (ex.superset != nil && exercises[i - 1].superset == ex.superset) : nil,
+                    addSet: { edit { try model.core.changeWorkoutSets(name: ex.name, delta: 1) } },
+                    removeSet: { edit { try model.core.changeWorkoutSets(name: ex.name, delta: -1) } },
+                    remove: {
+                        if ex.done.isEmpty { edit("Ejercicio quitado") { try model.core.removeWorkoutExercise(name: ex.name) } } else { removing = ex.name }
+                    },
+                    link: { on in edit { try model.core.linkWorkoutExercise(name: ex.name, linked: on) } }) : nil
+                ) { set in current = i; setNo = set; mode = "set"; restView = false }
             }
         } else if restEnd != nil && restView {
             if !notifyOk {
@@ -127,39 +161,59 @@ struct StrengthSessionView: View {
                      skip: { restEnd = nil },
                      rate: { rir in
                          guard case let (ex, s)? = logged else { return }
-                         model.run { try model.core.logSet(date: date, exercise: ex.name, set: s.set, weightKg: s.weightKg, reps: s.reps, rir: KotlinInt(int: Int32(rir))) }
-                         logged = (ex, LoggedSet(set: s.set, weightKg: s.weightKg, reps: s.reps, rir: KotlinInt(int: Int32(rir))))
+                         model.run { try model.core.logSet(date: date, exercise: ex.name, set: s.set, weightKg: s.weightKg, reps: s.reps, rir: KotlinInt(int: Int32(rir)), kind: s.kind) }
+                         logged = (ex, LoggedSet(set: s.set, weightKg: s.weightKg, reps: s.reps, rir: KotlinInt(int: Int32(rir)), kind: s.kind))
                      })
         } else if let e, !(setNo > Int(e.sets) && pending == nil) {
             SetView(e: e, setNo: setNo, next: exercises.indices.contains(current + 1) ? exercises[current + 1] : nil,
-                    swap: model.core.canSwapExercises(date: date) && e.done.isEmpty ? { (r: String) in
+                    swap: !free && model.core.canSwapExercises(date: date) && e.done.isEmpty ? { (r: String) in
                         model.run("Ejercicio cambiado") { try model.core.swapExercise(date: date, current: e.name, replacement: r) }
-                    } : nil) { weight, reps in
-                save(e, weight: weight, reps: reps)
+                    } : nil) { weight, reps, kind in
+                save(e, weight: weight, reps: reps, kind: kind)
             }.id("\(e.name)-\(setNo)")
         } else {
             Finished(other: other, close: close)
         }
+        if free {
+            HStack(spacing: 16) {
+                Button("Añadir ejercicio") { picking = true }.buttonStyle(SecondaryStyle())
+                if mode == "session" {
+                    Button("Descartar el entreno") { confirmDiscard = true }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
+                }
+            }
+        }
     }
 
-    private func save(_ e: StrengthExercise, weight: Double?, reps: Int) {
+    /// La serie que toca según el núcleo (alterna las superseries); sin ninguna, la sesión completa.
+    @discardableResult
+    private func goNext(_ from: Int) -> Bool {
+        if let next = model.core.nextSet(date: date, current: Int32(from)) {
+            current = Int(next.exercise)
+            setNo = Int(next.set)
+            return true
+        }
+        let fresh = model.core.strengthScreen(date: date)?.exercises ?? []
+        current = max(0, min(from, fresh.count - 1))
+        setNo = (fresh.indices.contains(from) ? Int(fresh[from].sets) : 0) + 1
+        return false
+    }
+
+    /// Entreno libre: cada cambio vuelve a buscar la serie que toca (puede haber una nueva, o haberse ido la actual).
+    private func edit(_ success: String? = nil, _ block: () throws -> Void) {
+        model.run(success, block)
+        goNext(current)
+    }
+
+    private func save(_ e: StrengthExercise, weight: Double?, reps: Int, kind: String?) {
         let previousRir = e.done.first { Int($0.set) == setNo }?.rir
         let editing = e.done.contains { Int($0.set) == setNo }
         model.run {
-            try model.core.logSet(date: date, exercise: e.name, set: Int32(setNo), weightKg: weight.map { KotlinDouble(double: $0) }, reps: Int32(reps), rir: previousRir)
+            try model.core.logSet(date: date, exercise: e.name, set: Int32(setNo), weightKg: weight.map { KotlinDouble(double: $0) }, reps: Int32(reps), rir: previousRir, kind: kind)
         }
-        logged = (e, LoggedSet(set: Int32(setNo), weightKg: weight.map { KotlinDouble(double: $0) }, reps: Int32(reps), rir: previousRir))
-        // Siguiente: otra serie de este ejercicio o el primero que falte; sin ninguno, sesión completa
-        let fresh = model.core.strengthScreen(date: date)?.exercises ?? []
-        let pending = fresh.firstIndex { $0.done.count < Int($0.sets) }
-        if !editing && setNo < Int(e.sets) && fresh.indices.contains(current) && !fresh[current].done.contains(where: { Int($0.set) == setNo + 1 }) {
-            setNo += 1
-        } else if let p = pending {
-            current = p; setNo = fresh[p].done.count + 1
-        } else {
-            setNo = Int(e.sets) + 1
-        }
-        if !editing && pending != nil {
+        logged = (e, LoggedSet(set: Int32(setNo), weightKg: weight.map { KotlinDouble(double: $0) }, reps: Int32(reps), rir: previousRir, kind: kind))
+        let more = goNext(current)
+        // En una superserie no se descansa hasta acabar la ronda (restSeconds 0)
+        if !editing && more && e.restSeconds > 0 {
             restTotal = Int(e.restSeconds)
             restEnd = Date().addingTimeInterval(TimeInterval(e.restSeconds))
             restView = true
@@ -167,23 +221,40 @@ struct StrengthSessionView: View {
     }
 }
 
+/// Entreno libre: lo que se puede hacer con un ejercicio desde la tabla de la sesión.
+private struct FreeControls {
+    let canRemoveSet: Bool
+    let linked: Bool?  // nil: es el primero y no tiene anterior
+    let addSet: () -> Void
+    let removeSet: () -> Void
+    let remove: () -> Void
+    let link: (Bool) -> Void
+}
+
 private struct SetView: View {
+    @EnvironmentObject var model: AppModel
     let e: StrengthExercise
     let setNo: Int
     let next: StrengthExercise?
     let swap: ((String) -> Void)?
-    let done: (Double?, Int) -> Void
+    let done: (Double?, Int, String?) -> Void
     @State private var sheet: String?  // "card" o "swap"
     @State private var weight: Double?
     @State private var reps: Int
+    @State private var kind: String?  // tipo de serie (SET_KINDS); nil: normal
     @State private var typing = false
     @State private var typed = ""
 
-    init(e: StrengthExercise, setNo: Int, next: StrengthExercise?, swap: ((String) -> Void)?, done: @escaping (Double?, Int) -> Void) {
+    init(e: StrengthExercise, setNo: Int, next: StrengthExercise?, swap: ((String) -> Void)?, done: @escaping (Double?, Int, String?) -> Void) {
         self.e = e; self.setNo = setNo; self.next = next; self.swap = swap; self.done = done
         let today = e.done.first { Int($0.set) == setNo }
         let previous = e.previous.first { Int($0.set) == setNo }
-        _weight = State(initialValue: today?.weightKg?.doubleValue ?? e.weightKg?.doubleValue ?? previous?.weightKg?.doubleValue)
+        // El peso de partida: al corregir, el de esa serie; si no, el de la última serie de trabajo de hoy, el propuesto
+        // o el de la última vez
+        let lastToday = e.done.last { $0.kind != "warmup" && $0.kind != "drop" }
+        let startWeight = lastToday?.weightKg?.doubleValue ?? e.weightKg?.doubleValue ?? previous?.weightKg?.doubleValue
+        _weight = State(initialValue: today != nil ? today?.weightKg?.doubleValue : startWeight)
+        _kind = State(initialValue: today?.kind)
         // Con el mismo peso, las repeticiones de la última vez; si cambia el peso, el mínimo del rango (progresión doble)
         let samePrevious = previous.flatMap { $0.weightKg?.doubleValue == e.weightKg?.doubleValue ? Int($0.reps) : nil }
         _reps = State(initialValue: today.map { Int($0.reps) } ?? samePrevious ?? Int(e.repsLow))
@@ -205,6 +276,7 @@ private struct SetView: View {
                 Secondary("Serie \(setNo) de \(e.sets) · \(e.repsLow)–\(e.repsHigh) \(e.timed ? "segundos" : "repeticiones")")
                 if let rir = e.rir { Text(effort(Int(rir.int32Value))).font(.ui(14, .bold)) }
                 if let original = e.original { Secondary("En lugar de \(original)") }
+                if let superset = e.superset { Secondary("Superserie \(superset): alterna sus ejercicios y descansa al acabar la ronda") }
             }
         }
         HStack(spacing: 16) {
@@ -232,7 +304,17 @@ private struct SetView: View {
             }
             Button("Cancelar", role: .cancel) {}
         } message: { Text("Vacío: con tu peso corporal.") }
-        Button { done(weight, reps) } label: { Text(today != nil ? "Guardar cambio" : "Serie hecha").frame(maxWidth: .infinity) }
+        if e.barbell, let w = weight, let plates = model.core.plates(weightKg: w) { Secondary(plates) }
+        // Tipo de serie: las de calentamiento y las descendentes se suman a las del plan y no cuentan para subir el peso
+        HStack {
+            Secondary("Tipo de serie")
+            Spacer()
+            Picker("Tipo de serie", selection: $kind) {
+                Text("Normal").tag(String?.none)
+                ForEach(DataKt.SET_KIND_KEYS, id: \.self) { k in Text(DataKt.SET_KINDS[k] ?? k).tag(String?.some(k)) }
+            }
+        }
+        Button { done(weight, reps, kind) } label: { Text(today != nil ? "Guardar cambio" : "Serie hecha").frame(maxWidth: .infinity) }
             .buttonStyle(PrimaryStyle())
         if today == nil, let previous { Secondary("La última vez: \(setText(previous, timed: e.timed))") }
         if let next {
@@ -362,6 +444,7 @@ private struct SessionRows: View {
     let e: StrengthExercise
     let isCurrent: Bool
     let currentSet: Int
+    var controls: FreeControls? = nil
     let open: (Int) -> Void
 
     var body: some View {
@@ -371,6 +454,7 @@ private struct SessionRows: View {
                 Spacer()
                 Text("\(e.done.count)/\(e.sets)").font(.mono(13)).foregroundStyle(Palette.muted)
             }
+            if let superset = e.superset { Source(text: "Superserie \(superset)") }
             Grid(horizontalSpacing: 6, verticalSpacing: 8) {
                 GridRow {
                     ForEach(["SERIE", "ANTERIOR", e.timed ? "PESO" : "KG", e.timed ? "SEG" : "REPS", ""], id: \.self) {
@@ -382,7 +466,10 @@ private struct SessionRows: View {
                     let before = e.previous.first { Int($0.set) == n }
                     let now = isCurrent && n == currentSet && today == nil
                     GridRow {
-                        Text("\(n)").font(.mono(15))
+                        // La letra del tipo de serie (C, D o F) junto al número; VoiceOver lee el nombre entero
+                        let kindName = today?.kind.flatMap { DataKt.SET_KINDS[$0] }
+                        Text("\(n)" + (kindName.map { " " + String($0.prefix(1)) } ?? "")).font(.mono(15))
+                            .accessibilityLabel("Serie \(n)" + (kindName.map { ", " + $0.lowercased() } ?? ""))
                         Text(before.map { setText($0, timed: e.timed) } ?? "—").font(.mono(13)).foregroundStyle(Palette.muted)
                         Cell(text: today.map { kgText($0.weightKg?.doubleValue) } ?? "—", done: today != nil, now: now)
                         Cell(text: today.map { amount(Int($0.reps), timed: e.timed) } ?? "—", done: today != nil, now: now)
@@ -395,6 +482,16 @@ private struct SessionRows: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityAddTraits(.isButton)
                     .accessibilityHint("Abrir la serie \(n)")
+                }
+            }
+            if let c = controls {
+                HStack(spacing: 16) {
+                    Button("Otra serie", action: c.addSet).font(.ui(14, .bold)).buttonStyle(TextActionStyle())
+                    if c.canRemoveSet { Button("Una serie menos", action: c.removeSet).font(.ui(14, .bold)).buttonStyle(TextActionStyle()) }
+                    Button("Quitar", action: c.remove).font(.ui(14, .bold)).buttonStyle(TextActionStyle()).accessibilityLabel("Quitar \(e.name)")
+                }
+                if let linked = c.linked {
+                    Toggle("En superserie con el anterior", isOn: Binding(get: { linked }, set: c.link)).font(.small)
                 }
             }
         }

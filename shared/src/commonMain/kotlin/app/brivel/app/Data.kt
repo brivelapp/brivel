@@ -63,6 +63,9 @@ data class SetLog(val date: String, val exercise: String, val set: Int, val weig
 /** Tipos de serie que se pueden marcar, además de la normal. Las de calentamiento y las descendentes no cuentan para la progresión. */
 val SET_KINDS = mapOf("warmup" to "Calentamiento", "drop" to "Descendente", "failure" to "Al fallo")
 
+/** Las claves de SET_KINDS en su orden (un diccionario de Swift no lo guarda). */
+val SET_KIND_KEYS: List<String> = SET_KINDS.keys.toList()
+
 /** Las series que cuentan como trabajo: ni calentamiento ni descendentes. */
 fun SetLog.counts(): Boolean = kind != "warmup" && kind != "drop"
 
@@ -73,9 +76,9 @@ fun SetLog.counts(): Boolean = kind != "warmup" && kind != "drop"
 @Serializable
 data class FreeWorkout(val date: String, val name: String, val exercises: List<RoutineExercise> = emptyList(), val rir: Int = 2)
 
-/** Una medida corporal apuntada a mano (MEASURES): una por día y tipo. */
+/** Una medida corporal apuntada a mano (MEASURES): una por día y tipo. No se llama Measurement: en Swift ya existe uno. */
 @Serializable
-data class Measurement(val date: String, val kind: String, val value: Double)
+data class BodyMeasure(val date: String, val kind: String, val value: Double)
 
 /** Cambios de una semana (acumulados) desde `since`; `earlier`: los anteriores de esa semana, para que lo pasado no cambie. */
 @Serializable
@@ -133,7 +136,7 @@ data class AppData(
     val customExercises: List<CustomExercise> = emptyList(),  // ejercicios creados por el usuario (Library.kt)
     val equipment: List<String> = emptyList(),  // el material que tiene (etiquetas de EQUIPMENT); vacío: sin indicar
     val workouts: List<FreeWorkout> = emptyList(),  // entrenos libres, uno por día (Planner.applyWorkouts)
-    val measurements: List<Measurement> = emptyList(),  // medidas corporales apuntadas a mano (Measures.kt)
+    val measurements: List<BodyMeasure> = emptyList(),  // medidas corporales apuntadas a mano (Measures.kt)
 )
 
 /**

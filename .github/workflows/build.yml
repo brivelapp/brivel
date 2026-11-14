@@ -68,7 +68,7 @@ jobs:
             '{"profile":{"birthYear":1990,"level":"intermediate","strength":"gym","cardio":["walking","running"],"days":{"MON":45,"WED":45,"FRI":45,"SAT":60}},"goal":{"kind":"FITNESS","since":"2026-01-05"},"blockStart":"2026-01-05"}'
           for mode in dark light; do
             xcrun simctl ui "$DEVICE" appearance $mode
-            for t in 0 1 2 3; do
+            for t in 0 1 2 3 4; do
               xcrun simctl launch "$DEVICE" app.brivel -tab $t
               sleep 6
               xcrun simctl io "$DEVICE" screenshot screenshots/pestana-$t-$mode.png

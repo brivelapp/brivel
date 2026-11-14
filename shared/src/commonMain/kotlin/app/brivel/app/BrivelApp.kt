@@ -623,7 +623,7 @@ class BrivelApp(
         val m = MEASURES[kind] ?: throw IllegalArgumentException("Medida no válida")
         require(date <= today().toString()) { "No se puede apuntar una medida futura" }
         require(value in m.range) { "${m.label}: entre ${num(m.range.start)} y ${num(m.range.endInclusive)} ${m.unit}" }
-        save(data.copy(measurements = data.measurements.filterNot { it.date == date && it.kind == kind } + Measurement(date, kind, value)))
+        save(data.copy(measurements = data.measurements.filterNot { it.date == date && it.kind == kind } + BodyMeasure(date, kind, value)))
     }
 
     fun deleteMeasure(date: String, kind: String) =

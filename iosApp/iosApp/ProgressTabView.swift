@@ -81,6 +81,7 @@ struct ProgressTabView: View {
                         }
                     }
                 }
+                MeasuresSection(screen: screen)
                 MilestonesSection(screen: screen)
             }.padding(.horizontal, 18).padding(.vertical, 16)
         }.background(Palette.bg)
@@ -90,6 +91,42 @@ struct ProgressTabView: View {
 private func format(_ v: Double?) -> String {
     guard let v else { return "—" }
     return v >= 20 ? String(Int(v.rounded())) : String(format: "%.1f", v).replacingOccurrences(of: ".", with: ",")
+}
+
+/// Con un decimal: en una medida o un 1RM, medio centímetro o medio kilo cuentan.
+func oneDecimal(_ v: Double?) -> String {
+    guard let v else { return "—" }
+    let r = (v * 10).rounded() / 10
+    return (r == r.rounded() ? String(Int(r)) : String(format: "%.1f", r)).replacingOccurrences(of: ".", with: ",")
+}
+
+/// Medidas corporales apuntadas a mano (Training.kt): su evolución y el formulario para apuntar la de hoy.
+private struct MeasuresSection: View {
+    @EnvironmentObject var model: AppModel
+    let screen: ProgressScreen
+    @State private var kind = TrainingKt.MEASURE_KINDS.first ?? "weight"
+    @State private var value = ""
+
+    var body: some View {
+        Module {
+            Text("Tus medidas").font(.section)
+            Secondary("Apunta tu peso o tus perímetros con una cinta para ver cómo cambian. La de hoy sustituye a la que ya hubiera hoy.")
+            ForEach(Array(screen.measures.enumerated()), id: \.offset) { i, m in MetricRow(metric: m, first: i == 0) }
+            Picker("Medida", selection: $kind) {
+                ForEach(TrainingKt.MEASURE_KINDS, id: \.self) { k in Text(TrainingKt.MEASURES[k]?.label ?? k).tag(k) }
+            }
+            HStack(spacing: 10) {
+                TextField("Valor (\(TrainingKt.MEASURES[kind]?.unit ?? ""))", text: $value).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
+                Button("Apuntar") {
+                    guard let v = Double(value.replacingOccurrences(of: ",", with: ".")) else { model.message = "Escribe un número"; return }
+                    model.run("Medida apuntada") {
+                        try model.core.logMeasure(kind: kind, value: v)
+                        value = ""
+                    }
+                }.buttonStyle(SecondaryStyle())
+            }
+        }
+    }
 }
 
 /// Mejores marcas, semanas seguidas cumpliendo la OMS y récords de fuerza; los umbrales, aparte (como web/src/Progress.tsx).
@@ -172,7 +209,7 @@ private struct RecentRow: View {
 }
 
 /// Un indicador: valor, barra frente a tu rango y una frase; al tocarlo, su evolución y qué significa.
-private struct MetricRow: View {
+struct MetricRow: View {
     let metric: Metric
     let first: Bool
     @State private var open = false
@@ -186,7 +223,7 @@ private struct MetricRow: View {
             HStack(alignment: .bottom) {
                 Text(metric.label).font(.ui(15, .semibold, relativeTo: .subheadline))
                 Spacer()
-                Text(format(latest) + (metric.unit.isEmpty ? "" : " \(metric.unit)")).font(.mono(15, .semibold))
+                Text((metric.key.hasPrefix("measure-") ? oneDecimal(latest) : format(latest)) + (metric.unit.isEmpty ? "" : " \(metric.unit)")).font(.mono(15, .semibold))
                 RowChevron(open: open)
             }
             if let source = metric.source { Source(text: source) }
@@ -214,7 +251,7 @@ private struct MetricRow: View {
     }
 }
 
-private struct Sparkline: View {
+struct Sparkline: View {
     let values: [Double]
     let low: Double?
     let high: Double?

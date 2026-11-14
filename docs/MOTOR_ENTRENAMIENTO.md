@@ -368,6 +368,32 @@ Los motores siguen proponiendo los ejercicios de §5.2. Sobre eso, la app (`Exer
 - **Descripciones y músculos** de la biblioteca: salen de reglas sobre patrón, material y nombre, no de un texto por
   ejercicio. [Inferencia: anatomía funcional general]
 
+### 5.5 Entrenar por tu cuenta (capa de la app, 2026-11-14)
+
+Bloque A de la visión (`docs/VISION.md` §9): lo que el usuario decide él mismo. Código en `Training.kt`, `BrivelApp.kt` y
+`Planner.applyWorkouts`.
+
+- **Entreno libre.** Uno por día (`AppData.workouts`, esquema 10). Ese día sustituye a la fuerza del plan o de la rutina,
+  o se añade si no había; se monta sobre la marcha (cada ejercicio entra con 3 × 8–12 repeticiones, o 3 × 20–40 s si va
+  por tiempo) o parte de una rutina. Descartarlo borra sus series de ese día y devuelve el plan. [Inferencia: la dosis de
+  partida]
+- **Tipos de serie.** Normal, calentamiento, descendente y al fallo (`SetLog.kind`). Las de calentamiento y las
+  descendentes se suman a las series del plan y no cuentan para la progresión, los récords ni el historial: no dicen si el
+  peso de trabajo sube. [Inferencia]
+- **Superseries.** Un ejercicio puede ir con el anterior (`RoutineExercise.linked`). Se alternan: toca el del grupo con
+  menos series hechas, y el descanso va solo tras el último del grupo (`nextSet`). [Práctica]
+- **1RM estimado.** Epley: peso × (1 + repeticiones / 30); con una repetición, el propio peso. Solo con series de 10
+  repeticiones o menos. [Práctica: Epley 1985, sin leer el original. Verificado: Reynolds et al. 2006 (ref. 44), «no more
+  than 10 repetitions should be used in linear equations to estimate 1RM», en press de banca y prensa; en su comparación
+  la ecuación de Epley tuvo los residuos medios más pequeños]
+- **Historial del ejercicio.** Por día: la mejor serie (la de más 1RM estimado), las series de trabajo y los kilos
+  movidos (peso × repeticiones). Marcas: más peso, mejor 1RM estimado, más kilos en un día y, sin peso, más repeticiones
+  o más tiempo.
+- **Discos.** Para los ejercicios con barra, los discos por lado con barra de 20 kg y discos de 25, 20, 15, 10, 5, 2,5 y
+  1,25 kg. La barra aún no se puede cambiar.
+- **Medidas corporales.** Peso, cintura, cadera, pecho, brazo y muslo, apuntadas a mano (`AppData.measurements`); una por
+  día y tipo. Solo lo que mide una báscula o una cinta (VISION §2).
+
 ## 6. Estructura semanal
 
 ### 6.1 Plantilla por fase (deporte único)
@@ -709,6 +735,7 @@ Python del prototipo queda congelado. Cada regla está cubierta por `ValidationT
 41. Mayo Clinic. Designing your taper to maximize your potential on race day. https://newsnetwork.mayoclinic.org/discussion/how-tapering-maximizes-your-potential-on-marathon-day/
 42. Durabilidad en deportes de resistencia: revisión. *Front Sports Act Living.* 2025. https://www.frontiersin.org/journals/sports-and-active-living/articles/10.3389/fspor.2025.1530162/pdf
 43. Effects of training and anthropometric factors on marathon and 100 km ultramarathon race performance. *Open Access J Sports Med.* 2015;6. https://pmc.ncbi.nlm.nih.gov/articles/PMC4425319
+44. Reynolds JM, Gordon TJ, Robergs RA. Prediction of one repetition maximum strength from multiple repetition maximum testing and anthropometry. *J Strength Cond Res.* 2006;20(3):584-592. https://www.unm.edu/~rrobergs/478RMStrengthPrediction.pdf (leído el 2026-11-14)
 
 
 **Título de la ref. 11:** el resultado de búsqueda confirma el artículo de mantenimiento en *Eur J Appl Physiol* 110(6):1269-82 del mismo grupo, pero no he visto el título ni la lista de autores. [No verificado: título literal y autores]
@@ -719,6 +746,7 @@ Python del prototipo queda congelado. Cada regla está cubierta por `ValidationT
 
 | Versión | Fecha | Cambios |
 |---|---|---|
+| 0.8 | 2026-11-14 | Entrenar por tu cuenta (§5.5): entreno libre, tipos de serie, superseries, 1RM estimado (Epley, hasta 10 repeticiones), historial del ejercicio, discos y medidas corporales. Esquema 10. |
 | 0.7 | 2026-10-29 | El núcleo de Kotlin es la única fuente; reglas nuevas de §15.2 tras la validación ampliada (carreras, ajuste del día, natación, 600 combinaciones generadas y 100 usuarios simulados). |
 | 0.6 | 2026-10-21 | Plantilla ajustada a los días del usuario (`fit_days`) y emparejado de lo hecho con lo planificado con motivo visible (`match_day`) (§15.1). |
 | 0.5 | 2026-10-21 | Reparto de la carga como el load focus de Garmin (§12), sesiones tempo y anaeróbicas, vuelta a la base tras 7 días sin entrenar, ritmos de carrera desde la FC con la relación FC-velocidad propia (§13), envío al reloj con una métrica por sesión (§14) y comparación con Garmin (§15). |

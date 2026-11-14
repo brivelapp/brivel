@@ -61,8 +61,9 @@ const val E1RM_MAX_REPS = 10
 /**
  * 1RM estimado con la fórmula de Epley: peso × (1 + repeticiones / 30); con una repetición, el propio peso. null con más
  * de 10 repeticiones o sin peso.
- * [Práctica: Epley 1985; el tope de 10 repeticiones, Reynolds, Gordon y Robergs 2006 (PMID 16937972): las ecuaciones
- * lineales pierden precisión por encima de 10 RM]
+ * [Práctica: Epley 1985 (no leído el original). Verificado, leyendo el artículo: Reynolds, Gordon y Robergs 2006,
+ * J Strength Cond Res 20(3):584–592: "no more than 10 repetitions should be used in linear equations to estimate 1RM"
+ * (press de banca y prensa); en su comparación, la de Epley tuvo los residuos medios más pequeños]
  */
 fun e1rm(weightKg: Double, reps: Int): Double? = when {
     weightKg <= 0 || reps !in 1..E1RM_MAX_REPS -> null
@@ -159,8 +160,11 @@ val MEASURES: Map<String, Measure> = linkedMapOf(
     "thigh" to Measure("Muslo", "cm", 20.0..150.0),
 )
 
+/** Las claves de MEASURES en su orden (un diccionario de Swift no lo guarda). */
+val MEASURE_KINDS: List<String> = MEASURES.keys.toList()
+
 /** Cada medida apuntada como una tendencia de Progreso, en el orden de MEASURES; las que no tienen datos no salen. */
-fun measureMetrics(measurements: List<Measurement>): List<Metric> = MEASURES.mapNotNull { (kind, m) ->
+fun measureMetrics(measurements: List<BodyMeasure>): List<Metric> = MEASURES.mapNotNull { (kind, m) ->
     val points = measurements.filter { it.kind == kind }.sortedBy { it.date }.map { Point(it.date, it.value) }
     if (points.isEmpty()) null
     else Metric("measure-$kind", m.label, m.unit, "${m.label}, apuntado por ti.", points, points.last().value, null, null, null)

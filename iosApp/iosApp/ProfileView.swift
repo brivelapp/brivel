@@ -147,8 +147,6 @@ struct ProfileView: View {
                     Text("Tu nivel").font(.section)
                     Segmented(options: levelChoices.map { ($0.0, $0.1) }, selected: draft.level) { draft.level = $0; save() }
                 }
-                RoutinesSection()
-                LibrarySection()
                 Module {
                     Text("Año de nacimiento").font(.section)
                     TextField("1990", text: Binding(get: { draft.birthYear.map(String.init) ?? "" }, set: { v in

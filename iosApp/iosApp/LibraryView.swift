@@ -47,6 +47,10 @@ struct ExerciseSheet: View {
                         if !card.description.isEmpty { Text(card.description).font(.small) }
                         ForEach(card.cues, id: \.self) { Text("• \($0)").font(.small) }
                         Source(text: card.cueSource)
+                        if onSwap == nil {
+                            let history = model.core.exerciseHistory(name: name)
+                            if !history.days.isEmpty { ExerciseHistoryRows(history: history) }
+                        }
                         if let onSwap {
                             Text("Cambiar por").font(.section)
                             if let original {
@@ -67,7 +71,67 @@ struct ExerciseSheet: View {
     }
 }
 
-/// En Perfil: todos los ejercicios, con búsqueda y filtros de zona y de material, y el material que tienes.
+/// Lo que has hecho en ese ejercicio: la gráfica (1RM estimado o mejor serie), tus marcas y los últimos días.
+private struct ExerciseHistoryRows: View {
+    let history: ExerciseHistory
+
+    private func line(_ title: String, _ detail: String?, _ value: String) -> some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.body15)
+                if let detail { Source(text: detail) }
+            }
+            Spacer()
+            Text(value).font(.mono(15, .semibold)).fixedSize()
+        }
+    }
+
+    var body: some View {
+        Text("Tu historial").font(.section)
+        if let chart = history.chart {
+            line(chart.label, nil, oneDecimal(chart.latest?.doubleValue) + (chart.unit.isEmpty ? "" : " \(chart.unit)"))
+            if chart.points.count > 1 {
+                Sparkline(values: chart.points.map { $0.value }, low: nil, high: nil, color: Palette.ok).frame(height: 56)
+            }
+            Source(text: chart.explanation)
+        }
+        ForEach(history.records, id: \.title) { r in line(r.title, r.date.map { ScreensKt.dateLabel(date: $0) }, r.value) }
+        Secondary("Últimos días")
+        ForEach(history.days, id: \.date) { d in
+            line(ScreensKt.dateLabel(date: d.date), "\(d.sets) series" + (d.volumeKg > 0 ? " · \(Int(d.volumeKg.rounded())) kg movidos" : ""), d.best)
+        }
+    }
+}
+
+/// Elegir un ejercicio de la biblioteca, buscando por nombre: para añadirlo al entreno libre.
+struct ExercisePicker: View {
+    @EnvironmentObject var model: AppModel
+    let choose: (String) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+    @State private var mine = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    TextField("Buscar", text: $query).textFieldStyle(.roundedBorder)
+                    if !model.core.equipment.isEmpty { Toggle("Solo con mi material", isOn: $mine).font(.small) }
+                    let found = model.core.libraryByZone(query: query, zone: nil, equipment: nil, mine: mine)
+                    Secondary("\(found.count) ejercicios" + (found.count > 40 ? ": escribe para acotar (se ven 40)" : ""))
+                    ForEach(Array(found.prefix(40)), id: \.name) { c in
+                        ExerciseRow(card: c, detail: c.patternLabel) { choose(c.name); dismiss() }
+                    }
+                }.padding(18)
+            }
+            .background(Palette.bg)
+            .navigationTitle("Añadir ejercicio").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() } } }
+        }
+    }
+}
+
+/// En Entrenar: todos los ejercicios, con búsqueda y filtros de zona y de material, y el material que tienes.
 struct LibrarySection: View {
     @EnvironmentObject var model: AppModel
     @State private var open = false

@@ -139,10 +139,12 @@ struct RootView: View {
                         .tabItem { Label { Text("Hoy") } icon: { Image("tab_today").renderingMode(.template) } }.tag(0)
                     CalendarTabView()
                         .tabItem { Label { Text("Calendario") } icon: { Image("tab_calendar").renderingMode(.template) } }.tag(1)
-                    ProgressTabView(openProfile: { tab = 3 })
-                        .tabItem { Label { Text("Progreso") } icon: { Image("tab_progress").renderingMode(.template) } }.tag(2)
+                    TrainView()
+                        .tabItem { Label { Text("Entrenar") } icon: { Image("sport_strength").renderingMode(.template) } }.tag(2)
+                    ProgressTabView(openProfile: { tab = 4 })
+                        .tabItem { Label { Text("Progreso") } icon: { Image("tab_progress").renderingMode(.template) } }.tag(3)
                     ProfileView()
-                        .tabItem { Label { Text("Perfil") } icon: { Image("tab_profile").renderingMode(.template) } }.tag(3)
+                        .tabItem { Label { Text("Perfil") } icon: { Image("tab_profile").renderingMode(.template) } }.tag(4)
                 }
             }
         }

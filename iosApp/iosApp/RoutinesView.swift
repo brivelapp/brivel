@@ -17,6 +17,7 @@ private struct DraftExercise: Identifiable {
     var sets: Int
     var low: Int
     var high: Int
+    var linked = false  // en superserie con el anterior
 }
 
 /// Un número de 1 a 3 cifras: vacío es 0 (el núcleo lo rechaza al guardar).
@@ -78,6 +79,7 @@ private struct RoutineEditor: View {
                                 NumberField(label: "Desde (\(unit))", value: $e.low)
                                 NumberField(label: "Hasta (\(unit))", value: $e.high)
                             }
+                            if exercises.first?.id != e.id { Toggle("En superserie con el anterior", isOn: $e.linked).font(.small) }
                         }
                     }
                     Button("Añadir ejercicio") { picking = true }.buttonStyle(SecondaryStyle())
@@ -97,7 +99,7 @@ private struct RoutineEditor: View {
                 guard !loaded, let start else { loaded = true; return }
                 name = start.name
                 selected = start.days
-                exercises = start.exercises.map { DraftExercise(name: $0.name, sets: Int($0.sets), low: Int($0.low), high: Int($0.high)) }
+                exercises = start.exercises.map { DraftExercise(name: $0.name, sets: Int($0.sets), low: Int($0.low), high: Int($0.high), linked: $0.linked) }
                 rir = Int(start.rir)
                 loaded = true
             }
@@ -135,7 +137,7 @@ private struct RoutineEditor: View {
 
     private func save() {
         let routine = Routine(id: start?.id ?? "", name: name,
-                              exercises: exercises.map { RoutineExercise(name: $0.name, sets: Int32($0.sets), low: Int32($0.low), high: Int32($0.high)) },
+                              exercises: exercises.map { RoutineExercise(name: $0.name, sets: Int32($0.sets), low: Int32($0.low), high: Int32($0.high), linked: $0.linked) },
                               days: selected, rir: Int32(rir), since: "")
         // El aviso general no se ve con la hoja abierta: el error se enseña dentro de ella
         do { _ = try model.core.saveRoutine(routine: routine) } catch { saveError = error.localizedDescription; return }
@@ -177,7 +179,7 @@ private struct NewExercise: View {
     }
 }
 
-/// En Perfil: las rutinas propias y el botón para crear otra.
+/// En Entrenar: las rutinas propias y el botón para crear otra.
 struct RoutinesSection: View {
     @EnvironmentObject var model: AppModel
     @State private var editing: Routine?

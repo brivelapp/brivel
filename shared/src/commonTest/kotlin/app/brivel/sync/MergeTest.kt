@@ -47,7 +47,7 @@ class MergeTest {
         routines = listOf(app.brivel.app.Routine("r1", "Torso", listOf(app.brivel.app.RoutineExercise("Flexiones", 3, 8, 12)), listOf("MON"), since = "2026-11-02")),
         equipment = listOf("mancuernas", "goma"),
         workouts = listOf(app.brivel.app.FreeWorkout("2026-11-02", "Entreno libre", listOf(app.brivel.app.RoutineExercise("Flexiones", 3, 8, 12)))),
-        measurements = listOf(app.brivel.app.Measurement("2026-11-02", "waist", 82.0)),
+        measurements = listOf(app.brivel.app.BodyMeasure("2026-11-02", "waist", 82.0)),
     )
 
     /** Guarda de la lista de arriba: si AppData gana un campo y no se añade a `full`, este test falla y lo nombra. */
