@@ -275,6 +275,7 @@ data class ProgressScreen(
     val milestones: List<Milestone> = emptyList(),  // mejores marcas y semanas seguidas cumpliendo la OMS (Milestones.kt)
     val strengthRecords: List<Milestone> = emptyList(),  // el mayor peso de cada ejercicio; no necesita reloj
     val thresholds: List<Threshold> = emptyList(),  // de intervals.icu
+    val measures: List<Metric> = emptyList(),  // medidas corporales apuntadas a mano (Training.kt); no necesitan reloj
 )
 
 /** h:mm:ss o mm:ss. */
@@ -287,7 +288,9 @@ fun raceTime(minutes: Double): String {
 
 fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScreen {
     val records = strengthRecords(data.sets)
-    val cache = data.deviceData(today) ?: return ProgressScreen(false, emptyList(), emptyList(), strengthRecords = records)
+    val measures = measureMetrics(data.measurements)
+    val cache = data.deviceData(today)
+        ?: return ProgressScreen(false, emptyList(), emptyList(), strengthRecords = records, measures = measures)
     val since = today.plusDays(-days).toString()
     val wellness = cache.wellness.filter { (it["id"].str() ?: "") >= since }.sortedBy { it["id"].str() }
     fun series(key: String, label: String, unit: String, explanation: String, better: Boolean?,
@@ -363,7 +366,7 @@ fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScre
         }
     return ProgressScreen(true, metrics, weekly, status, predictions, source, recent, GARMIN_DERIVED.takeIf { data.usesGarmin() },
         milestones = listOfNotNull(whoStreak(weekly)) + longest(cache.activities), strengthRecords = records,
-        thresholds = data.cache?.let { thresholds(it.athlete) } ?: emptyList())
+        thresholds = data.cache?.let { thresholds(it.athlete) } ?: emptyList(), measures = measures)
 }
 
 /** De dónde salen los puntos de una métrica: Garmin, sola o con el móvil; null si Garmin no aporta ninguno. */

@@ -29,6 +29,8 @@ import app.brivel.app.ZONES
 import app.brivel.app.polylines
 import app.brivel.app.EQUIPMENT
 import app.brivel.app.PATTERN_LABEL
+import app.brivel.app.MEASURES
+import app.brivel.app.SET_KINDS
 import app.brivel.sync.SyncCode
 import app.brivel.sync.Syncer
 import kotlinx.browser.window
@@ -207,9 +209,28 @@ class WebApp {
     fun setEquipmentJson(text: String) = app.setEquipment(read.decodeFromString<List<String>>(text))
     fun swapExercise(date: String, current: String, replacement: String) = app.swapExercise(date, current, replacement)
 
-    /** Apunta o corrige una serie; `weight` vacío: con tu peso corporal; `rir` null: sin apuntar la reserva. */
-    fun logSet(date: String, exercise: String, set: Int, weight: String, reps: Int, rir: Int?) =
-        app.logSet(date, exercise, set, weight.replace(',', '.').toDoubleOrNull(), reps, rir)
+    /** Apunta o corrige una serie; `weight` vacío: con tu peso corporal; `rir` null: sin apuntar la reserva; `kind`: SET_KINDS o null. */
+    fun logSet(date: String, exercise: String, set: Int, weight: String, reps: Int, rir: Int?, kind: String?) =
+        app.logSet(date, exercise, set, weight.replace(',', '.').toDoubleOrNull(), reps, rir, kind)
+    fun setKindsJson(): String = json.encodeToString(SET_KINDS)
+    fun nextSetJson(date: String, current: Int): String? = app.nextSet(date, current)?.let { json.encodeToString(it) }
+    fun exerciseHistoryJson(name: String): String = json.encodeToString(app.exerciseHistory(name))
+    fun plates(weight: String): String? = weight.replace(',', '.').toDoubleOrNull()?.let { app.plates(it) }
+
+    // Entreno libre (BrivelApp): la fuerza de hoy la monta el usuario
+    fun workoutTodayJson(): String? = app.workoutToday?.let { json.encodeToString(it) }
+    fun startWorkout(routineId: String?): String = app.startWorkout(routineId).date
+    fun addWorkoutExercise(name: String) = app.addWorkoutExercise(name)
+    fun removeWorkoutExercise(name: String) = app.removeWorkoutExercise(name)
+    fun changeWorkoutSets(name: String, delta: Int) = app.changeWorkoutSets(name, delta)
+    fun linkWorkoutExercise(name: String, linked: Boolean) = app.linkWorkoutExercise(name, linked)
+    fun discardWorkout() = app.discardWorkout()
+
+    // Medidas corporales (Training.kt): [clave, nombre, unidad]
+    fun measuresJson(): String = json.encodeToString(MEASURES.map { (k, m) -> listOf(k, m.label, m.unit) })
+    fun logMeasure(kind: String, value: String) =
+        app.logMeasure(kind, value.replace(',', '.').toDoubleOrNull() ?: throw IllegalArgumentException("Escribe un número"))
+    fun deleteMeasure(date: String, kind: String) = app.deleteMeasure(date, kind)
 
     // intervals.icu por OAuth con PKCE desde el navegador (cliente público, sin secreto); vuelve a brivel.app/intervals.
     // El token, en sessionStorage como el resto de secretos: al cerrar la pestaña hay que volver a conectar

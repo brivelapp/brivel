@@ -84,7 +84,7 @@ fun restSeconds(p: Prescription, pattern: String): Int = when {
 }
 
 @Serializable
-data class LoggedSet(val set: Int, val weightKg: Double?, val reps: Int, val rir: Int? = null)
+data class LoggedSet(val set: Int, val weightKg: Double?, val reps: Int, val rir: Int? = null, val kind: String? = null)  // kind: SET_KINDS
 
 /** Un ejercicio en la pantalla de sesión. `reps*` son segundos si `timed`. */
 @Serializable
@@ -102,11 +102,14 @@ data class StrengthExercise(
     val previous: List<LoggedSet>,  // la última sesión anterior a este día
     val done: List<LoggedSet>,  // lo apuntado este día
     val original: String? = null,  // el ejercicio del plan, si se cambió por este en la biblioteca
+    val superset: String? = null,  // «A», «B»…: se alterna con los demás de su letra; el descanso va tras el último
+    val barbell: Boolean = false,  // se hace con barra: la pantalla enseña los discos por lado
 )
 
 @Serializable
 data class StrengthScreen(val date: String, val title: String, val minutes: Int, val exercises: List<StrengthExercise>,
-    val other: List<String>, val notes: String?)  // other: lo que no se apunta serie a serie (equilibrio)
+    val other: List<String>, val notes: String?,  // other: lo que no se apunta serie a serie (equilibrio)
+    val free: Boolean = false)  // entreno libre: se le pueden añadir y quitar ejercicios y series
 
 fun strengthScreen(item: PlanItem, date: String, sets: List<SetLog>, custom: List<CustomExercise>): StrengthScreen {
     val all = latestSets(sets)
@@ -115,8 +118,9 @@ fun strengthScreen(item: PlanItem, date: String, sets: List<SetLog>, custom: Lis
     // Plan de salud: su RIR (nivel, objetivo y tope del cuestionario); carrera: RIR = 10 − RPE planificado, la misma
     // equivalencia que usa la carga de HealthPlan [Inferencia: Zourdos 2016, escala RPE basada en RIR]
     val target = item.healthStrength?.rir ?: item.raceStrength?.let { 10 - it.rpePlanned }
-    val (logged, other) = item.exercises.partition { prescription(it, dose, custom) != null }
-    val exercises = logged.map { line ->
+    val (logged, other) = item.exercises.withIndex().partition { prescription(it.value, dose, custom) != null }
+    val groups = supersetLabels(item.exercises.size, item.linked)
+    val exercises = logged.map { (index, line) ->
         val p = prescription(line, dose, custom)!!
         val name = exerciseName(line)
         val pattern = exerciseInfo(name, custom)!!.pattern
@@ -124,9 +128,14 @@ fun strengthScreen(item: PlanItem, date: String, sets: List<SetLog>, custom: Lis
         val hint = liftHint(daySummaries(before), line, p.range.takeUnless { p.timed }, rir, date)
         val previousDate = before.filter { it.exercise == name }.maxOfOrNull { it.date }
         fun day(d: String?) = all.filter { it.date == d && it.exercise == name }.sortedBy { it.set }
-            .map { LoggedSet(it.set, it.weightKg, it.reps, it.rir) }
-        StrengthExercise(name, pattern, p.sets, p.range.first, p.range.last, p.timed,
-            restSeconds(p, pattern), rir, hint.suggestion, hint.weightKg, day(previousDate), day(date))
+            .map { LoggedSet(it.set, it.weightKg, it.reps, it.rir, it.kind) }
+        val today = day(date)
+        // Las de calentamiento y las descendentes se suman a las del plan: no le quitan sitio a las de trabajo
+        val extra = today.count { it.kind == "warmup" || it.kind == "drop" }
+        val group = groups[index]
+        StrengthExercise(name, pattern, p.sets + extra, p.range.first, p.range.last, p.timed,
+            if (group?.second == false) 0 else restSeconds(p, pattern), rir, hint.suggestion, hint.weightKg, day(previousDate), today,
+            superset = group?.first, barbell = exerciseCard(name, custom)?.equipment?.contains("barra") == true)
     }
-    return StrengthScreen(date, item.title, item.durationMin, exercises, other, item.notes)
+    return StrengthScreen(date, item.title, item.durationMin, exercises, other.map { it.value }, item.notes, item.kind == "free")
 }

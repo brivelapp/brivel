@@ -57,7 +57,25 @@ data class LiftLog(val date: String, val exercise: String, val weightKg: Double?
  * las repeticiones que te quedaban, si lo apuntaste.
  */
 @Serializable
-data class SetLog(val date: String, val exercise: String, val set: Int, val weightKg: Double?, val reps: Int, val rir: Int? = null)
+data class SetLog(val date: String, val exercise: String, val set: Int, val weightKg: Double?, val reps: Int, val rir: Int? = null,
+    val kind: String? = null)  // tipo de serie (SET_KINDS); null: normal
+
+/** Tipos de serie que se pueden marcar, además de la normal. Las de calentamiento y las descendentes no cuentan para la progresión. */
+val SET_KINDS = mapOf("warmup" to "Calentamiento", "drop" to "Descendente", "failure" to "Al fallo")
+
+/** Las series que cuentan como trabajo: ni calentamiento ni descendentes. */
+fun SetLog.counts(): Boolean = kind != "warmup" && kind != "drop"
+
+/**
+ * Entreno libre: la fuerza de ese día la decide el usuario, sin plan ni rutina asignada. Uno por día; sustituye a la
+ * fuerza del plan de ese día (o la añade). `rir`: la reserva que se pide en cada serie.
+ */
+@Serializable
+data class FreeWorkout(val date: String, val name: String, val exercises: List<RoutineExercise> = emptyList(), val rir: Int = 2)
+
+/** Una medida corporal apuntada a mano (MEASURES): una por día y tipo. */
+@Serializable
+data class Measurement(val date: String, val kind: String, val value: Double)
 
 /** Cambios de una semana (acumulados) desde `since`; `earlier`: los anteriores de esa semana, para que lo pasado no cambie. */
 @Serializable
@@ -87,7 +105,7 @@ data class IntervalsCache(
 data class GarminLink(val privateKey: String, val publicKey: String, val token: String, val since: String)
 
 /** Versión del formato guardado: al cambiarlo, `migrate` adapta los datos antiguos (sin servidor no hay migraciones). */
-const val SCHEMA = 9
+const val SCHEMA = 10
 
 /** Campo nuevo: añádelo también a `merge` (sync/Merge.kt), o un cambio de otro dispositivo pisará el de este. */
 @Serializable
@@ -114,6 +132,8 @@ data class AppData(
     val routines: List<Routine> = emptyList(),  // rutinas propias asignadas a días (Routines.kt)
     val customExercises: List<CustomExercise> = emptyList(),  // ejercicios creados por el usuario (Library.kt)
     val equipment: List<String> = emptyList(),  // el material que tiene (etiquetas de EQUIPMENT); vacío: sin indicar
+    val workouts: List<FreeWorkout> = emptyList(),  // entrenos libres, uno por día (Planner.applyWorkouts)
+    val measurements: List<Measurement> = emptyList(),  // medidas corporales apuntadas a mano (Measures.kt)
 )
 
 /**
@@ -122,7 +142,8 @@ data class AppData(
  * v3 → v4: añade `garmin` (vacío). Sube para que un dispositivo sin actualizar no sincronice: descartaría `garmin` al
  * leerlo (ignoreUnknownKeys) y lo borraría también en los demás al subir su copia. v4 → v5: añade `swaps` (vacío), por
  * lo mismo. v5 → v6: añade `moves` (vacío), por lo mismo. v6 → v7: añade `routines` (vacío), por lo mismo. v7 → v8: añade
- * `customExercises` (vacío), por lo mismo. v8 → v9: añade `equipment` (vacío), por lo mismo.
+ * `customExercises` (vacío), por lo mismo. v8 → v9: añade `equipment` (vacío), por lo mismo. v9 → v10: añade `workouts` y
+ * `measurements` (vacíos), el tipo de cada serie y las superseries de las rutinas, por lo mismo.
  */
 fun migrate(data: AppData): AppData = when {
     data.schema >= SCHEMA && data.lifts.isEmpty() -> data

@@ -18,9 +18,9 @@ data class LiftHint(val exercise: String, val last: LiftLog?, val suggestion: St
 
 /**
  * Las series de cada día como un resumen: el peso más alto, las repeticiones mínimas con ese peso, cuántas series y la
- * menor reserva apuntada con ese peso.
+ * menor reserva apuntada con ese peso. Sin las de calentamiento ni las descendentes: no dicen si el peso de trabajo sube.
  */
-fun daySummaries(sets: List<SetLog>): List<LiftLog> = latestSets(sets).groupBy { it.date to it.exercise }
+fun daySummaries(sets: List<SetLog>): List<LiftLog> = latestSets(sets).filter { it.counts() }.groupBy { it.date to it.exercise }
     .map { (key, day) ->
         val top = day.mapNotNull { it.weightKg }.maxOrNull()
         val atTop = day.filter { it.weightKg == top }

@@ -182,6 +182,80 @@ class BrivelApp(
 
     fun deleteRoutine(id: String) = save(data.copy(routines = data.routines.filter { it.id != id }))
 
+    // ------------------------------------------------------------ entreno libre (Planner.applyWorkouts)
+
+    /** El entreno libre de hoy, o null si no se ha empezado ninguno. */
+    val workoutToday: FreeWorkout? get() = today().toString().let { d -> data.workouts.firstOrNull { it.date == d } }
+
+    /**
+     * Empieza hoy un entreno libre: vacío (`routineId` null) o con los ejercicios de una rutina, aunque hoy no le toque.
+     * Hoy sustituye a la fuerza del plan. Si ya había uno empezado, devuelve ese sin cambiarlo.
+     * shortcut: solo hoy; apuntar un entreno libre de un día pasado, cuando alguien lo pida.
+     */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun startWorkout(routineId: String?): FreeWorkout {
+        workoutToday?.let { return it }
+        val routine = routineId?.let { id ->
+            data.routines.firstOrNull { it.id == id } ?: throw IllegalArgumentException("Esa rutina ya no existe")
+        }
+        val w = FreeWorkout(today().toString(), routine?.name ?: "Entreno libre", routine?.exercises ?: emptyList(), routine?.rir ?: 2)
+        save(data.copy(workouts = data.workouts + w))
+        return w
+    }
+
+    private fun changeWorkout(change: (FreeWorkout) -> FreeWorkout) {
+        val w = workoutToday ?: throw IllegalStateException("Hoy no hay un entreno libre empezado")
+        save(data.copy(workouts = data.workouts.filter { it.date != w.date } + change(w)))
+    }
+
+    private fun FreeWorkout.with(name: String, change: (RoutineExercise) -> RoutineExercise): FreeWorkout {
+        require(exercises.any { it.name == name }) { "Ese ejercicio no está en el entreno" }
+        return copy(exercises = exercises.map { if (it.name == name) change(it) else it })
+    }
+
+    /** Añade un ejercicio al entreno libre de hoy: 3 series de 8–12 repeticiones, o de 20–40 segundos si va por tiempo. */
+    @Throws(Exception::class)
+    fun addWorkoutExercise(name: String) {
+        val info = exerciseInfo(name, data.customExercises) ?: throw IllegalArgumentException("«$name» no está en la biblioteca")
+        changeWorkout { w ->
+            require(w.exercises.none { it.name == name }) { "Ese ejercicio ya está en el entreno" }
+            require(w.exercises.size < 30) { "Un entreno tiene 30 ejercicios como mucho" }
+            w.copy(exercises = w.exercises + if (info.timed) RoutineExercise(name, 3, 20, 40) else RoutineExercise(name, 3, 8, 12))
+        }
+    }
+
+    /** Quita un ejercicio del entreno libre de hoy, con las series que tuviera apuntadas hoy. */
+    @Throws(Exception::class)
+    fun removeWorkoutExercise(name: String) {
+        val date = today().toString()
+        changeWorkout { w -> w.with(name) { it }.copy(exercises = w.exercises.filter { it.name != name }) }
+        save(data.copy(sets = data.sets.filterNot { it.date == date && it.exercise == name }))
+    }
+
+    /** Una serie más (`delta` 1) o una menos (−1) en un ejercicio del entreno libre de hoy; entre 1 y 10. */
+    @Throws(Exception::class)
+    fun changeWorkoutSets(name: String, delta: Int) = changeWorkout { w ->
+        w.with(name) { e ->
+            require(e.sets + delta in 1..10) { "Entre 1 y 10 series" }
+            e.copy(sets = e.sets + delta)
+        }
+    }
+
+    /** Pone o quita la superserie de un ejercicio del entreno libre de hoy con el anterior. */
+    @Throws(Exception::class)
+    fun linkWorkoutExercise(name: String, linked: Boolean) = changeWorkout { w ->
+        require(!linked || w.exercises.firstOrNull()?.name != name) { "El primer ejercicio no tiene uno anterior" }
+        w.with(name) { it.copy(linked = linked) }
+    }
+
+    /** Descarta el entreno libre de hoy y las series apuntadas hoy en sus ejercicios: el día vuelve a su plan. */
+    fun discardWorkout() {
+        val w = workoutToday ?: return
+        val names = w.exercises.map { it.name }.toSet()
+        save(data.copy(workouts = data.workouts.filter { it.date != w.date },
+            sets = data.sets.filterNot { it.date == w.date && it.exercise in names }))
+    }
+
     // ------------------------------------------------------------ biblioteca y ejercicios propios (Library.kt)
 
     val customExercises: List<CustomExercise> get() = data.customExercises
@@ -510,16 +584,46 @@ class BrivelApp(
 
     /**
      * Apunta o corrige la serie `set` (desde 1) de un ejercicio; `reps` son segundos en los ejercicios por tiempo; `rir`:
-     * las repeticiones que te quedaban (null: sin apuntar).
+     * las repeticiones que te quedaban (null: sin apuntar). Al corregirla conserva su tipo.
      */
     @Throws(Exception::class)
-    fun logSet(date: String, exercise: String, set: Int, weightKg: Double?, reps: Int, rir: Int?) {
+    fun logSet(date: String, exercise: String, set: Int, weightKg: Double?, reps: Int, rir: Int?) =
+        logSet(date, exercise, set, weightKg, reps, rir,
+            data.sets.lastOrNull { it.date == date && it.exercise == exercise && it.set == set }?.kind)
+
+    /** Como la anterior, con el tipo de la serie (SET_KINDS: calentamiento, descendente o al fallo; null: normal). */
+    @Throws(Exception::class)
+    fun logSet(date: String, exercise: String, set: Int, weightKg: Double?, reps: Int, rir: Int?, kind: String?) {
         require(date <= today().toString()) { "No se puede apuntar una sesión futura" }
         require(exercise.isNotBlank() && set in 1..20 && reps in 1..600 && (weightKg == null || weightKg in 0.0..500.0) &&
             (rir == null || rir in 0..10)) { "Revisa el peso y las repeticiones" }
+        require(kind == null || kind in SET_KINDS) { "Tipo de serie no válido" }
         save(data.copy(sets = data.sets.filterNot { it.date == date && it.exercise == exercise && it.set == set } +
-            SetLog(date, exercise, set, weightKg, reps, rir)))
+            SetLog(date, exercise, set, weightKg, reps, rir, kind)))
     }
+
+    /** Qué serie toca en la sesión de ese día después de apuntar una en el ejercicio `current`; null: sesión completa. */
+    fun nextSet(date: String, current: Int): NextSet? = strengthScreen(date)?.let { nextSet(it.exercises, current) }
+
+    /** El historial de un ejercicio: últimos días, gráfica y mejores marcas (Training.kt). */
+    fun exerciseHistory(name: String): ExerciseHistory = exerciseHistory(name, data.sets, data.customExercises)
+
+    /** Los discos por lado para ese peso con la barra de 20 kg; null si no se puede montar. */
+    fun plates(weightKg: Double): String? = platesText(weightKg)
+
+    // ------------------------------------------------------------ medidas corporales (Training.kt)
+
+    /** Apunta una medida de hoy (o de un día pasado); otra del mismo día y tipo la sustituye. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun logMeasure(kind: String, value: Double, date: String = today().toString()) {
+        val m = MEASURES[kind] ?: throw IllegalArgumentException("Medida no válida")
+        require(date <= today().toString()) { "No se puede apuntar una medida futura" }
+        require(value in m.range) { "${m.label}: entre ${num(m.range.start)} y ${num(m.range.endInclusive)} ${m.unit}" }
+        save(data.copy(measurements = data.measurements.filterNot { it.date == date && it.kind == kind } + Measurement(date, kind, value)))
+    }
+
+    fun deleteMeasure(date: String, kind: String) =
+        save(data.copy(measurements = data.measurements.filterNot { it.date == date && it.kind == kind }))
 
     /** Borra una serie; las siguientes de ese ejercicio y día bajan un número para que no queden huecos. */
     fun deleteSet(date: String, exercise: String, set: Int) {

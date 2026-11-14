@@ -49,7 +49,7 @@ internal fun whoStreak(weekly: List<Point>): Milestone? {
 
 /** El mayor peso de cada ejercicio (a igual peso, más repeticiones), los más recientes primero. */
 fun strengthRecords(sets: List<SetLog>, limit: Int = 6): List<Milestone> =
-    sets.filter { (it.weightKg ?: 0.0) > 0 }.groupBy { it.exercise }.map { (exercise, logs) ->
+    sets.filter { (it.weightKg ?: 0.0) > 0 && it.counts() }.groupBy { it.exercise }.map { (exercise, logs) ->
         logs.maxWith(compareBy<SetLog>({ it.weightKg }, { it.reps }, { it.date }).thenByDescending { it.set })
             .let { best -> Milestone(exercise, "${fmt(best.weightKg!!, 1).removeSuffix(".0").replace('.', ',')} kg × ${best.reps}", best.date) }
     }.sortedByDescending { it.date }.take(limit)

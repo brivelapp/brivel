@@ -70,6 +70,7 @@ data class PlanItem(
     @Transient internal val healthStrength: HealthStrength? = null,
     @Transient internal val raceStrength: RaceStrength? = null,
     @Transient internal val rotatedFrom: Map<String, String> = emptyMap(),  // variante puesta por la rotación → ejercicio del plan
+    @Transient internal val linked: Set<Int> = emptySet(),  // posiciones de `exercises` en superserie con la anterior
 ) {
     val isStrength: Boolean get() = sport == "strength"
 }
@@ -293,7 +294,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
 
     fun week(monday: LocalDate): WeekView {
         val race = raceGoal()
-        val week = moveSessions(applyRoutines(if (race != null && race.date >= today) raceWeek(monday, race) else healthWeek(monday)))
+        val week = applyWorkouts(moveSessions(applyRoutines(if (race != null && race.date >= today) raceWeek(monday, race) else healthWeek(monday))))
             .let { w -> zoneLine(w)?.let { w.copy(info = w.info + it) } ?: w }
         val s = screening ?: return week
         return when (s.clearance) {
@@ -336,19 +337,37 @@ class Planner(private val data: AppData, private val today: LocalDate) {
         val days = week.days.map { d ->
             val routine = data.routines.firstOrNull { r -> weekdayOf(LocalDate.parse(d.date)) in r.days && d.date >= r.since }
                 ?: return@map d
-            val s = routine.strength(data.customExercises)
-            val item = routineItem(routine, s)
-            val i = d.items.indexOfFirst { it.isStrength }
-            val items = if (i >= 0) d.items.toMutableList().also { it[i] = item } else d.items + item
-            dayView(d.date, d.weekday, items, d.note.takeIf { items.isEmpty() }, d.availableMin, d.reasons, d.adjustments, d.phase)
+            withStrength(d, routineItem(routine, routine.strength(data.customExercises)))
         }
         return week.copy(days = days, strengthDays = days.count { d -> d.items.any { it.isStrength } })
+    }
+
+    /**
+     * Entrenos libres (FreeWorkout): ese día la fuerza es la que el usuario ha montado; sustituye a la del plan o a la de
+     * su rutina, o se añade si no había. Después de mover sesiones: el entreno libre es de su día y no se mueve.
+     */
+    private fun applyWorkouts(week: WeekView): WeekView {
+        if (data.workouts.none { w -> week.days.any { it.date == w.date } }) return week
+        val days = week.days.map { d ->
+            val w = data.workouts.firstOrNull { it.date == d.date } ?: return@map d
+            val r = Routine("", w.name, w.exercises, emptyList(), w.rir, w.date)
+            withStrength(d, routineItem(r, r.strength(data.customExercises)).copy(kind = "free", hint = "Entreno libre"))
+        }
+        return week.copy(days = days, strengthDays = days.count { d -> d.items.any { it.isStrength } })
+    }
+
+    /** El día con esa sesión como su fuerza: en el sitio de la que tuviera, o añadida. */
+    private fun withStrength(d: DayView, item: PlanItem): DayView {
+        val i = d.items.indexOfFirst { it.isStrength }
+        val items = if (i >= 0) d.items.toMutableList().also { it[i] = item } else d.items + item
+        return dayView(d.date, d.weekday, items, d.note.takeIf { items.isEmpty() }, d.availableMin, d.reasons, d.adjustments, d.phase)
     }
 
     private fun routineItem(r: Routine, s: HealthStrength) = PlanItem(
         sport = "strength", kind = "routine", title = r.name, hint = "Tu rutina", technicalName = r.name,
         durationMin = s.durationMin, steps = emptyList(), exercises = s.exercises, notes = effortNote(r.rir, "gym"),
         alternatives = emptyList(), chosen = false, slot = "strength", session = null, healthStrength = s, raceStrength = null,
+        linked = r.exercises.linkedIndexes(),
     )
 
     /**
@@ -391,7 +410,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
         val planned: List<Planned> = items.map { it.planned() }
         // En pantalla, hecha con la mayoría de las series; la adherencia sí cuenta el trabajo parcial [Inferencia]
         val due = items.filter { it.isStrength }.sumOf { i -> i.exercises.sumOf { prescription(it, i.raceStrength?.dose, data.customExercises)?.sets ?: 0 } }
-        val unfinished = date in strengthFromSets && 2 * latestSets(data.sets).count { it.date == date } <= due
+        val unfinished = date in strengthFromSets && 2 * latestSets(data.sets).count { it.date == date && it.counts() } <= due
         val matches = matchDay(planned, (done[date] ?: emptyList()).filterNot { unfinished && it.sport == "strength" })
         return DayView(date, weekday, date == today.toString(), date < today.toString(), items, note, availableMin,
             reasons, adjustments, matches.map { MatchView(it.why, it.matched != null) },

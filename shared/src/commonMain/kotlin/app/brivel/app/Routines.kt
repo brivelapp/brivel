@@ -9,9 +9,15 @@ import app.brivel.engine.pyRound
 import app.brivel.engine.strengthTss
 import kotlinx.serialization.Serializable
 
-/** Un ejercicio de la rutina: series y rango de repeticiones (o de segundos, si el ejercicio va por tiempo). */
+/**
+ * Un ejercicio de la rutina: series y rango de repeticiones (o de segundos, si el ejercicio va por tiempo). `linked`: en
+ * superserie con el anterior (se alternan sin descanso y se descansa al acabar la ronda).
+ */
 @Serializable
-data class RoutineExercise(val name: String, val sets: Int, val low: Int, val high: Int)
+data class RoutineExercise(val name: String, val sets: Int, val low: Int, val high: Int, val linked: Boolean = false)
+
+/** Posiciones de los ejercicios que van en superserie con el anterior; el primero nunca lo está. */
+internal fun List<RoutineExercise>.linkedIndexes(): Set<Int> = indices.filter { it > 0 && this[it].linked }.toSet()
 
 /**
  * Rutina propia. `days`: días de la semana ("MON"…) en los que se hace; `rir`: repeticiones en reserva que pide en cada

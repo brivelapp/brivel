@@ -1,6 +1,6 @@
 # Visión — Brivel
 
-> **Estado:** borrador para revisar con Gabriel · **Fecha:** 2026-10-22
+> **Estado:** borrador para revisar con Gabriel · **Fecha:** 2026-10-22 · **Objetivo ampliado:** 2026-11-14
 > Ordena todo lo demás: cada apartado, función o cambio debe encajar aquí. Si algo no encaja, o se cambia la visión o no
 > se hace. Nace de la revisión de la web del mismo día (`REVISION_2026-10-22.md`).
 
@@ -12,6 +12,15 @@ hoy y por qué**.
 
 La diferencia con esas apps no es tener más gráficas, es cerrar el círculo: **medir → entender → decidir → hacer → medir**.
 Garmin decide pero encierra tus datos en su ecosistema; Apple y Google guardan los datos pero no deciden nada.
+
+**Objetivo ampliado (2026-11-14, Gabriel):** una sola app gratuita que permita dejar de usar Runna, TrainingPeaks, Hevy,
+Strong, Symmetry, intervals.icu, Garmin Connect, Apple Health y Google Health. Brivel **decide por ti y también te deja
+decidir a ti**: entrenar sin plan, crear tus sesiones y analizar lo que hiciste. Qué se toma de cada una, en la sección
+3.1.
+
+Dos límites que no dependen de Brivel: el reloj Garmin solo se sincroniza a través de Garmin Connect, y Apple Salud y
+Health Connect son el almacén de datos del sistema. Esas tres siguen instaladas y trabajando por debajo; el objetivo es
+no tener que abrirlas.
 
 ## 2. Para quién
 
@@ -35,6 +44,23 @@ por salud. La app no cambia de modo, cambia de objetivo.
 | Explica sus fórmulas | No (Firstbeat es cerrado) | No aplica | Sí: motor determinista y documentado |
 | Precio | Gratis + Connect+ de pago | Gratis | Gratis, sin niveles de pago ni anuncios |
 
+### 3.1 Ampliación del 2026-11-14: qué tomamos de las demás
+
+Funciones contrastadas el 2026-11-14 con la fuente enlazada (página oficial o ficha de la tienda, leídas en el resumen
+de la búsqueda, no enteras). La columna «Ya hay» sale del código de Brivel.
+
+| App | Qué tomamos | Ya hay | Qué dejamos fuera | Fuente |
+|---|---|---|---|---|
+| Runna | Plan personal de 5 km a ultra, fuerza junto a la carrera, ritmo objetivo por sesión, envío al reloj | Casi todo: motor con fases, ritmos (`WorkoutText.kt`), fuerza, envío al reloj | App propia de reloj con avisos de voz, comunidad | [App Store](https://apps.apple.com/gb/app/runna/id1594204443) |
+| TrainingPeaks | Gráfica de forma, fatiga y forma física; planificar a largo plazo; mover sesiones; constructor de sesiones | Estado de forma, mover sesiones, plan frente a lo hecho | Entrenadores (Fase 4), tienda de planes | [Ayuda oficial](https://help.trainingpeaks.com/hc/en-us/articles/204072624-Basic-Athlete-vs-Premium-Athlete-account) |
+| Hevy | Entreno libre, superseries, tipos de serie (normal, calentamiento, descendente, al fallo), 1RM estimado y volumen por ejercicio, series por grupo muscular, calculadora de discos y de calentamiento | Series, rutinas, 1.310 ejercicios, descansos, progresión, series por zona | Red social | [Ayuda oficial](https://help.hevyapp.com/hc/en-us/articles/33106320824727) |
+| Strong | Lo mismo, más medidas corporales | Peso corporal | — | [App Store](https://apps.apple.com/app/id464254577) |
+| Symmetry | Progreso por grupo muscular, fotos de antes y después | Series por zona | Planes hechos con IA a partir de un escaneo del cuerpo (principio 5), red social | [App Store](https://apps.apple.com/app/id6474446718) [Inferencia: «Symmetric» es esta app] |
+| intervals.icu | Análisis de la actividad (vueltas, zonas, desacople), curva de potencia y ritmo, umbrales estimados, efecto del plan futuro en la forma | Carga propia con datos del móvil, proyección de la forma en `plan()` | Gráficas personalizadas con código | [Analizar](https://www.intervals.icu/features/analyze/), [curva de potencia](https://www.intervals.icu/features/power-curve/), [forma](https://www.intervals.icu/features/fitness-chart/) |
+| Garmin Connect | Resumen del día, sueño, estrés y energía, rutas, kilómetros del material | Sueño, VFC, FC en reposo, pasos, VO2max, estado de entrenamiento, tiempos previstos | Ajustes del reloj, insignias y retos | [Blog de Garmin](https://www.garmin.com/en-US/blog/general/connect-features-you-should-know-about/) |
+| Apple Health | Tendencias y avisos de cambio, fases de sueño | Tendencias con rango normal | Medicación, historial médico, ciclo (de momento) | [Apple](https://www.apple.com/ca/health) |
+| Google Health (antes Fitbit, desde el 2026-05-19) | Objetivo semanal de cardio, sueño | Minutos de la OMS por semana | Entrenador con IA de pago, historial médico | [9to5Google](https://9to5google.com/2026/05/07/google-health-fitbit-features/) |
+
 ## 4. Principios (no negociables)
 
 1. **Un solo sistema.** Un motor, una navegación, un lenguaje visual. Nada de "modo carrera" y "modo salud" separados.
@@ -50,7 +76,8 @@ por salud. La app no cambia de modo, cambia de objetivo.
 
 ## 5. Estructura de la app
 
-Cuatro apartados y un flujo de objetivo. Todo lo de hoy (Salud, Plan, Hoy) se reparte aquí; nada queda fuera.
+Cinco apartados (Hoy, Calendario, Entrenar, Progreso y Perfil; Entrenar se decidió el 2026-11-14) y un flujo de
+objetivo. Todo lo de hoy (Salud, Plan, Hoy) se reparte aquí; nada queda fuera.
 
 ### Objetivo (flujo propio, fuera del perfil)
 
@@ -74,6 +101,14 @@ Cuatro apartados y un flujo de objetivo. Todo lo de hoy (Salud, Plan, Hoy) se re
 - Cada actividad hecha aparece emparejada con la sesión planificada y **con un título que dice lo que fue** ("Rodaje Z3",
   "Tempo"), no el nombre automático del ciclocomputador; el título se corrige también en intervals.icu.
 - Tocar un día: detalle, mover la sesión, cambiar el tiempo disponible.
+
+### Entrenar (decidido el 2026-11-14, sin construir)
+
+- **Empezar un entrenamiento sin plan:** fuerza libre, o grabar una actividad con el GPS del móvil.
+- **Tus rutinas de fuerza y tus sesiones propias de resistencia** (pasos con duración y objetivo), que se pueden poner
+  en el calendario y enviar al reloj.
+- **La biblioteca de ejercicios**, con el historial y la gráfica de cada uno.
+- Rutinas y biblioteca salen de Perfil y pasan aquí.
 
 ### Progreso
 
@@ -162,6 +197,26 @@ peticiones al día, 5 GB de D1; [`SINCRONIZACION.md`](SINCRONIZACION.md)); solo 
 | 4. Entrenadores | Varios atletas por cuenta | Abre el perfil profesional |
 | 5. Integraciones | Strava y Garmin directos (con servidor) | Plataforma completa |
 
+**Bloques del objetivo ampliado (orden aprobado por Gabriel el 2026-11-14):**
+
+| Orden | Bloque | Qué | Sustituye a | Tamaño |
+|---|---|---|---|---|
+| 1 | A. Fuerza libre | Pestaña Entrenar, entreno sin plan, superseries, tipos de serie, historial y gráfica por ejercicio (1RM estimado, volumen), calculadora de discos, medidas corporales | Hevy, Strong, Symmetry | M |
+| 2 | C. Constructor de sesiones | Sesiones propias de resistencia al calendario y al reloj | TrainingPeaks, intervals.icu, Garmin | M |
+| 3 | B. Actividades propias | Importar FIT, guardar la actividad con sus series, detalle (mapa, vueltas, gráficas, zonas), curvas de potencia y ritmo, umbrales propios | intervals.icu | L |
+| 4 | G. Grabar con el GPS del móvil | Añadido por Gabriel el 2026-11-14. Va detrás de B porque usa su almacén de actividades | Runna, Garmin | L |
+| 5 | D. Plan de carrera | Repasar la vista del plan entero hasta la carrera; los ritmos por sesión ya están | Runna | S |
+| 6 | E. Salud | Fases de sueño, estrés, SpO2, respiración, temperatura. Solo lo que miden reloj y báscula | Apple Health, Google Health, Garmin | M |
+| 7 | F. Material | Kilómetros por zapatilla y bici | Garmin, intervals.icu | S |
+
+Avisos antes de empezar B y G:
+
+- **B:** la copia cifrada tiene un tope de 1 MB ([`SINCRONIZACION.md`](SINCRONIZACION.md)); las actividades con sus
+  series no caben. Hace falta un almacén local propio y otra forma de sincronizarlas. Sin diseñar.
+- **G:** la ubicación es una categoría nueva de datos: revisar [`CUMPLIMIENTO.md`](CUMPLIMIENTO.md), la política de
+  privacidad y la EIPD, y declarar la ubicación en segundo plano en Google Play. La web no puede grabar con la pantalla
+  apagada [Inferencia], así que sería solo de las apps.
+
 ## 10. La revisión del 2026-10-22 en esta estructura
 
 | Punto | Dónde | Fase |
@@ -184,6 +239,15 @@ peticiones al día, 5 GB de D1; [`SINCRONIZACION.md`](SINCRONIZACION.md)); solo 
 | Entrenadores | Más adelante (Fase 4) |
 | Financiación | Cuentas de desarrollador y dominio; el servidor, en el plan gratis de Cloudflare mientras quepa |
 | Nombre | **Brivel** (2026-10-30; antes TrainSync). Dominio `brivel.app` comprado; marca sin registrar (sección 12) |
+
+| Pregunta | Decisión (2026-11-14) |
+|---|---|
+| Objetivo | Sustituir también a Runna, TrainingPeaks, Hevy, Strong, Symmetry e intervals.icu (secciones 1 y 3.1) |
+| Navegación | Quinta pestaña, Entrenar (sección 5) |
+| Salud | Sigue limitada a reloj y báscula; nutrición, medicación e historial médico, de momento no |
+| Grabar con el GPS del móvil | Sí (bloque G) |
+| Orden | A → C → B → G → D → E → F (sección 9) |
+| Red social y retos | Sin decidir; fuera mientras tanto |
 
 ## 12. Nombre
 
