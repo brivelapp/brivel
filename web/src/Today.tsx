@@ -114,6 +114,7 @@ function SessionCard({ core, item, done, children }: { core: WebApp; item: PlanI
         </ul>
       )}
       {item.exercises.map((e) => <p key={e}>{e}</p>)}
+      {item.notes && <p className="muted small-text">{item.notes}</p>}
       {children}
     </section>
   )

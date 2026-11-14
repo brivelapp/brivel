@@ -1,7 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 
-// El recorrido de un usuario nuevo en la web, de la portada a la biblioteca. Lo que se comprueba no depende del día de
-// la semana en que corra la prueba.
+// El recorrido de un usuario nuevo en la web, de la portada a la biblioteca, con el reloj del navegador fijado en un lunes.
 
 const errors: string[] = []
 
@@ -9,6 +8,7 @@ const errors: string[] = []
 async function signUp(page: Page) {
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()) })
   page.on("pageerror", (e) => errors.push(String(e)))
+  await page.clock.install({ time: new Date("2026-11-16T10:00:00") })  // un lunes fijo: el plan no depende de cuándo corra la prueba
   await page.goto("/")
   await page.getByRole("button", { name: "Empezar" }).click()
   await page.getByRole("radio", { name: /Ganar fuerza/ }).click()
@@ -112,4 +112,14 @@ test("el material del usuario se guarda y «solo con mi material» reduce la lis
   await page.reload()
   const again = await openLibrary(page)
   await expect(again.getByRole("button", { name: "mancuernas", exact: true })).toHaveAttribute("aria-pressed", "true")
+})
+
+test("la sesión de fuerza de hoy dice cómo calentar y se puede empezar", async ({ page }) => {
+  await signUp(page)
+  await expect(page.getByText("Lunes 16 de noviembre")).toBeVisible()
+  await expect(page.getByText(/^Calentamiento \(10 min\): /)).toBeVisible()
+  await page.getByRole("button", { name: "Empezar" }).click()
+  await expect(page.getByText(/^0\/\d+ series$/)).toBeVisible()
+  await expect(page.getByRole("button", { name: "Serie hecha" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Cómo se hace" })).toBeVisible()
 })
