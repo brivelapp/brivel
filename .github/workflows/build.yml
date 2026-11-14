@@ -92,7 +92,7 @@ jobs:
       - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: "21" }
       - uses: gradle/actions/setup-gradle@v6
-      - run: ./gradlew :shared:koverLogJvm :shared:koverXmlReportJvm :shared:koverHtmlReportJvm --console=plain
+      - run: ./gradlew :shared:koverLogJvm :shared:koverXmlReportJvm :shared:koverHtmlReportJvm :shared:koverVerifyJvm --console=plain
       - uses: actions/upload-artifact@v7
         with:
           name: cobertura

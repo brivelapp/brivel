@@ -78,3 +78,16 @@ kotlin {
         }
     }
 }
+
+// Suelo de cobertura de los tests de la JVM: el CI falla si un cambio baja de aquí (a 2026-11-14: 97,8 % de líneas y
+// 71,9 % de ramas). Subirlo cuando suba la cobertura; no bajarlo para que pase un cambio sin tests.
+kover {
+    reports {
+        verify {
+            rule {
+                minBound(97)
+                minBound(70, kotlinx.kover.gradle.plugin.dsl.CoverageUnit.BRANCH, kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE)
+            }
+        }
+    }
+}
