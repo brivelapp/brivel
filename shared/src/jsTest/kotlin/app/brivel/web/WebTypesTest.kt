@@ -68,11 +68,19 @@ class WebTypesTest {
         // Entrenar: una medida, el historial de un ejercicio con peso, la serie que toca y el entreno libre de hoy
         app.logMeasure("waist", 82.0)
         app.logSet(today.toString(), "Flexiones", 1, 20.0, 8, null)
+        // Una actividad propia (grabada: 1,6 km con recorrido y vueltas), el material que se la apunta y las medallas
+        app.utcOffsetSeconds = { 0 }
+        app.saveGear(null, "Zapatillas", "running", today.plusDays(-30).toString(), 100.0, 50.0)
+        val t0 = 1_793_260_800L  // 2026-10-29T08:00:00Z
+        app.startRecording("running", t0)
+        for (t in 0..400) app.recordPoint(t0 + t, 38.5 + t * 4 / 111195.0, -0.1 + t * 0.00001, 50.0 + t % 30, 8.0)
+        val own = app.finishRecording()
         val screens = listOf(json.encodeToString(app.month(2026, 10)), json.encodeToString(app.progress()),
             json.encodeToString(library()), json.encodeToString(app.routines),  // la biblioteca y las rutinas, en Entrenar
             json.encodeToString(app.exerciseHistory("Flexiones")), json.encodeToString(app.startWorkout(null)),
             json.encodeToString(NextSet(0, 1)),
-            json.encodeToString(app.planOverview()),
+            json.encodeToString(app.planOverview()), json.encodeToString(app.activities()), json.encodeToString(app.activity(own)),
+            json.encodeToString(app.gear()),
             json.encodeToString(app.saveOwnSession(OwnSession("", "Series", "running", listOf(OwnStep("Rápido", 3.0, "Z4", 5, 2.0)), listOf("TUE"), since = ""))))
         val all = sent + screens.flatMap { keys(Json.parseToJsonElement(it)) }
         val types = fs.readFileSync(js("process.env.WEB_TYPES"), "utf8") as String

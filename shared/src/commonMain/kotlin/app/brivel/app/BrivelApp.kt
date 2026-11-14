@@ -26,7 +26,6 @@ import app.brivel.sync.deriveKeys
 import io.ktor.client.engine.HttpClientEngine
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import kotlinx.serialization.json.Json
 
@@ -893,7 +892,7 @@ class BrivelApp(
         val file = runCatching { parseFit(bytes) }.getOrElse {
             throw IllegalArgumentException(if (it is IllegalArgumentException) it.message else "No se pudo leer el archivo: no parece un FIT de actividad")
         }
-        require(localTime(file.start).take(10) <= today().toString()) { "La actividad tiene una fecha futura: revisa la hora del dispositivo que la grabó" }
+        require(localStart(file.start).take(10) <= today().toString()) { "La actividad tiene una fecha futura: revisa la hora del dispositivo que la grabó" }
         return addActivity(file, "fit")
     }
 
@@ -906,8 +905,16 @@ class BrivelApp(
     private fun zoneBounds(): List<Double> = heartRateZoneBounds(data.profile, today(), null,
         (combinedHealth(data.health, data.garmin)?.workouts ?: emptyList()) + data.activities.map { it.workout() })
 
+    /**
+     * Segundos al este de UTC en ese instante (segundos desde 1970): lo pone cada plataforma con la zona horaria del
+     * dispositivo, para dar la hora local de una actividad. Sin ponerlo, la hora sale en UTC.
+     */
+    var utcOffsetSeconds: (Long) -> Int = { 0 }
+
+    private fun localStart(epoch: Long): String = localTime(epoch + utcOffsetSeconds(epoch))
+
     private fun addActivity(file: FitFile, source: String): String {
-        val (activity, detail) = buildActivity(file, localTime(file.start), zoneBounds(), source)
+        val (activity, detail) = buildActivity(file, localStart(file.start), zoneBounds(), source)
         store.write(DETAIL_KEY + activity.id, detail?.let { json.encodeToString(it) })
         save(data.copy(activities = (data.activities.filterNot { it.id == activity.id } + activity).sortedBy { it.start }))
         return activity.id
@@ -1017,12 +1024,14 @@ class BrivelApp(
     }
 }
 
-/** Segundos desde 1970 → «AAAA-MM-DDTHH:MM:SS» en la hora del móvil. */
-@OptIn(kotlin.time.ExperimentalTime::class)
-internal fun localTime(epochSeconds: Long, zone: TimeZone = TimeZone.currentSystemDefault()): String {
-    val t = kotlin.time.Instant.fromEpochSeconds(epochSeconds).toLocalDateTime(zone)
+/**
+ * Segundos desde 1970 → «AAAA-MM-DDTHH:MM:SS», sin zonas horarias: quien llama suma antes el desfase local. A mano porque en
+ * JavaScript las conversiones de zona de kotlinx-datetime arrastran una librería aparte (@js-joda) que la web no lleva.
+ */
+internal fun localTime(seconds: Long): String {
+    val time = seconds.mod(86400L).toInt()
     fun two(n: Int) = n.toString().padStart(2, '0')
-    return "${t.date}T${two(t.hour)}:${two(t.minute)}:${two(t.second)}"
+    return "${LocalDate.fromEpochDays(seconds.floorDiv(86400L).toInt())}T${two(time / 3600)}:${two(time % 3600 / 60)}:${two(time % 60)}"
 }
 
 /** La fecha de hoy en la zona horaria del móvil. */

@@ -43,9 +43,21 @@ export interface MonthScreen { title: string; year: number; month: number; weeks
 export interface Point { date: string; value: number }
 export interface Metric { key: string; label: string; unit: string; explanation: string; points: Point[]; latest: number | null
   normalLow: number | null; normalHigh: number | null; higherIsBetter: boolean | null; source: string | null }
-export interface RecentActivity { date: string; title: string; sport: string; minutes: number; detail: string | null; zoneMinutes: number[]; source: string | null }
+export interface RecentActivity { date: string; title: string; sport: string; minutes: number; detail: string | null; zoneMinutes: number[]; source: string | null
+  own: string | null }
 export interface ProgressScreen { linked: boolean; metrics: Metric[]; weeklyMinutes: Point[]; status: { label: string; text: string } | null
   predictions: { distance: string; time: string }[]; predictionSource: string | null; recent: RecentActivity[]; garminNote: string | null
   milestones: Milestone[]; strengthRecords: Milestone[]; thresholds: { label: string; value: string; explanation: string }[]
-  measures: Metric[] }
+  measures: Metric[]; curves: Curve[]; badges: BadgesScreen | null }
+export interface Curve { title: string; note: string | null; rows: { duration: string; recent: string; best: string }[] }
+export interface BadgeView { id: string; title: string; text: string; group: string; points: number; earned: string | null; progress: string | null; fraction: number }
+export interface BadgesScreen { level: number; points: number; nextLevel: string | null; earned: BadgeView[]; next: BadgeView[]; garminNote: string | null }
+export interface XY { x: number; y: number }
+export interface ActivityRow { id: string; date: string; title: string; sport: string; detail: string | null }
+export interface ActivityScreen { id: string; title: string; dateLabel: string; sport: string; stats: { label: string; value: string }[]; zoneMinutes: number[]
+  laps: { n: number; time: string; distance: string; pace: string; hr: string }[]; bests: { label: string; value: string }[]
+  charts: { label: string; low: string; high: string; line: XY[] }[]; track: XY[]; source: string; gear: string | null }
+export interface GearRow { id: string; name: string; sport: string; label: string; km: string; detail: string; warning: string | null; inUse: boolean; retired: boolean
+  uses: { activity: string; text: string }[]; since: string; startKm: number; limitKm: number | null }
+export interface GearScreen { rows: GearRow[]; garminNote: string | null }
 export interface Milestone { title: string; value: string; date: string | null; source: string | null }

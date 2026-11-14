@@ -34,6 +34,7 @@ import app.brivel.app.OWN_SPORTS
 import app.brivel.app.OWN_ZONES
 import app.brivel.app.OwnSession
 import app.brivel.app.SET_KINDS
+import app.brivel.app.GEAR_LABEL
 import app.brivel.sync.SyncCode
 import app.brivel.sync.Syncer
 import kotlinx.browser.window
@@ -51,7 +52,15 @@ import org.w3c.dom.Storage
 
 private class WebStore(private val storage: Storage) : KeyValueStore {
     override fun read(key: String) = storage.getItem(key)
-    override fun write(key: String, value: String?) = if (value == null) storage.removeItem(key) else storage.setItem(key, value)
+    override fun write(key: String, value: String?) {
+        if (value == null) return storage.removeItem(key)
+        try {
+            storage.setItem(key, value)
+        } catch (e: dynamic) {
+            // El navegador da unos 5 MB: si se llena, las gráficas de una actividad se quedan sin guardar; lo demás sí debe fallar
+            if (!key.startsWith("brivel.activity.")) throw e
+        }
+    }
 }
 
 // La fecha local del navegador; TimeZone.currentSystemDefault() en JS necesita la base de zonas horarias aparte
@@ -72,7 +81,10 @@ class WebApp {
     // La clave de intervals.icu no se queda en el navegador: sessionStorage se borra al cerrar la pestaña. Cifrarla no
     // serviría (la llave estaría en el mismo navegador); contra scripts ajenos protege la CSP de web/vite.config.ts
     private val local = WebStore(localStorage)
-    private val app = BrivelApp(local, WebStore(sessionStorage), ::browserToday)
+    private val app = BrivelApp(local, WebStore(sessionStorage), ::browserToday).apply {
+        // La hora local de una actividad, con el desfase que da el navegador para ese momento
+        utcOffsetSeconds = { epoch -> -Date(epoch * 1000.0).getTimezoneOffset() * 60 }
+    }
     private val json = Json { encodeDefaults = true }
 
     val needsOnboarding: Boolean get() = app.needsOnboarding
@@ -238,6 +250,24 @@ class WebApp {
     fun unscheduleOwnSession(id: String, date: String) = app.unscheduleOwnSession(id, date)
     fun ownSportsJson(): String = json.encodeToString(OWN_SPORTS)
     fun ownZonesJson(): String = json.encodeToString(OWN_ZONES.map { (k, label) -> listOf(k, label) })
+
+    // Actividades propias (Activities.kt): en la web se importan de un archivo FIT; grabar con el GPS es de las apps
+    fun activitiesJson(): String = json.encodeToString(app.activities())
+    fun activityJson(id: String): String? = app.activity(id)?.let { json.encodeToString(it) }
+    fun importFit(bytes: ByteArray): String = app.importFit(bytes)
+    fun deleteActivity(id: String) = app.deleteActivity(id)
+
+    // Material (Gear.kt): zapatillas y bicis con sus kilómetros
+    fun gearJson(): String = json.encodeToString(app.gear())
+    fun gearSportsJson(): String = json.encodeToString(GEAR_LABEL.map { (k, label) -> listOf(k, label) })
+    fun saveGear(id: String?, name: String, sport: String, since: String, startKm: String, limitKm: String) {
+        fun km(text: String) = text.trim().replace(',', '.').let { if (it.isEmpty()) null else it.toDoubleOrNull() ?: throw IllegalArgumentException("Escribe los kilómetros con números") }
+        app.saveGear(id, name, sport, since, km(startKm) ?: 0.0, km(limitKm))
+    }
+    fun useGear(id: String) = app.useGear(id)
+    fun retireGear(id: String) = app.retireGear(id)
+    fun deleteGear(id: String) = app.deleteGear(id)
+    fun moveGearUse(activity: String, gearId: String) = app.moveGearUse(activity, gearId)
 
     // Medidas corporales (Training.kt): [clave, nombre, unidad]
     fun measuresJson(): String = json.encodeToString(MEASURES.map { (k, m) -> listOf(k, m.label, m.unit) })

@@ -5,7 +5,6 @@ import app.brivel.sync.SYNCED_ACTIVITIES
 import app.brivel.sync.merge
 import app.brivel.sync.syncPayload
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import java.io.ByteArrayOutputStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -83,7 +82,7 @@ class ActivitiesTest {
         assertEquals(3.0, s.speed)
         assertEquals(300.0, s.distance)
         assertNull(s.power)  // 0xFFFF es «sin dato»
-        assertEquals("2024-11-08T11:33:20", localTime(fit.start, TimeZone.UTC))
+        assertEquals("2024-11-08T11:33:20", localTime(fit.start))
     }
 
     @Test

@@ -257,3 +257,56 @@ test("el Calendario enseña el plan entero, semana a semana", async ({ page }) =
   await expect(plan.getByText(/Semana 4 de 4 \(más suave\)/)).toBeVisible()
   await expect(plan.getByText(/^Semana del \d+ de (noviembre|diciembre)/)).toHaveCount(3)  // las tres que quedan del bloque
 })
+
+test("actividad propia: se importa un FIT, se apunta al material, sale su detalle y da medallas", async ({ page }) => {
+  await signUp(page)
+  const nav = page.getByRole("navigation", { name: "Secciones" })
+  // Antes, una bici en Perfil: la actividad se le apuntará a ella
+  await nav.getByRole("button", { name: "Perfil" }).click()
+  const gear = page.locator("section.module", { hasText: "Zapatillas y bicis" })
+  await gear.getByRole("button", { name: "Añadir zapatillas o bici" }).click()
+  await gear.getByLabel("Nombre").fill("Bici de carretera")
+  await gear.getByLabel("Qué es").selectOption("cycling")
+  await gear.getByLabel("Cuenta las actividades desde").fill("2026-10-01")
+  await gear.getByLabel("Kilómetros que ya llevaba").fill("1000")
+  await gear.getByRole("button", { name: "Guardar" }).click()
+  await expect(page.getByRole("status")).toHaveText("Material guardado")
+  await expect(gear.getByText("1000 km")).toBeVisible()
+
+  // El archivo es sintético (e2e/fixtures): 10 min de bici a 210 W y 140 ppm, 4,8 km, escrito con otra librería
+  await nav.getByRole("button", { name: "Entrenar" }).click()
+  const activities = page.locator("section.module", { hasText: "Tus actividades" })
+  await activities.getByLabel("Archivo FIT").setInputFiles("e2e/fixtures/salida.fit")
+  await expect(page.getByRole("status")).toHaveText("Actividad importada")
+  const detail = page.getByRole("dialog", { name: "Bici" })
+  await expect(detail.getByText("4,80 km")).toBeVisible()
+  await expect(detail.getByText("210 W").first()).toBeVisible()
+  await expect(detail.getByText("140 ppm").first()).toBeVisible()
+  await expect(detail.getByRole("img", { name: "Recorrido" })).toBeVisible()
+  await expect(detail.getByRole("img", { name: /^Potencia/ })).toBeVisible()
+  await expect(detail.getByText("Material: Bici de carretera")).toBeVisible()
+  await detail.getByRole("button", { name: "Cerrar" }).click()
+  await expect(activities.getByRole("button", { name: /Bici.*4,8 km/ })).toBeVisible()
+
+  // Un archivo que no es FIT se rechaza con su motivo
+  await activities.getByLabel("Archivo FIT").setInputFiles({ name: "nota.fit", mimeType: "application/octet-stream", buffer: Buffer.from("esto no es un FIT, es texto") })
+  await expect(page.getByRole("status")).toHaveText("No es un archivo FIT")
+
+  // Progreso: sin reloj, la actividad propia ya da datos, su curva de potencia y la primera medalla
+  await nav.getByRole("button", { name: "Progreso" }).click()
+  const curve = page.locator("section.module", { hasText: "Curva de potencia (bici)" })
+  await expect(curve.getByRole("row", { name: /5 min.*210 W.*210 W/ })).toBeVisible()
+  const badges = page.locator("section.module", { hasText: "Medallas" })
+  await expect(badges.getByText("Primer paso")).toBeVisible()
+  await expect(badges.getByText(/Nivel 1 · 1 punto/)).toBeVisible()
+  await page.locator("section.module", { hasText: "Tus últimos entrenamientos" }).getByRole("button", { name: /Bici/ }).first().click()
+  await page.getByRole("button", { name: "Ver la actividad" }).click()
+  await expect(page.getByRole("dialog", { name: "Bici" })).toBeVisible()
+  await page.getByRole("dialog", { name: "Bici" }).getByRole("button", { name: "Cerrar" }).click()
+
+  // Perfil: los 4,8 km se sumaron a la bici, y siguen tras recargar
+  await page.reload()
+  await nav.getByRole("button", { name: "Perfil" }).click()
+  await expect(page.locator("section.module", { hasText: "Zapatillas y bicis" }).getByText("1005 km")).toBeVisible()
+  expect(errors).toEqual([])
+})

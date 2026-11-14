@@ -306,3 +306,19 @@ main.wide ~ .legal { padding-block: 8px 32px; }
 .nowrap { white-space: nowrap; }
 .small-field { flex: 1 1 90px; min-width: 0; }
 .routine-exercise { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+
+/* Actividades propias, material y medallas (Activities.tsx) */
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; }
+.track svg { display: block; width: min(100%, 300px); aspect-ratio: 1; margin-inline: auto; color: var(--ok); }
+.chart svg { display: block; width: 100%; height: 56px; color: var(--ok); }
+.laps { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.laps th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; padding: 4px 6px 4px 0; }
+.laps td { padding: 6px 6px 6px 0; border-top: 1px solid var(--chip); }
+.gear { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-top: 1px solid var(--chip); }
+.gear select { min-height: 36px; border-radius: 10px; border: 1px solid var(--muted); background: var(--surface); color: var(--text); font: inherit; }
+.badge-row { align-items: flex-start; padding: 6px 0; }
+.medal { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
+  color: var(--muted); border: 2px dashed var(--muted); }
+.medal.on { color: var(--surface); background: var(--ok); border: 2px solid var(--ok); }
+.progress { display: block; height: 6px; margin: 6px 0 2px; border-radius: 99px; background: var(--chip); overflow: hidden; }
+.progress > span { display: block; height: 100%; background: var(--ok); }

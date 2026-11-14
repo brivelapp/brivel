@@ -5,6 +5,7 @@ import type { FreeWorkout, Routine } from "./types"
 import { RoutinesCard } from "./Routines"
 import { LibraryCard } from "./Library"
 import { SessionsCard } from "./Sessions"
+import { ActivitiesCard } from "./Activities"
 
 export function Train({ core, act, openStrength }: { core: WebApp; act: Act; openStrength: (date: string) => void }) {
   const json = core.workoutTodayJson()
@@ -35,6 +36,7 @@ export function Train({ core, act, openStrength }: { core: WebApp; act: Act; ope
           )}
         </section>
         <SessionsCard core={core} act={act} />
+        <ActivitiesCard core={core} act={act} />
         <RoutinesCard core={core} act={act} />
         <LibraryCard core={core} />
       </div>

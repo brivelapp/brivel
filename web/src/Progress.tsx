@@ -3,8 +3,9 @@ import { useState } from "react"
 import type { WebApp } from "brivel-shared"
 import type { Metric, Milestone, Point, ProgressScreen, RecentActivity } from "./types"
 import { Icon, SPORT_ICON, type Act } from "./Today"
+import { ActivityDialog, BadgesCard, Curves } from "./Activities"
 
-const BODY = ["sleep", "sleepScore", "hrv", "restingHR", "weight", "steps"]
+const BODY = ["sleep", "sleepScore", "deepSleep", "remSleep", "hrv", "restingHR", "spo2", "respiration", "stress", "weight", "bodyFat", "steps"]
 const fmt = (v: number | null) => v == null ? "—" : v >= 20 ? String(Math.round(v)) : String(Math.round(v * 10) / 10).replace(".", ",")
 /** Con un decimal también por encima de 20: en una medida o un 1RM, medio centímetro o medio kilo cuentan. */
 export const fmt1 = (v: number | null) => v == null ? "—" : String(Math.round(v * 10) / 10).replace(".", ",")
@@ -61,10 +62,12 @@ function MetricRow({ m }: { m: Metric }) {
   )
 }
 
-function Recent({ r, core }: { r: RecentActivity; core: WebApp }) {
+function Recent({ r, core, act }: { r: RecentActivity; core: WebApp; act: Act }) {
   const [open, setOpen] = useState(false)
+  const [detail, setDetail] = useState(false)
   const total = r.zoneMinutes.reduce((a, b) => a + b, 0)
   return (
+    <>
     <button className="metric" aria-expanded={open} onClick={() => setOpen(!open)}>
       <span className="row">
         <span className="badge"><Icon src={SPORT_ICON[r.sport] ?? SPORT_ICON.strength} size={18} /></span>
@@ -79,6 +82,9 @@ function Recent({ r, core }: { r: RecentActivity; core: WebApp }) {
         </>
       )}
     </button>
+    {open && r.own && <button className="link" onClick={() => setDetail(true)}>Ver la actividad</button>}
+    {detail && r.own && <ActivityDialog core={core} act={act} id={r.own} onClose={() => setDetail(false)} />}
+    </>
   )
 }
 
@@ -158,6 +164,7 @@ export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; o
           <button className="primary" onClick={openProfile}>Ir a Perfil</button>
         </section>
         <Measures core={core} act={act} screen={screen} />
+        {screen.badges && <BadgesCard badges={screen.badges} />}
         <Milestones core={core} screen={screen} />
         </div>
       ) : (
@@ -200,10 +207,12 @@ export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; o
           {screen.recent.length > 0 && (
             <section className="module">
               <h3>Tus últimos entrenamientos</h3>
-              {screen.recent.map((r, i) => <Recent key={i} r={r} core={core} />)}
+              {screen.recent.map((r, i) => <Recent key={i} r={r} core={core} act={act} />)}
             </section>
           )}
+          <Curves curves={screen.curves} />
           <Measures core={core} act={act} screen={screen} />
+          {screen.badges && <BadgesCard badges={screen.badges} />}
           <Milestones core={core} screen={screen} />
         </div>
       )}
