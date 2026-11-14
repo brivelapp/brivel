@@ -9,6 +9,7 @@ import app.brivel.engine.K_CTL
 import app.brivel.engine.hrTss
 import app.brivel.engine.nextLoad
 import app.brivel.engine.plusDays
+import app.brivel.intervals.str
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -29,7 +30,20 @@ data class DailyHealth(
     val weightKg: Double? = null,
     val steps: Double? = null,
     val vo2max: Double? = null,
-)
+    // Más salud (VISION §9, bloque E): solo lo que miden el reloj y la báscula
+    val deepSleepMinutes: Double? = null,
+    val remSleepMinutes: Double? = null,
+    val spo2: Double? = null,  // % de saturación de oxígeno
+    val respiratoryRate: Double? = null,  // respiraciones por minuto
+    val bodyFat: Double? = null,  // %
+    val stress: Double? = null,  // 0–100, la media del día según el reloj (Garmin)
+) {
+    /** Este día con lo que le falte tomado de `other`. */
+    fun or(other: DailyHealth?): DailyHealth = if (other == null) this else DailyHealth(date, sleepMinutes ?: other.sleepMinutes,
+        hrv ?: other.hrv, restingHr ?: other.restingHr, weightKg ?: other.weightKg, steps ?: other.steps, vo2max ?: other.vo2max,
+        deepSleepMinutes ?: other.deepSleepMinutes, remSleepMinutes ?: other.remSleepMinutes, spo2 ?: other.spo2,
+        respiratoryRate ?: other.respiratoryRate, bodyFat ?: other.bodyFat, stress ?: other.stress)
+}
 
 /** Un entrenamiento registrado en el móvil. `zoneSeconds`: tiempo en las 7 zonas de FC, si se pudo calcular. */
 @Serializable
@@ -117,6 +131,12 @@ fun healthCache(snapshot: HealthSnapshot, profile: UserProfile?, today: LocalDat
             h?.weightKg?.let { put("weight", it) }
             h?.steps?.let { put("steps", it) }
             h?.vo2max?.let { put("vo2max", it) }
+            h?.deepSleepMinutes?.let { put("brivel_deep", it) }
+            h?.remSleepMinutes?.let { put("brivel_rem", it) }
+            h?.spo2?.let { put("spO2", it) }
+            h?.respiratoryRate?.let { put("respiration", it) }
+            h?.bodyFat?.let { put("bodyFat", it) }
+            h?.stress?.let { put("brivel_stress", it) }
         }
         d = d.plusDays(1)
     }
@@ -155,7 +175,26 @@ fun heartRateZoneBounds(profile: UserProfile?, today: LocalDate, measuredMaxHr: 
 }
 
 /** Los datos del reloj o del móvil, sea cual sea la fuente: intervals.icu primero (es más completo), si no el móvil y Garmin. */
-fun AppData.deviceData(today: LocalDate): IntervalsCache? = cache ?: combinedHealth(health, garmin)?.let { healthCache(it, profile, today) }
+fun AppData.deviceData(today: LocalDate): IntervalsCache? {
+    val own = activities.map { it.workout() }
+    if (cache == null) return withOwn(own, combinedHealth(health, garmin))?.let { healthCache(it, profile, today) }
+    if (own.isEmpty()) return cache
+    // Con intervals.icu mandan sus actividades y su forma; las propias que no estén allí se añaden a la lista, pero su
+    // carga no entra en la forma, que calcula intervals.icu
+    val starts = cache.activities.mapNotNull { a -> a["start_date_local"].str()?.takeIf { it.length >= 16 } }.map { minuteOf(it) }
+    val extra = own.filter { w -> starts.none { kotlin.math.abs(it - minuteOf(w.start)) < 5 } }
+    if (extra.isEmpty()) return cache
+    return cache.copy(activities = cache.activities + healthCache(HealthSnapshot("Brivel", emptyList(), extra, ""), profile, today).activities)
+}
+
+/** Las actividades propias con las del reloj: una del reloj que empieza a menos de 5 minutos de una propia es la misma. */
+private fun withOwn(own: List<Workout>, others: HealthSnapshot?): HealthSnapshot? {
+    if (own.isEmpty()) return others
+    val starts = own.map { minuteOf(it.start) }
+    val rest = others?.workouts?.filter { w -> starts.none { kotlin.math.abs(it - minuteOf(w.start)) < 5 } } ?: emptyList()
+    return HealthSnapshot(others?.source ?: "Brivel", others?.days ?: emptyList(), (own + rest).sortedBy { it.start },
+        others?.syncedAt ?: own.maxOf { it.start }.take(10))
+}
 
 // ---------------------------------------------------------------- atribución de Garmin (Garmin API Brand Guidelines)
 
@@ -188,9 +227,7 @@ fun mergeGarmin(old: HealthSnapshot?, delivery: GarminDelivery, today: LocalDate
     val since = today.plusDays(-GARMIN_DAYS).toString()
     val days = (old?.days ?: emptyList()).associateBy { it.date }.toMutableMap()
     for (n in delivery.days) {
-        val o = days[n.date] ?: DailyHealth(n.date)
-        days[n.date] = DailyHealth(n.date, n.sleepMinutes ?: o.sleepMinutes, n.hrv ?: o.hrv, n.restingHr ?: o.restingHr,
-            n.weightKg ?: o.weightKg, n.steps ?: o.steps, n.vo2max ?: o.vo2max)
+        days[n.date] = n.or(days[n.date])
     }
     val workouts = ((old?.workouts ?: emptyList()) + delivery.workouts).associateBy { it.id }.values
     return HealthSnapshot("Garmin", days.values.filter { it.date >= since }.sortedBy { it.date },
@@ -205,11 +242,10 @@ fun mergeGarmin(old: HealthSnapshot?, delivery: GarminDelivery, today: LocalDate
 fun combinedHealth(phone: HealthSnapshot?, garmin: HealthSnapshot?): HealthSnapshot? {
     if (phone == null || garmin == null) return phone ?: garmin
     val fromGarmin = garmin.days.associateBy { it.date }
+    val fromPhone = phone.days.associateBy { it.date }
     val days = (phone.days.map { it.date } + garmin.days.map { it.date }).distinct().sorted().map { date ->
-        val g = fromGarmin[date]
-        val p = phone.days.firstOrNull { it.date == date }
-        DailyHealth(date, g?.sleepMinutes ?: p?.sleepMinutes, g?.hrv ?: p?.hrv, g?.restingHr ?: p?.restingHr,
-            g?.weightKg ?: p?.weightKg, g?.steps ?: p?.steps, g?.vo2max ?: p?.vo2max)
+        val p = fromPhone[date]
+        fromGarmin[date]?.or(p) ?: p!!
     }
     val starts = garmin.workouts.map { minuteOf(it.start) }
     val phoneOnly = phone.workouts.filter { w -> starts.none { kotlin.math.abs(it - minuteOf(w.start)) < 5 } }
@@ -217,5 +253,5 @@ fun combinedHealth(phone: HealthSnapshot?, garmin: HealthSnapshot?): HealthSnaps
         maxOf(phone.syncedAt, garmin.syncedAt))
 }
 
-private fun minuteOf(start: String): Long =
+internal fun minuteOf(start: String): Long =
     kotlinx.datetime.LocalDateTime.parse(start.take(19)).let { it.date.toEpochDays() * 1440L + it.hour * 60 + it.minute }

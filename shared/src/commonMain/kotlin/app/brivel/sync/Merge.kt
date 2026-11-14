@@ -12,7 +12,14 @@ import app.brivel.app.SCHEMA
  * tope de 1 MB) y viven en intervals.icu: cada dispositivo con la clave los vuelve a descargar. Así el servidor guarda
  * menos datos de salud (RGPD art. 5.1.c). La base guardada tampoco la lleva, y `merge` conserva la de este dispositivo.
  */
-fun syncPayload(data: AppData): AppData = data.copy(cache = null)
+fun syncPayload(data: AppData): AppData = data.copy(cache = null,
+    activities = data.activities.sortedByDescending { it.start }.take(SYNCED_ACTIVITIES).sortedBy { it.start })
+
+/**
+ * Las actividades propias que se suben: las más recientes (por el tope de 1 MB). Las anteriores siguen en el dispositivo
+ * que las tiene: como tampoco están en la base, `merge` las conserva sin darlas por borradas.
+ */
+const val SYNCED_ACTIVITIES = 400
 
 /** Los datos combinados y los apartados en los que el cambio de este dispositivo perdió frente al del servidor. */
 class Merged(val data: AppData, val conflicts: Set<String>)
@@ -69,6 +76,12 @@ fun merge(base: AppData, local: AppData, remote: AppData): Merged {
         workouts = items(base.workouts, local.workouts, remote.workouts).distinctBy { it.date },
         measurements = items(base.measurements, local.measurements, remote.measurements).distinctBy { it.date to it.kind },
         ownSessions = items(base.ownSessions, local.ownSessions, remote.ownSessions).distinctBy { it.id },
+        activities = items(base.activities, local.activities, remote.activities).distinctBy { it.id }.sortedBy { it.start },
+        // El orden de la lista dice cuál está en uso: se combina entera, como el perfil
+        gear = pick("gear", base.gear, local.gear, remote.gear),
+        gearUses = app.brivel.app.dedupeUses(items(base.gearUses, local.gearUses, remote.gearUses)),
+        // Una medalla no se pierde nunca: las de los dos, con la fecha más antigua
+        badges = (remote.badges.keys + local.badges.keys).associateWith { minOf(local.badges[it] ?: remote.badges[it]!!, remote.badges[it] ?: local.badges[it]!!) },
     )
     return Merged(data, conflicts)
 }

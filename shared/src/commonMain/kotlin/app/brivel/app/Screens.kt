@@ -102,7 +102,8 @@ fun buildToday(data: AppData, today: LocalDate): TodayScreen {
         },
         weekLine = "Esta semana: ${week.activeMinutes} min de actividad y fuerza $strength ${if (strength == 1) "día" else "días"}",
         meetsWho = week.activeMinutes >= 150 && strength >= 2,
-        warnings = week.warnings, info = week.info,
+        warnings = week.warnings,
+        info = week.info + BADGES.filter { data.badges[it.id] == today.toString() }.map { "Medalla nueva: «${it.title}». Está en Progreso." },
         askReadiness = !planner.hasRecoverySignals && data.readiness[today.toString()] == null && day.items.isNotEmpty(),
         linked = data.cache != null, goalFinished = goalFinished,
         garminNote = GARMIN_DERIVED.takeIf { data.usesGarmin() },
@@ -244,6 +245,7 @@ data class RecentActivity(
     val detail: String? = null,  // "10,2 km · 5:12 /km · 148 ppm · carga 62"
     val zoneMinutes: List<Int> = emptyList(),  // minutos en Z1–Z7 (de intervals.icu o del móvil)
     val source: String? = null,  // «Garmin [modelo]» si llegó de Garmin
+    val own: String? = null,  // id de la actividad propia: abre su detalle (Activities.kt)
 )
 
 /** Una línea con lo medido: distancia, ritmo (a pie, /km) o velocidad (bici, km/h), pulso medio y carga. */
@@ -276,6 +278,8 @@ data class ProgressScreen(
     val strengthRecords: List<Milestone> = emptyList(),  // el mayor peso de cada ejercicio; no necesita reloj
     val thresholds: List<Threshold> = emptyList(),  // de intervals.icu
     val measures: List<Metric> = emptyList(),  // medidas corporales apuntadas a mano (Training.kt); no necesitan reloj
+    val curves: List<Curve> = emptyList(),  // curvas de potencia y de ritmo de las actividades propias (Activities.kt)
+    val badges: BadgesScreen? = null,  // medallas, puntos y nivel (Badges.kt)
 )
 
 /** h:mm:ss o mm:ss. */
@@ -286,11 +290,23 @@ fun raceTime(minutes: Double): String {
     return if (h > 0) "$h:${two(m)}:${two(s)}" else "$m:${two(s)}"
 }
 
+/** Los minutos moderados equivalentes (OMS) de cada una de las últimas `weeks` semanas, de la más antigua a la actual. */
+internal fun weeklyMinutes(activities: List<JsonObject>, today: LocalDate, weeks: Int): List<Point> = (0 until weeks).reversed().map { w ->
+    val monday = mondayOf(today).plusDays(-7 * w)
+    val end = monday.plusDays(7).toString()
+    val minutes = activities.filter { it.date() >= monday.toString() && it.date() < end }.sumOf { a ->
+        val z = a["icu_hr_zone_times"].nums()
+        if (z.size < 7) (a["moving_time"].num() ?: 0.0) / 60 else (z[1] + z[2] + 2 * (z[3] + z[4] + z[5] + z[6])) / 60
+    }
+    Point(monday.toString(), minutes)
+}
+
 fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScreen {
     val records = strengthRecords(data.sets)
     val measures = measureMetrics(data.measurements)
+    val badges = badgesScreen(data, today)
     val cache = data.deviceData(today)
-        ?: return ProgressScreen(false, emptyList(), emptyList(), strengthRecords = records, measures = measures)
+        ?: return ProgressScreen(false, emptyList(), emptyList(), strengthRecords = records, measures = measures, badges = badges)
     val since = today.plusDays(-days).toString()
     val wellness = cache.wellness.filter { (it["id"].str() ?: "") >= since }.sortedBy { it["id"].str() }
     fun series(key: String, label: String, unit: String, explanation: String, better: Boolean?,
@@ -306,10 +322,16 @@ fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScre
     val metrics = listOfNotNull(
         series("sleep", "Sueño", "h", "Horas dormidas cada noche, según tu reloj.", true) { w -> w["sleepSecs"].num()?.let { it / 3600 } },
         series("sleepScore", "Calidad del sueño", "/100", "Puntuación del sueño de tu reloj.", true) { it["sleepScore"].num() },
+        series("deepSleep", "Sueño profundo", "min", "Minutos de sueño profundo cada noche, según tu reloj.", true) { it["brivel_deep"].num() },
+        series("remSleep", "Sueño REM", "min", "Minutos de sueño REM cada noche, según tu reloj.", true) { it["brivel_rem"].num() },
         series("hrv", "VFC", "ms", GLOSSARY["VFC"]!!, true) { it["hrv"].num() },
         series("restingHR", "FC en reposo", "ppm", GLOSSARY["FC en reposo"]!!, false) { it["restingHR"].num() },
         series("vo2max", "VO2max", "", GLOSSARY["VO2max"]!!, true) { it["vo2max"].num() },
+        series("spo2", "Oxígeno en sangre", "%", "Saturación de oxígeno que estima tu reloj, normalmente mientras duermes. No es una medición médica.", null) { it["spO2"].num() },
+        series("respiration", "Respiración", "rpm", "Respiraciones por minuto, según tu reloj.", null) { it["respiration"].num() },
+        series("stress", "Estrés", "/100", "La puntuación de estrés de tu reloj, media del día.", false) { it["brivel_stress"].num() },
         series("weight", "Peso", "kg", "Tu peso, de la báscula o del reloj.", null) { it["weight"].num() },
+        series("bodyFat", "Grasa corporal", "%", "Porcentaje de grasa que estima tu báscula.", null) { it["bodyFat"].num() },
         // Hoy no ha terminado: sus pasos van por debajo de cualquier día completo
         series("steps", "Pasos", "", "Pasos al día.", true) { w -> w["steps"].num().takeIf { w["id"].str() != today.toString() } },
         series("ctl", "Forma física", "", GLOSSARY["Forma física"]!!, true) { it["ctl"].num() },
@@ -320,15 +342,7 @@ fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScre
     )
     // Minutos moderados equivalentes por semana (OMS): Z1 no cuenta, Z2–Z3 ×1, Z4 o más ×2 (zonas de intervals.icu); sin
     // zonas (entrenamientos del móvil sin pulso), el tiempo entero cuenta como moderado [Inferencia]
-    val weekly = (0 until days / 7).reversed().map { w ->
-        val monday = mondayOf(today).plusDays(-7 * w)
-        val end = monday.plusDays(7).toString()
-        val minutes = cache.activities.filter { it.date() >= monday.toString() && it.date() < end }.sumOf { a ->
-            val z = a["icu_hr_zone_times"].nums()
-            if (z.size < 7) (a["moving_time"].num() ?: 0.0) / 60 else (z[1] + z[2] + 2 * (z[3] + z[4] + z[5] + z[6])) / 60
-        }
-        Point(monday.toString(), minutes)
-    }
+    val weekly = weeklyMinutes(cache.activities, today, days / 7)
 
     // Estado de entrenamiento: carga de esta semana frente a la habitual y forma de hoy frente a la de hace 4 semanas
     val withLoad = cache.wellness.filter { it["ctl"].num() != null }.sortedBy { it["id"].str() }
@@ -362,11 +376,12 @@ fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScre
                 sport, pyRound((a["moving_time"].num() ?: 0.0) / 60), a["icu_training_load"].num()?.let { pyRound(it) },
                 activityDetail(sport, a["distance"].num(), a["moving_time"].num(), a["average_heartrate"].num(), a["icu_training_load"].num()),
                 a["icu_hr_zone_times"].nums().takeIf { it.sum() > 0 }?.map { pyRound(it / 60) } ?: emptyList(),
-                a["brivel_source"].str())
+                a["brivel_source"].str(), a["id"].str()?.takeIf { it.startsWith(OWN_ID) })
         }
     return ProgressScreen(true, metrics, weekly, status, predictions, source, recent, GARMIN_DERIVED.takeIf { data.usesGarmin() },
         milestones = listOfNotNull(whoStreak(weekly)) + longest(cache.activities), strengthRecords = records,
-        thresholds = data.cache?.let { thresholds(it.athlete) } ?: emptyList(), measures = measures)
+        thresholds = data.cache?.let { thresholds(it.athlete) } ?: emptyList(), measures = measures,
+        curves = curves(data.activities, since), badges = badges)
 }
 
 /** De dónde salen los puntos de una métrica: Garmin, sola o con el móvil; null si Garmin no aporta ninguno. */
@@ -379,6 +394,12 @@ private fun AppData.sourceOf(key: String, since: String): String? {
         "vo2max" -> { d -> d.vo2max }
         "weight" -> { d -> d.weightKg }
         "steps" -> { d -> d.steps }
+        "deepSleep" -> { d -> d.deepSleepMinutes }
+        "remSleep" -> { d -> d.remSleepMinutes }
+        "spo2" -> { d -> d.spo2 }
+        "respiration" -> { d -> d.respiratoryRate }
+        "stress" -> { d -> d.stress }
+        "bodyFat" -> { d -> d.bodyFat }
         // La forma y la forma física salen de las actividades: Garmin contribuye si alguna es suya
         else -> return if (garmin!!.workouts.any { it.start >= since }) "En parte con datos de Garmin" else null
     }

@@ -26,6 +26,7 @@ import app.brivel.sync.deriveKeys
 import io.ktor.client.engine.HttpClientEngine
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import kotlinx.serialization.json.Json
 
@@ -69,10 +70,17 @@ class BrivelApp(
         ?: AppData()
         private set
 
+    /** Guarda, y antes apunta lo que sale de los datos nuevos: los kilómetros del material y las medallas ganadas. */
     private fun save(new: AppData) {
-        data = new
-        store.write(DATA_KEY, json.encodeToString(new))
+        data = derived(new)
+        store.write(DATA_KEY, json.encodeToString(data))
     }
+
+    // Si el cálculo fallara con unos datos raros, se guarda igual: lo apuntado por el usuario no se pierde
+    private fun derived(new: AppData): AppData = runCatching { awardBadges(countGear(new, today()), today()) }.getOrDefault(new)
+
+    // Al abrir: lo que una versión anterior no apuntó (medallas ya ganadas, kilómetros del material)
+    init { derived(data).let { if (it !== data) save(it) } }
 
     /** Los datos combinados con los de otro dispositivo (sync/Syncer.kt). */
     internal fun replaceData(new: AppData) = save(new)
@@ -868,19 +876,153 @@ class BrivelApp(
         forgetSync()
     }
 
+    // ------------------------------------------------------------ actividades propias (Activities.kt)
+
+    fun activities(): List<ActivityRow> = activityRows(data.activities)
+
+    private fun detailOf(id: String): ActivityDetail? =
+        store.read(DETAIL_KEY + id)?.let { runCatching { json.decodeFromString<ActivityDetail>(it) }.getOrNull() }
+
+    /** El detalle de una actividad propia; las gráficas y el recorrido, solo en el dispositivo que la importó o grabó. */
+    fun activity(id: String): ActivityScreen? =
+        data.activities.firstOrNull { it.id == id }?.let { activityScreen(it, detailOf(id), gearOf(data, id)) }
+
+    /** Importa un archivo FIT; devuelve el id de la actividad. Importar otra vez el mismo archivo la sustituye. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun importFit(bytes: ByteArray): String {
+        val file = runCatching { parseFit(bytes) }.getOrElse {
+            throw IllegalArgumentException(if (it is IllegalArgumentException) it.message else "No se pudo leer el archivo: no parece un FIT de actividad")
+        }
+        require(localTime(file.start).take(10) <= today().toString()) { "La actividad tiene una fecha futura: revisa la hora del dispositivo que la grabó" }
+        return addActivity(file, "fit")
+    }
+
+    /** Lo mismo con el archivo en base64 (Swift no tiene un ByteArray de Kotlin a mano). */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun importFitBase64(text: String): String = importFit(Base64.decode(text))
+
+    // shortcut: las zonas de FC salen del umbral estimado con tus entrenamientos, también con intervals.icu vinculado;
+    // usar las zonas de intervals.icu si alguien nota la diferencia
+    private fun zoneBounds(): List<Double> = heartRateZoneBounds(data.profile, today(), null,
+        (combinedHealth(data.health, data.garmin)?.workouts ?: emptyList()) + data.activities.map { it.workout() })
+
+    private fun addActivity(file: FitFile, source: String): String {
+        val (activity, detail) = buildActivity(file, localTime(file.start), zoneBounds(), source)
+        store.write(DETAIL_KEY + activity.id, detail?.let { json.encodeToString(it) })
+        save(data.copy(activities = (data.activities.filterNot { it.id == activity.id } + activity).sortedBy { it.start }))
+        return activity.id
+    }
+
+    fun deleteActivity(id: String) {
+        store.write(DETAIL_KEY + id, null)
+        save(data.copy(activities = data.activities.filterNot { it.id == id }))
+    }
+
+    // ------------------------------------------------------------ material (Gear.kt)
+
+    fun gear(): GearScreen = gearScreen(data)
+
+    /** Crea o cambia una zapatilla o una bici. Uno nuevo pasa a ser el que está en uso en su deporte. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun saveGear(id: String?, name: String, sport: String, since: String, startKm: Double, limitKm: Double?) {
+        val old = data.gear.firstOrNull { it.id == id }
+        val gear = Gear(old?.id ?: "g${data.gear.size + 1}-${today()}-${name.hashCode().toUInt()}", name.trim(), old?.sport ?: sport,
+            since, startKm, limitKm, old?.retired ?: false)
+        validGear(gear)?.let { throw IllegalArgumentException(it) }
+        save(data.copy(gear = if (old == null) listOf(gear) + data.gear else data.gear.map { if (it.id == gear.id) gear else it }))
+    }
+
+    /** Lo pone en uso: las actividades nuevas de su deporte se le apuntan a él. */
+    fun useGear(id: String) {
+        val gear = data.gear.firstOrNull { it.id == id } ?: return
+        save(data.copy(gear = listOf(gear.copy(retired = false)) + data.gear.filterNot { it.id == id }))
+    }
+
+    /** Retirado: conserva sus kilómetros y deja de apuntarse actividades. */
+    fun retireGear(id: String) = save(data.copy(gear = data.gear.map { if (it.id == id) it.copy(retired = true) else it }))
+
+    fun deleteGear(id: String) =
+        save(data.copy(gear = data.gear.filterNot { it.id == id }, gearUses = data.gearUses.filterNot { it.gear == id }))
+
+    /** Pasa una actividad a otro material del mismo deporte (la hiciste con las otras zapatillas). */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun moveGearUse(activity: String, gearId: String) {
+        val use = data.gearUses.firstOrNull { it.activity == activity }
+        val from = data.gear.firstOrNull { it.id == use?.gear }
+        val to = data.gear.firstOrNull { it.id == gearId }
+        require(use != null && from != null && to != null && from.sport == to.sport) { "Ese material no es del mismo deporte" }
+        save(data.copy(gearUses = data.gearUses.map { if (it.activity == activity) it.copy(gear = gearId) else it }))
+    }
+
+    // ------------------------------------------------------------ grabar con el GPS del móvil (Recorder.kt)
+
+    private var recording: Recording? = store.read(RECORDING_KEY)?.let { runCatching { json.decodeFromString<Recording>(it) }.getOrNull() }
+
+    private fun keep(r: Recording?) {
+        recording = r
+        store.write(RECORDING_KEY, r?.let { json.encodeToString(it) })
+    }
+
+    /** Lo que se está grabando; null si no hay nada en marcha. `time`: ahora, en segundos desde 1970. */
+    fun recordingView(time: Long): RecordingView? = recording?.view(time)
+
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun startRecording(sport: String, time: Long) {
+        require(recording == null) { "Ya hay una actividad grabándose: termínala o descártala" }
+        require(sport in RECORD_SPORTS) { "Con el móvil se graba carrera, bici o caminata" }
+        keep(Recording(sport, time))
+    }
+
+    /** Un punto del GPS. Se guarda cada 20 puntos: si la app se cierra, la grabación sigue donde estaba. */
+    fun recordPoint(time: Long, lat: Double, lon: Double, altitude: Double?, accuracy: Double) {
+        val r = recording ?: return
+        if (!r.add(time, lat, lon, altitude, accuracy)) return
+        if (r.points.size % 20 == 0) keep(r)
+    }
+
+    fun pauseRecording(time: Long) { recording?.let { it.pause(time); keep(it) } }
+    fun resumeRecording(time: Long) { recording?.let { it.resume(time); keep(it) } }
+    fun discardRecording() = keep(null)
+
+    /** Termina y guarda la actividad; devuelve su id. Sin recorrido no se guarda nada y la grabación sigue ahí. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun finishRecording(): String {
+        val r = recording
+        require(r != null) { "No hay ninguna actividad grabándose" }
+        require(r.points.size >= 2) { "El GPS no ha dado ningún recorrido: no hay nada que guardar" }
+        val id = addActivity(r.file(), "gps")
+        keep(null)
+        return id
+    }
+
     // ------------------------------------------------------------ tus datos
 
-    /** Todo lo guardado, en JSON (portabilidad, RGPD art. 20). La clave de intervals.icu no se incluye. */
-    fun exportJson(): String = Json { prettyPrint = true; encodeDefaults = true }.encodeToString(data.copy(garminLink = null))
+    /** Todo lo guardado, en JSON (portabilidad, RGPD art. 20), con las series de las actividades propias que tenga este dispositivo. La clave de intervals.icu no se incluye. */
+    fun exportJson(): String {
+        val pretty = Json { prettyPrint = true; encodeDefaults = true }
+        val details = data.activities.mapNotNull { a -> detailOf(a.id)?.let { a.id to pretty.encodeToJsonElement(ActivityDetail.serializer(), it) } }
+        val all = pretty.encodeToJsonElement(AppData.serializer(), data.copy(garminLink = null)) as kotlinx.serialization.json.JsonObject
+        return pretty.encodeToString(kotlinx.serialization.json.JsonObject(all + ("activityDetails" to kotlinx.serialization.json.JsonObject(details.toMap()))))
+    }
 
     /** Borra todo del móvil, clave incluida, y deja de sincronizar: si no, la próxima sincronización lo borraría también en el servidor. */
     fun deleteAll() {
         secrets.write(API_KEY, null)
         secrets.write(INTERVALS_TOKEN, null)
+        data.activities.forEach { store.write(DETAIL_KEY + it.id, null) }
+        keep(null)
         store.write(DATA_KEY, null)
         forgetSync()
         data = AppData()
     }
+}
+
+/** Segundos desde 1970 → «AAAA-MM-DDTHH:MM:SS» en la hora del móvil. */
+@OptIn(kotlin.time.ExperimentalTime::class)
+internal fun localTime(epochSeconds: Long, zone: TimeZone = TimeZone.currentSystemDefault()): String {
+    val t = kotlin.time.Instant.fromEpochSeconds(epochSeconds).toLocalDateTime(zone)
+    fun two(n: Int) = n.toString().padStart(2, '0')
+    return "${t.date}T${two(t.hour)}:${two(t.minute)}:${two(t.second)}"
 }
 
 /** La fecha de hoy en la zona horaria del móvil. */

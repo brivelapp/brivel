@@ -108,7 +108,7 @@ data class IntervalsCache(
 data class GarminLink(val privateKey: String, val publicKey: String, val token: String, val since: String)
 
 /** Versión del formato guardado: al cambiarlo, `migrate` adapta los datos antiguos (sin servidor no hay migraciones). */
-const val SCHEMA = 10
+const val SCHEMA = 11
 
 /** Campo nuevo: añádelo también a `merge` (sync/Merge.kt), o un cambio de otro dispositivo pisará el de este. */
 @Serializable
@@ -138,6 +138,10 @@ data class AppData(
     val workouts: List<FreeWorkout> = emptyList(),  // entrenos libres, uno por día (Planner.applyWorkouts)
     val measurements: List<BodyMeasure> = emptyList(),  // medidas corporales apuntadas a mano (Training.kt)
     val ownSessions: List<OwnSession> = emptyList(),  // sesiones propias de resistencia (OwnSessions.kt)
+    val activities: List<OwnActivity> = emptyList(),  // actividades importadas de un archivo o grabadas con el móvil (Activities.kt)
+    val gear: List<Gear> = emptyList(),  // zapatillas y bicis; el primero de cada deporte sin retirar es el que está en uso (Gear.kt)
+    val gearUses: List<GearUse> = emptyList(),  // las actividades apuntadas a cada material: permanente
+    val badges: Map<String, String> = emptyMap(),  // medalla ganada → fecha (Badges.kt)
 )
 
 /**
@@ -148,6 +152,7 @@ data class AppData(
  * lo mismo. v5 → v6: añade `moves` (vacío), por lo mismo. v6 → v7: añade `routines` (vacío), por lo mismo. v7 → v8: añade
  * `customExercises` (vacío), por lo mismo. v8 → v9: añade `equipment` (vacío), por lo mismo. v9 → v10: añade `workouts`,
  * `measurements` y `ownSessions` (vacíos), el tipo de cada serie y las superseries de las rutinas, por lo mismo.
+ * v10 → v11: añade `activities`, `gear`, `gearUses` y `badges` (vacíos) y más datos de salud por día, por lo mismo.
  */
 fun migrate(data: AppData): AppData = when {
     data.schema >= SCHEMA && data.lifts.isEmpty() -> data
