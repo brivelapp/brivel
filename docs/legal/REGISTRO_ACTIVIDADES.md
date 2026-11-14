@@ -1,7 +1,7 @@
 # Registro de actividades de tratamiento (RGPD art. 30)
 
 Obligatorio aunque Brivel sea de una sola persona, porque hay datos de salud (art. 30.5: la excepción de menos de 250
-empleados no aplica a las categorías especiales). Actualizado el 2026-11-04.
+empleados no aplica a las categorías especiales). Actualizado el 2026-11-15.
 
 **Responsable:** Gabriel Miralles Alvarez (persona física). Contacto: `hola@brivel.app`. No hay delegado de protección
 de datos: no es obligatorio mientras no sea a gran escala (art. 37.1.c; LOPDGDD art. 34) [Inferencia].
@@ -13,7 +13,7 @@ de datos: no es obligatorio mientras no sea a gran escala (art. 37.1.c; LOPDGDD 
 | Fines | Que el usuario tenga los mismos datos en sus dispositivos |
 | Base legal | Consentimiento explícito (arts. 6.1.a y 9.2.a); límite de peticiones por IP: interés legítimo (art. 6.1.f) |
 | Interesados | Usuarios de 14 años o más que la activan |
-| Datos | Copia cifrada de extremo a extremo del perfil, objetivo, sesiones, pesos, respuestas de cómo está y datos de Salud; identificador seudónimo; versión, fecha del último uso y tamaño; IP solo en contadores de 60 s |
+| Datos | Copia cifrada de extremo a extremo del perfil, objetivo, sesiones, pesos, respuestas de cómo está, datos de Salud, material, medallas y el resumen de las actividades importadas o grabadas (sin el recorrido ni la ubicación, que no salen del dispositivo); identificador seudónimo; versión, fecha del último uso y tamaño; IP solo en contadores de 60 s |
 | Destinatarios | Cloudflare, Inc. como encargado (DPA v6.4). Nadie más |
 | Transferencias | EE. UU.: Marco de Privacidad UE-EE. UU.; si cae, cláusulas contractuales tipo. D1 con jurisdicción UE |
 | Plazo de supresión | Hasta que el usuario la borre o tras 12 meses sin subirla ni bajarla (borrado automático diario); historial de D1 hasta 7 días más |

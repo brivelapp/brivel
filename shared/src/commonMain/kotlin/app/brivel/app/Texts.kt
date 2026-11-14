@@ -115,7 +115,7 @@ fun conflictMessage(conflicts: Set<String>): String? = conflicts.takeIf { it.isN
     ?.let { "Cambiaste $it aquí y en otro dispositivo a la vez: se ha quedado lo del otro." }
 
 /** Versión de la política de privacidad que se acepta al activar la sincronización (web/public/privacidad.html). */
-const val PRIVACY_POLICY_VERSION = "2026-11-02.2"
+const val PRIVACY_POLICY_VERSION = "2026-11-15.6"
 
 // Sincronización (docs/SINCRONIZACION.md): los mismos textos que web/src/Sync.tsx
 const val SYNC_INTRO = "Opcional. Sin activarlo, tus datos siguen solo en este móvil."
