@@ -96,6 +96,10 @@ private fun RoutineEditor(app: BrivelApp, act: Act, start: Routine, close: () ->
                         NumberField("Desde ($unit)", e.low, Modifier.weight(1f)) { setEx(i, e.copy(low = it)) }
                         NumberField("Hasta ($unit)", e.high, Modifier.weight(1f)) { setEx(i, e.copy(high = it)) }
                     }
+                    if (i > 0) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("En superserie con el anterior", modifier = Modifier.weight(1f))
+                        Switch(e.linked, { setEx(i, e.copy(linked = it)) })
+                    }
                 }
             }
             OutlinedButton(onClick = { picking = true }) { Text("Añadir ejercicio") }
@@ -161,7 +165,7 @@ private fun NewExercise(app: BrivelApp, act: Act, close: () -> Unit) {
     }
 }
 
-/** En Perfil: las rutinas propias y el botón para crear otra. */
+/** En Entrenar: las rutinas propias y el botón para crear otra. */
 @Composable
 fun RoutinesCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: Int) {
     var editing by remember { mutableStateOf<Routine?>(null) }

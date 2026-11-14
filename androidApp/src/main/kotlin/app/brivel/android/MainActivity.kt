@@ -132,7 +132,7 @@ class Act(val app: BrivelApp, private val scope: CoroutineScope, private val sna
 }
 
 private val TABS = listOf("Hoy" to R.drawable.ic_tab_today, "Calendario" to R.drawable.ic_tab_calendar,
-    "Progreso" to R.drawable.ic_tab_progress, "Perfil" to R.drawable.ic_tab_profile)
+    "Entrenar" to R.drawable.ic_sport_strength, "Progreso" to R.drawable.ic_tab_progress, "Perfil" to R.drawable.ic_tab_profile)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -181,7 +181,7 @@ fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null
                 TABS.forEachIndexed { i, (label, icon) ->
                     NavigationBarItem(selected = tab == i, onClick = { tab = i },
                         icon = { Icon(painterResource(icon), contentDescription = null) },
-                        label = { Text(label, fontWeight = FontWeight.Bold) },
+                        label = { Text(label, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1, softWrap = false) },  // cinco pestañas: que quepa «Calendario»
                         colors = NavigationBarItemDefaults.colors(indicatorColor = Palette.chip,
                             selectedTextColor = Palette.ok, selectedIconColor = Palette.ok,
                             unselectedTextColor = Palette.muted, unselectedIconColor = Palette.muted))
@@ -199,7 +199,8 @@ fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null
             } else when (tab) {
                 0 -> TodayTab(app, version, act) { act.run { app.abandonGoal() } }
                 1 -> CalendarTab(app, version, act)
-                2 -> ProgressTab(app, version) { tab = 3 }
+                2 -> TrainTab(app, version, act)
+                3 -> ProgressTab(app, version, act) { tab = 4 }
                 else -> ProfileTab(app, version, act)
             }
         }

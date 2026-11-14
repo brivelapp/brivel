@@ -33,6 +33,8 @@ import app.brivel.app.BrivelApp
 import app.brivel.app.EQUIPMENT
 import app.brivel.app.ExerciseCard
 import app.brivel.app.ZONES
+import app.brivel.app.dateLabel
+import kotlin.math.roundToInt
 
 // Biblioteca de ejercicios (Library.kt del núcleo), como web/src/Library.tsx
 
@@ -72,6 +74,7 @@ fun ExerciseSheet(app: BrivelApp, name: String, original: String?, dismiss: () -
                 if (card.description.isNotEmpty()) Text(card.description, fontSize = 15.sp)
                 card.cues.forEach { Text("• $it", fontSize = 15.sp) }
                 Source(card.cueSource)
+                if (onSwap == null) ExerciseHistoryRows(app, name)
                 if (onSwap != null) {
                     SectionTitle("Cambiar por")
                     original?.let { o -> OutlinedButton(onClick = { onSwap(o) }) { Text("Volver a $o") } }
@@ -85,9 +88,55 @@ fun ExerciseSheet(app: BrivelApp, name: String, original: String?, dismiss: () -
         confirmButton = { TextButton(onClick = dismiss) { Text("Cerrar") } })
 }
 
+/** Lo que has hecho en ese ejercicio: la gráfica (1RM estimado o mejor serie), tus marcas y los últimos días. */
+@Composable
+private fun ExerciseHistoryRows(app: BrivelApp, name: String) {
+    val h = remember(name) { app.exerciseHistory(name) }
+    if (h.days.isEmpty()) return
+    @Composable fun Line(title: String, detail: String?, value: String) = Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 15.sp)
+            detail?.let { Source(it) }
+        }
+        Text(value, fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, softWrap = false)
+    }
+    SectionTitle("Tu historial")
+    h.chart?.let { c ->
+        Line(c.label, null, oneDecimal(c.latest) + if (c.unit.isNotEmpty()) " ${c.unit}" else "")
+        Sparkline(c.points, null, null, Palette.ok)
+        Source(c.explanation)
+    }
+    h.records.forEach { r -> Line(r.title, r.date?.let { dateLabel(it) }, r.value) }
+    Secondary("Últimos días")
+    h.days.forEach { d ->
+        Line(dateLabel(d.date), "${d.sets} series" + if (d.volumeKg > 0) " · ${d.volumeKg.roundToInt()} kg movidos" else "", d.best)
+    }
+}
+
+private const val PICK = 40
+
+/** Elegir un ejercicio de la biblioteca, buscando por nombre: para añadirlo al entreno libre. */
+@Composable
+fun ExercisePicker(app: BrivelApp, dismiss: () -> Unit, choose: (String) -> Unit) {
+    var query by remember { mutableStateOf("") }
+    var mine by remember { mutableStateOf(false) }
+    AlertDialog(onDismissRequest = dismiss, containerColor = Palette.surface,
+        title = { Text("Añadir ejercicio") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                OutlinedTextField(query, { query = it }, label = { Text("Buscar") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                if (app.equipment.isNotEmpty()) FilterChip(selected = mine, label = { Text("Solo con mi material") }, onClick = { mine = !mine })
+                val found = remember(query, mine) { app.libraryByZone(query, null, null, mine) }
+                Secondary("${found.size} ejercicios" + if (found.size > PICK) ": escribe para acotar (se ven $PICK)" else "")
+                found.take(PICK).forEach { c -> ExerciseRow(c, c.patternLabel) { choose(c.name) } }
+            }
+        },
+        confirmButton = { TextButton(onClick = dismiss) { Text("Cancelar") } })
+}
+
 private const val PAGE = 60
 
-/** En Perfil: todos los ejercicios, con búsqueda y filtros de zona y de material, y el material que tienes. */
+/** En Entrenar: todos los ejercicios, con búsqueda y filtros de zona y de material, y el material que tienes. */
 @Composable
 fun LibraryCard(app: BrivelApp) {
     var open by remember { mutableStateOf(false) }

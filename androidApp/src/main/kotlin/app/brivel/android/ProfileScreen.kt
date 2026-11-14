@@ -102,8 +102,6 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act) {
             SectionTitle("Tu nivel")
             Segmented(LEVEL_CHOICES.map { it.first to it.second }, draft.level) { save(draft.copy(level = it)) }
         }
-        RoutinesCard(app, act, version)
-        LibraryCard(app)
         Module {
             var year by remember(version) { mutableStateOf(draft.birthYear) }
             SectionTitle("Año de nacimiento")

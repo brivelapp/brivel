@@ -43,14 +43,19 @@ import app.brivel.app.Point
 import app.brivel.app.ProgressScreen
 import app.brivel.app.RecentActivity
 import app.brivel.app.BrivelApp
+import app.brivel.app.MEASURES
 import app.brivel.app.dateLabel
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.KeyboardType
 import kotlin.math.roundToInt
 
 private val BODY = listOf("sleep", "sleepScore", "hrv", "restingHR", "weight", "steps")
 
 /** Tu evolución: cómo está tu cuerpo frente a tu rango normal, tu forma y tu actividad (punto 8 de la revisión). */
 @Composable
-fun ProgressTab(app: BrivelApp, version: Int, openProfile: () -> Unit) {
+fun ProgressTab(app: BrivelApp, version: Int, act: Act, openProfile: () -> Unit) {
     val screen = remember(version) { app.progress() }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -61,6 +66,7 @@ fun ProgressTab(app: BrivelApp, version: Int, openProfile: () -> Unit) {
                     "(los datos de tu reloj o tu báscula en este móvil) o tu cuenta de intervals.icu (gratis).")
                 PrimaryButton("Ir a Perfil", onClick = openProfile)
             }
+            Measures(app, act, screen)
             Milestones(screen)
             return@Column
         }
@@ -110,10 +116,40 @@ fun ProgressTab(app: BrivelApp, version: Int, openProfile: () -> Unit) {
             SectionTitle("Tus últimos entrenamientos")
             screen.recent.forEach { r -> RecentRow(r) }
         }
+        Measures(app, act, screen)
         Milestones(screen)
         Spacer(Modifier.height(24.dp))
     }
 }
+
+/** Medidas corporales apuntadas a mano (Training.kt): su evolución y el formulario para apuntar la de hoy. */
+@Composable
+private fun Measures(app: BrivelApp, act: Act, screen: ProgressScreen) {
+    var kind by remember { mutableStateOf(MEASURES.keys.first()) }
+    var value by remember { mutableStateOf("") }
+    Module {
+        SectionTitle("Tus medidas")
+        Secondary("Apunta tu peso o tus perímetros con una cinta para ver cómo cambian. La de hoy sustituye a la que ya hubiera hoy.")
+        screen.measures.forEachIndexed { i, m -> MetricRow(m, first = i == 0) }
+        ChipRow {
+            MEASURES.forEach { (k, m) -> FilterChip(selected = kind == k, label = { Text(m.label) }, onClick = { kind = k }) }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedTextField(value, { value = it.filter { c -> c.isDigit() || c == ',' || c == '.' } },
+                label = { Text("Valor (${MEASURES.getValue(kind).unit})") }, singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f))
+            SecondaryButton("Apuntar") {
+                act.run("Medida apuntada") {
+                    app.logMeasure(kind, value.replace(',', '.').toDoubleOrNull() ?: throw IllegalArgumentException("Escribe un número"))
+                    value = ""
+                }
+            }
+        }
+    }
+}
+
+/** Con un decimal: en una medida o un 1RM, medio centímetro o medio kilo cuentan. */
+internal fun oneDecimal(v: Double?): String = v?.let { ((it * 10).roundToInt() / 10.0).toString().removeSuffix(".0").replace('.', ',') } ?: "—"
 
 /** Mejores marcas, semanas seguidas cumpliendo la OMS y récords de fuerza; los umbrales, aparte (como web/src/Progress.tsx). */
 @Composable
@@ -180,7 +216,7 @@ private fun MetricRow(m: Metric, first: Boolean) {
         if (!first) Box(Modifier.fillMaxWidth().height(1.dp).background(Palette.chip))
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = if (first) 0.dp else 6.dp)) {
             Text(m.label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            Text(format(latest) + if (m.unit.isNotEmpty()) " ${m.unit}" else "", fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text((if (m.key.startsWith("measure-")) oneDecimal(latest) else format(latest)) + if (m.unit.isNotEmpty()) " ${m.unit}" else "", fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             RowChevron(open)
         }
         m.source?.let { Source(it) }
@@ -217,7 +253,7 @@ private fun format(v: Double?): String = when {
 }
 
 @Composable
-private fun Sparkline(points: List<Point>, low: Double?, high: Double?, color: Color) {
+internal fun Sparkline(points: List<Point>, low: Double?, high: Double?, color: Color) {
     if (points.size < 2) return
     val band = Palette.band
     val values = points.map { it.value }

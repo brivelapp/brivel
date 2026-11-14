@@ -613,9 +613,13 @@ class BrivelApp(
 
     // ------------------------------------------------------------ medidas corporales (Training.kt)
 
-    /** Apunta una medida de hoy (o de un día pasado); otra del mismo día y tipo la sustituye. */
+    /** Apunta una medida de hoy; otra de hoy del mismo tipo la sustituye. */
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
-    fun logMeasure(kind: String, value: Double, date: String = today().toString()) {
+    fun logMeasure(kind: String, value: Double) = logMeasure(kind, value, today().toString())
+
+    /** Apunta una medida de ese día (hoy o pasado); otra del mismo día y tipo la sustituye. */
+    @Throws(Exception::class)
+    fun logMeasure(kind: String, value: Double, date: String) {
         val m = MEASURES[kind] ?: throw IllegalArgumentException("Medida no válida")
         require(date <= today().toString()) { "No se puede apuntar una medida futura" }
         require(value in m.range) { "${m.label}: entre ${num(m.range.start)} y ${num(m.range.endInclusive)} ${m.unit}" }

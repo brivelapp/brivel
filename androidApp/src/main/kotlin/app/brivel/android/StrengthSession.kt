@@ -31,6 +31,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Switch
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -67,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import app.brivel.app.BrivelApp
 import app.brivel.app.FIGURES
 import app.brivel.app.LoggedSet
+import app.brivel.app.SET_KINDS
 import app.brivel.app.StrengthExercise
 import app.brivel.app.kg
 import app.brivel.app.polylines
@@ -120,6 +123,23 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
     var logged by remember { mutableStateOf<Pair<StrengthExercise, LoggedSet>?>(null) }  // la última serie apuntada
     // Tras "Serie hecha", el descanso a pantalla; al abrir una serie de la tabla, la serie y el descanso abajo
     var restView by rememberSaveable { mutableStateOf(false) }  // la serie recién apuntada, en el descanso
+    var picking by remember { mutableStateOf(false) }  // entreno libre: eligiendo un ejercicio que añadir
+    var confirmDiscard by remember { mutableStateOf(false) }
+    var removing by remember { mutableStateOf<String?>(null) }  // ejercicio con series que se va a quitar
+
+    /** La serie que toca según el núcleo (alterna las superseries); sin ninguna, la sesión completa. */
+    fun goNext(from: Int): Boolean {
+        val next = app.nextSet(date, from)
+        if (next != null) { current = next.exercise; setNo = next.set }
+        else {
+            val fresh = app.strengthScreen(date)?.exercises ?: emptyList()
+            current = from.coerceIn(0, (fresh.size - 1).coerceAtLeast(0))
+            setNo = (fresh.getOrNull(from)?.sets ?: 0) + 1
+        }
+        return next != null
+    }
+    // Entreno libre: cada cambio vuelve a buscar la serie que toca (puede haber una nueva, o haberse ido la actual)
+    fun edit(success: String? = null, block: () -> Unit) { act.run(success, block); goNext(current) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val haptic = LocalHapticFeedback.current
     LaunchedEffect(restEnd) {
@@ -155,10 +175,25 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
         ) {
             val e = exercises.getOrNull(current)
             when {
+                screen.free && exercises.isEmpty() -> Module { Secondary("Tu entreno está vacío. Añade el primer ejercicio y apunta cada serie.") }
                 mode == "session" -> {
                     screen.notes?.let { Secondary(it) }  // calentamiento y esfuerzo, como en la tarjeta de Hoy
                     exercises.forEachIndexed { i, ex ->
-                        SessionRows(ex, i == current, setNo) { set ->
+                        SessionRows(ex, i == current, setNo, extra = {
+                            if (screen.free) {
+                                Row {
+                                    TextButton(onClick = { edit { app.changeWorkoutSets(ex.name, 1) } }) { LinkText("Otra serie") }
+                                    if (ex.sets > maxOf(1, ex.done.size)) TextButton(onClick = { edit { app.changeWorkoutSets(ex.name, -1) } }) { LinkText("Una serie menos") }
+                                    TextButton(onClick = {
+                                        if (ex.done.isEmpty()) edit("Ejercicio quitado") { app.removeWorkoutExercise(ex.name) } else removing = ex.name
+                                    }, modifier = Modifier.semantics { contentDescription = "Quitar ${ex.name}" }) { LinkText("Quitar") }
+                                }
+                                if (i > 0) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Text("En superserie con el anterior", fontSize = 14.sp, modifier = Modifier.weight(1f))
+                                    Switch(ex.superset != null && exercises[i - 1].superset == ex.superset, { on -> edit { app.linkWorkoutExercise(ex.name, on) } })
+                                }
+                            }
+                        }) { set ->
                             current = i; setNo = set; mode = "set"; restView = false
                         }
                     }
@@ -172,7 +207,7 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
                         skip = { restEnd = 0 },
                         rate = { rir ->
                             logged?.let { (ex, s) ->
-                                act.run { app.logSet(date, ex.name, s.set, s.weightKg, s.reps, rir) }
+                                act.run { app.logSet(date, ex.name, s.set, s.weightKg, s.reps, rir, s.kind) }
                                 logged = ex to s.copy(rir = rir)
                             }
                         })
@@ -180,37 +215,55 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
                 e == null || setNo > e.sets && firstPending() < 0 -> Finished(screen.other, close)
                 else -> SetView(app, e, setNo, exercises.getOrNull(current + 1),
                     swap = { r: String -> act.run { app.swapExercise(date, e.name, r) } }
-                        .takeIf { app.canSwapExercises(date) && e.done.isEmpty() }) { weight, reps ->
+                        .takeIf { !screen.free && app.canSwapExercises(date) && e.done.isEmpty() }) { weight, reps, kind ->
                     val editing = e.done.firstOrNull { it.set == setNo }
-                    act.run { app.logSet(date, e.name, setNo, weight, reps, editing?.rir) }
-                    logged = e to LoggedSet(setNo, weight, reps, editing?.rir)
-                    // Siguiente: otra serie de este ejercicio o el primero que falte; sin ninguno, sesión completa
-                    val fresh = app.strengthScreen(date)?.exercises ?: exercises
-                    val pending = fresh.indexOfFirst { it.done.size < it.sets }
-                    when {
-                        editing == null && setNo < e.sets && fresh[current].done.none { it.set == setNo + 1 } -> setNo += 1
-                        pending >= 0 -> { current = pending; setNo = fresh[pending].done.size + 1 }
-                        else -> setNo = e.sets + 1
-                    }
-                    if (editing == null && pending >= 0) {
+                    act.run { app.logSet(date, e.name, setNo, weight, reps, editing?.rir, kind) }
+                    logged = e to LoggedSet(setNo, weight, reps, editing?.rir, kind)
+                    val more = goNext(current)
+                    // En una superserie no se descansa hasta acabar la ronda (restSeconds 0)
+                    if (editing == null && more && e.restSeconds > 0) {
                         restTotal = e.restSeconds
                         restEnd = System.currentTimeMillis() + e.restSeconds * 1000L
                         restView = true
                     }
                 }
             }
+            if (screen.free) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SecondaryButton("Añadir ejercicio") { picking = true }
+                if (mode == "session") TextButton(onClick = { confirmDiscard = true }) { LinkText("Descartar el entreno") }
+            }
             Spacer(Modifier.height(16.dp))
         }
         if (restEnd > 0 && (mode == "session" || !restView)) RestBar(restLeft, restTotal)
     }
+    if (picking) ExercisePicker(app, { picking = false }) { name ->
+        picking = false
+        restView = false
+        edit { app.addWorkoutExercise(name) }
+    }
+    removing?.let { name ->
+        AlertDialog(onDismissRequest = { removing = null }, containerColor = Palette.surface,
+            title = { Text("¿Quitar $name y sus series de hoy?") },
+            confirmButton = { TextButton(onClick = { removing = null; edit("Ejercicio quitado") { app.removeWorkoutExercise(name) } }) { Text("Quitar") } },
+            dismissButton = { TextButton(onClick = { removing = null }) { Text("Cancelar") } })
+    }
+    if (confirmDiscard) DiscardWorkoutDialog({ confirmDiscard = false }) {
+        confirmDiscard = false
+        act.run("Entreno descartado: hoy vuelve a tu plan") { app.discardWorkout() }
+        close()
+    }
 }
 
 @Composable
-private fun SetView(app: BrivelApp, e: StrengthExercise, setNo: Int, next: StrengthExercise?, swap: ((String) -> Unit)?, done: (Double?, Int) -> Unit) {
+private fun SetView(app: BrivelApp, e: StrengthExercise, setNo: Int, next: StrengthExercise?, swap: ((String) -> Unit)?, done: (Double?, Int, String?) -> Unit) {
     var sheet by remember { mutableStateOf<String?>(null) }  // "card" o "swap"
-    val previous = e.done.firstOrNull { it.set == setNo } ?: e.previous.firstOrNull { it.set == setNo }
-    // Sin historial: el mínimo del rango; con él, lo de esa serie (hoy si se corrige, si no la última vez)
-    var weight by remember(e.name, setNo) { mutableStateOf(e.done.firstOrNull { it.set == setNo }?.weightKg ?: e.weightKg ?: previous?.weightKg) }
+    val today = e.done.firstOrNull { it.set == setNo }
+    val previous = today ?: e.previous.firstOrNull { it.set == setNo }
+    // El peso de partida: al corregir, el de esa serie; si no, el de la última serie de trabajo de hoy, el propuesto o
+    // el de la última vez
+    val lastToday = e.done.lastOrNull { it.kind != "warmup" && it.kind != "drop" }
+    var weight by remember(e.name, setNo) { mutableStateOf(if (today != null) today.weightKg else lastToday?.weightKg ?: e.weightKg ?: previous?.weightKg) }
+    var kind by remember(e.name, setNo) { mutableStateOf(today?.kind) }
     // Con el mismo peso, las repeticiones de la última vez; si cambia el peso, el mínimo del rango (progresión doble)
     var reps by remember(e.name, setNo) { mutableIntStateOf(e.done.firstOrNull { it.set == setNo }?.reps
         ?: previous?.takeIf { it.weightKg == e.weightKg }?.reps ?: e.repsLow) }
@@ -231,6 +284,7 @@ private fun SetView(app: BrivelApp, e: StrengthExercise, setNo: Int, next: Stren
             Secondary("Serie $setNo de ${e.sets} · ${e.repsLow}–${e.repsHigh} ${if (e.timed) "segundos" else "repeticiones"}")
             e.rir?.let { Text(effort(it), fontSize = 14.sp, fontWeight = FontWeight.Bold) }
             e.original?.let { Secondary("En lugar de $it") }
+            e.superset?.let { Secondary("Superserie $it: alterna sus ejercicios y descansa al acabar la ronda") }
         }
     }
     Row {
@@ -253,7 +307,13 @@ private fun SetView(app: BrivelApp, e: StrengthExercise, setNo: Int, next: Stren
             minus = { reps = (reps - if (e.timed) 5 else 1).coerceAtLeast(1) },
             plus = { reps = (reps + if (e.timed) 5 else 1).coerceAtMost(600) })
     }
-    PrimaryButton(if (e.done.any { it.set == setNo }) "Guardar cambio" else "Serie hecha", Modifier.fillMaxWidth()) { done(weight, reps) }
+    if (e.barbell) weight?.let { w -> app.plates(w)?.let { Secondary(it) } }
+    // Tipo de serie: las de calentamiento y las descendentes se suman a las del plan y no cuentan para subir el peso
+    ChipRow {
+        FilterChip(selected = kind == null, label = { Text("Normal") }, onClick = { kind = null })
+        SET_KINDS.forEach { (k, label) -> FilterChip(selected = kind == k, label = { Text(label) }, onClick = { kind = k }) }
+    }
+    PrimaryButton(if (e.done.any { it.set == setNo }) "Guardar cambio" else "Serie hecha", Modifier.fillMaxWidth()) { done(weight, reps, kind) }
     previous?.takeIf { e.done.none { it.set == setNo } }?.let { Secondary("La última vez: ${setText(it, e.timed)}") }
     next?.let {
         Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -375,12 +435,13 @@ private fun RestBar(left: Int, total: Int) {
 
 /** Un ejercicio en la vista Sesión: una fila por serie con la última vez, lo de hoy y la serie actual marcada. */
 @Composable
-private fun SessionRows(e: StrengthExercise, isCurrent: Boolean, currentSet: Int, open: (Int) -> Unit) {
+private fun SessionRows(e: StrengthExercise, isCurrent: Boolean, currentSet: Int, extra: @Composable () -> Unit = {}, open: (Int) -> Unit) {
     Module {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(e.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             Text("${e.done.size}/${e.sets}", fontFamily = Mono, fontSize = 13.sp, color = Palette.muted)
         }
+        e.superset?.let { Source("Superserie $it") }
         Row(Modifier.fillMaxWidth()) {
             listOf("SERIE" to 0.7f, "ANTERIOR" to 1.4f, if (e.timed) "PESO" to 1f else "KG" to 1f, (if (e.timed) "SEG" else "REPS") to 1f).forEach { (h, w) ->
                 Text(h, Modifier.weight(w), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Palette.muted)
@@ -393,7 +454,9 @@ private fun SessionRows(e: StrengthExercise, isCurrent: Boolean, currentSet: Int
             val now = isCurrent && n == currentSet && today == null
             Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClickLabel = "Abrir la serie $n") { open(n) }
                 .padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("$n", Modifier.weight(0.7f), fontFamily = Mono)
+                // La letra del tipo de serie (C, D o F) junto al número; TalkBack lee el nombre entero
+                Text("$n" + (today?.kind?.let { " " + SET_KINDS.getValue(it).first() } ?: ""), Modifier.weight(0.7f)
+                    .semantics { contentDescription = "Serie $n" + (today?.kind?.let { ", " + SET_KINDS.getValue(it).lowercase() } ?: "") }, fontFamily = Mono)
                 Text(before?.let { setText(it, e.timed) } ?: "—", Modifier.weight(1.4f), fontFamily = Mono, fontSize = 13.sp, color = Palette.muted)
                 Cell(today?.let { weightText(it.weightKg) } ?: "—", today != null, now, Modifier.weight(1f))
                 Cell(today?.let { amount(e, it.reps) } ?: "—", today != null, now, Modifier.weight(1f))
@@ -403,6 +466,7 @@ private fun SessionRows(e: StrengthExercise, isCurrent: Boolean, currentSet: Int
                 }
             }
         }
+        extra()
     }
 }
 
