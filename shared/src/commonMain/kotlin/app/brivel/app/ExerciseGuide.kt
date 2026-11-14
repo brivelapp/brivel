@@ -162,7 +162,7 @@ val ROTATION: Map<String, List<String>> = mapOf(
     "Plancha frontal" to listOf("Plancha con brazos extendidos", "Plancha de oso", "Posición hueca (hollow)"),
     "Plancha lateral" to listOf("Plancha lateral con pierna elevada"),
     "Bicho muerto (dead bug)" to listOf("Perro de muestra (bird dog)", "Crunch inverso", "Elevación de piernas tumbado"),
-    "Press Pallof antirrotación" to listOf("Press Pallof con rotación", "Leñador en polea"),
+    "Press Pallof antirrotación" to listOf("Press Pallof con rotación", "Leñador con goma"),  // el core es de los dos planes: sin máquinas
 )
 
 const val ROTATION_WEEKS = 4

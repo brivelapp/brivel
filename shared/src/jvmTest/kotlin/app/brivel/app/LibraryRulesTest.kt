@@ -96,10 +96,14 @@ class LibraryRulesTest {
         assertEquals("Curl con cadena", library("cadena", custom = mine).first().name)
     }
 
+    // Lo que los motores proponen a quien entrena sin gimnasio, más el core, que es común a los dos
+    private val homeExercises = app.brivel.engine.PATTERNS.values.map { it.second } + app.brivel.engine.LOWER["bodyweight"]!! +
+        app.brivel.engine.PLYO["bodyweight"]!! + app.brivel.engine.UPPER["bodyweight"]!! + app.brivel.engine.CORE
+
     @Test fun rotationPoolsAreSafeToSwapIn() {
         for ((original, variants) in ROTATION) {
             val card = exerciseCard(original)!!
-            val bodyweight = card.equipment.all { it == "peso corporal" || it == "banco o cajón" || it == "barra de dominadas" || it == "goma" }
+            val bodyweight = original in homeExercises
             for (v in variants) {
                 val c = exerciseCard(v)!!
                 assertEquals(card.zone, c.zone, "$original → $v")
