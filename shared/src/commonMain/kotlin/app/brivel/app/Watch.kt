@@ -18,7 +18,8 @@ data class WatchTarget(val metric: String, val low: Double, val high: Double)
 
 /**
  * Un paso. `kind`: warmup, active, interval, recovery, rest o cooldown. Dura `seconds`, `meters` o `reps` (si no lleva
- * ninguno, hasta pulsar vuelta). `exercise`: el nombre de Brivel del ejercicio de fuerza.
+ * ninguno, hasta pulsar vuelta). `exercise`: el nombre de Brivel del ejercicio de fuerza; `pattern`: su patrón de
+ * movimiento, para que quien traduce la sesión elija el ejercicio más cercano cuando no conoce ese nombre.
  */
 @Serializable
 data class WatchStep(
@@ -30,6 +31,7 @@ data class WatchStep(
     val exercise: String? = null,
     val weightKg: Double? = null,
     val note: String? = null,
+    val pattern: String? = null,
 )
 
 /** Pasos que se repiten `times` veces (1: sin repetir). */
@@ -79,8 +81,8 @@ fun watchStrength(s: StrengthScreen, name: String): WatchWorkout {
     val blocks = s.exercises.map { e ->
         val note = (if (e.timed) "${e.repsLow}–${e.repsHigh} s" else "${e.repsLow}–${e.repsHigh} repeticiones") +
             (e.rir?.let { " · deja $it en reserva" } ?: "")
-        val work = if (e.timed) WatchStep("active", seconds = e.repsHigh, exercise = e.name, note = note)
-            else WatchStep("active", reps = e.repsHigh, exercise = e.name, weightKg = e.weightKg, note = note)
+        val work = if (e.timed) WatchStep("active", seconds = e.repsHigh, exercise = e.name, note = note, pattern = e.pattern)
+            else WatchStep("active", reps = e.repsHigh, exercise = e.name, weightKg = e.weightKg, note = note, pattern = e.pattern)
         WatchBlock(e.sets, listOf(work, WatchStep("rest", seconds = e.restSeconds)))
     }
     val description = (s.exercises.map { "• ${it.name}: ${it.sets} × ${it.repsLow}–${it.repsHigh}" } +

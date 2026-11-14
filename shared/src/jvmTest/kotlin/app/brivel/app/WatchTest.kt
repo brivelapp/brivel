@@ -52,9 +52,10 @@ class WatchTest {
         val w = watchStrength(s, "Brivel · Fuerza")
         assertEquals(3, w.blocks[0].times)
         assertEquals(WatchStep("active", reps = 12, exercise = "Sentadilla con barra", weightKg = 60.0,
-            note = "8–12 repeticiones · deja 2 en reserva"), w.blocks[0].steps[0])
-        assertEquals(WatchStep("rest", seconds = 120), w.blocks[0].steps[1])
+            note = "8–12 repeticiones · deja 2 en reserva", pattern = "sentadilla"), w.blocks[0].steps[0])
+        assertEquals(WatchStep("rest", seconds = 120), w.blocks[0].steps[1])  // el descanso no es de ningún patrón
         assertEquals(45, w.blocks[1].steps[0].seconds)
+        assertEquals("core", w.blocks[1].steps[0].pattern)  // también los ejercicios por tiempo
     }
 
     @Test fun daySportsFollowTheChosenSession() {
