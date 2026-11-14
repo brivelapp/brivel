@@ -16,6 +16,15 @@ jobs:
       - run: ./gradlew :shared:compileCommonMainKotlinMetadata :shared:jvmTest :shared:jsNodeTest :shared:jsBrowserProductionLibraryDistribution :androidApp:testDebugUnitTest :androidApp:assembleDebug --console=plain
       - run: npm ci && npm run build  # la versión web, con el núcleo recién compilado
         working-directory: web
+      # El núcleo en JavaScript y la web ya construida: para probar la web en local sin Java y para los tests de navegador
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nucleo-js
+          path: shared/build/dist/js/productionLibrary
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web-dist
+          path: web/dist
       - uses: actions/upload-artifact@v7
         with:
           name: brivel-debug-apk
