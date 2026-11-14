@@ -15,5 +15,5 @@ export default defineConfig({
     channel: process.env.CHANNEL,
     trace: "retain-on-failure",
   },
-  webServer: external ? undefined : { command: "npx vite preview --port 4173 --strictPort", url: "http://127.0.0.1:4173", reuseExistingServer: !process.env.CI },
+  webServer: external ? undefined : { command: "npx vite preview --host 127.0.0.1 --port 4173 --strictPort", url: "http://127.0.0.1:4173", reuseExistingServer: !process.env.CI },
 })
