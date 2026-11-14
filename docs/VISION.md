@@ -102,7 +102,7 @@ objetivo. Todo lo de hoy (Salud, Plan, Hoy) se reparte aquí; nada queda fuera.
   "Tempo"), no el nombre automático del ciclocomputador; el título se corrige también en intervals.icu.
 - Tocar un día: detalle, mover la sesión, cambiar el tiempo disponible.
 
-### Entrenar (decidido el 2026-11-14, sin construir)
+### Entrenar (decidido el 2026-11-14)
 
 - **Empezar un entrenamiento sin plan:** fuerza libre, o grabar una actividad con el GPS del móvil.
 - **Tus rutinas de fuerza y tus sesiones propias de resistencia** (pasos con duración y objetivo), que se pueden poner
@@ -201,8 +201,8 @@ peticiones al día, 5 GB de D1; [`SINCRONIZACION.md`](SINCRONIZACION.md)); solo 
 
 | Orden | Bloque | Qué | Sustituye a | Tamaño |
 |---|---|---|---|---|
-| 1 | A. Fuerza libre | Pestaña Entrenar, entreno sin plan, superseries, tipos de serie, historial y gráfica por ejercicio (1RM estimado, volumen), calculadora de discos, medidas corporales | Hevy, Strong, Symmetry | M |
-| 2 | C. Constructor de sesiones | Sesiones propias de resistencia al calendario y al reloj | TrainingPeaks, intervals.icu, Garmin | M |
+| 1 | A. Fuerza libre | Pestaña Entrenar, entreno sin plan, superseries, tipos de serie, historial y gráfica por ejercicio (1RM estimado, volumen), calculadora de discos, medidas corporales. **Programado el 2026-11-14** (rama `entrenar`, sin publicar); fuera: calculadora de calentamiento, fotos y elegir la barra | Hevy, Strong, Symmetry | M |
+| 2 | C. Constructor de sesiones | Sesiones propias de resistencia al calendario y al reloj. **Programado el 2026-11-14** (rama `entrenar`, sin publicar); fuera: ponerla en un día futuro desde el calendario (hoy solo «Hoy» y días de la semana) | TrainingPeaks, intervals.icu, Garmin | M |
 | 3 | B. Actividades propias | Importar FIT, guardar la actividad con sus series, detalle (mapa, vueltas, gráficas, zonas), curvas de potencia y ritmo, umbrales propios | intervals.icu | L |
 | 4 | G. Grabar con el GPS del móvil | Añadido por Gabriel el 2026-11-14. Va detrás de B porque usa su almacén de actividades | Runna, Garmin | L |
 | 5 | D. Plan de carrera | Repasar la vista del plan entero hasta la carrera; los ritmos por sesión ya están | Runna | S |

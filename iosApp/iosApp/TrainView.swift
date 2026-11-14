@@ -33,6 +33,7 @@ struct TrainView: View {
                         }
                     }
                 }
+                SessionsSection()
                 RoutinesSection()
                 LibrarySection()
             }.padding(.horizontal, 18).padding(.vertical, 16)

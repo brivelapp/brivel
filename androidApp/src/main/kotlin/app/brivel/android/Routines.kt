@@ -42,18 +42,18 @@ import app.brivel.app.WEEKDAY_LABEL
 
 // Rutinas propias (Routines.kt del núcleo), como web/src/Routines.tsx: esos días sustituyen a la fuerza del plan
 
-private val DAYS = listOf("MON" to "L", "TUE" to "M", "WED" to "X", "THU" to "J", "FRI" to "V", "SAT" to "S", "SUN" to "D")
+internal val DAY_LETTERS = listOf("MON" to "L", "TUE" to "M", "WED" to "X", "THU" to "J", "FRI" to "V", "SAT" to "S", "SUN" to "D")
 
 /** El aviso general queda detrás de la hoja: los errores al guardar se enseñan dentro de ella. */
-private inline fun attempt(onError: (String?) -> Unit, block: () -> Unit) =
+internal inline fun attempt(onError: (String?) -> Unit, block: () -> Unit) =
     try { block() } catch (e: IllegalArgumentException) { onError(e.message) }
 
-private fun daysText(days: List<String>) =
+internal fun daysText(days: List<String>) =
     if (days.isEmpty()) "sin días: no entra en el plan"
-    else DAYS.filter { it.first in days }.joinToString(", ") { WEEKDAY_LABEL.getValue(it.first).lowercase() }
+    else DAY_LETTERS.filter { it.first in days }.joinToString(", ") { WEEKDAY_LABEL.getValue(it.first).lowercase() }
 
 @Composable
-private fun NumberField(label: String, value: Int, modifier: Modifier, onChange: (Int) -> Unit) =
+internal fun NumberField(label: String, value: Int, modifier: Modifier, onChange: (Int) -> Unit) =
     OutlinedTextField(if (value == 0) "" else value.toString(), { t -> onChange(t.filter(Char::isDigit).take(3).toIntOrNull() ?: 0) },
         label = { Text(label) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = modifier)
@@ -77,7 +77,7 @@ private fun RoutineEditor(app: BrivelApp, act: Act, start: Routine, close: () ->
             OutlinedTextField(r.name, { r = r.copy(name = it) }, label = { Text("Nombre") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             SectionTitle("Qué días la haces")
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                DAYS.forEach { (k, l) ->
+                DAY_LETTERS.forEach { (k, l) ->
                     val on = k in r.days
                     FilterChip(selected = on, label = { Text(l) }, modifier = Modifier.weight(1f), onClick = { r = r.copy(days = if (on) r.days - k else r.days + k) })
                 }

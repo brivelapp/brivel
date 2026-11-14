@@ -294,6 +294,23 @@ Sin CSS conocido, las zonas se prescriben por RPE (Z2 = 4–5/10, Z4 = 7/10, Z5 
 
 ---
 
+### 4.4 Sesiones propias (capa de la app, 2026-11-14)
+
+Bloque C de la visión (`docs/VISION.md` §9). El usuario monta una sesión de carrera, bici, natación o caminata por pasos:
+minutos, zona (Z1–Z5, con su nombre llano), repeticiones y descanso suave entre ellas. Código: `OwnSessions.kt`,
+`ownSession` y `finishSession` en `TrainingEngine.kt`, `Planner.applyOwnSessions`.
+
+- **Es una sesión del motor.** Pasa por lo mismo que las del catálogo: objetivos por zona con los umbrales del usuario,
+  techo del cuestionario de salud, metros en natación con CSS, carga estimada (§9.2) y envío al reloj (§14).
+- **Tipo.** Se trata como el tipo del catálogo de su zona más alta: Z1 recuperación, Z2 aeróbica, Z3 tempo, Z4 umbral,
+  Z5 VO2max. Así el reloj, las notas y el reparto de la carga la leen igual. [Inferencia]
+- **Cuándo entra en el plan.** Sus días de la semana, desde que se guarda (lo pasado no cambia), o un día concreto puesto
+  a mano («Hoy»). Ese día sustituye a la sesión de ese deporte del plan, o se añade si no había. Una sola por deporte y
+  día; si coinciden, manda la puesta para esa fecha.
+- **Lo que no hace.** El ajuste del día (fatiga, sueño, VFC) no la cambia: la decide el usuario.
+- **Límites.** De 1 a 20 pasos, de medio minuto a 300 minutos por paso, hasta 50 repeticiones, descanso de 0 a 30
+  minutos y 10 horas en total.
+
 ## 5. Biblioteca de fuerza
 
 ### 5.1 Dosis por fase
@@ -746,7 +763,7 @@ Python del prototipo queda congelado. Cada regla está cubierta por `ValidationT
 
 | Versión | Fecha | Cambios |
 |---|---|---|
-| 0.8 | 2026-11-14 | Entrenar por tu cuenta (§5.5): entreno libre, tipos de serie, superseries, 1RM estimado (Epley, hasta 10 repeticiones), historial del ejercicio, discos y medidas corporales. Esquema 10. |
+| 0.8 | 2026-11-14 | Entrenar por tu cuenta (§5.5): entreno libre, tipos de serie, superseries, 1RM estimado (Epley, hasta 10 repeticiones), historial del ejercicio, discos y medidas corporales. Sesiones propias de resistencia (§4.4). Esquema 10. |
 | 0.7 | 2026-10-29 | El núcleo de Kotlin es la única fuente; reglas nuevas de §15.2 tras la validación ampliada (carreras, ajuste del día, natación, 600 combinaciones generadas y 100 usuarios simulados). |
 | 0.6 | 2026-10-21 | Plantilla ajustada a los días del usuario (`fit_days`) y emparejado de lo hecho con lo planificado con motivo visible (`match_day`) (§15.1). |
 | 0.5 | 2026-10-21 | Reparto de la carga como el load focus de Garmin (§12), sesiones tempo y anaeróbicas, vuelta a la base tras 7 días sin entrenar, ritmos de carrera desde la FC con la relación FC-velocidad propia (§13), envío al reloj con una métrica por sesión (§14) y comparación con Garmin (§15). |
