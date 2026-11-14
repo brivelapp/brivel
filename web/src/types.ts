@@ -12,15 +12,20 @@ export interface TodayScreen {
   askReadiness: boolean; goalFinished: boolean; garminNote: string | null
 }
 // Sesión de fuerza serie a serie (Workout.kt) y figura de su movimiento (Figures.kt); reps son segundos si timed
-export interface LoggedSet { set: number; weightKg: number | null; reps: number; rir: number | null }
+export interface LoggedSet { set: number; weightKg: number | null; reps: number; rir: number | null; kind: string | null }
 export interface StrengthExercise { name: string; pattern: string; sets: number; repsLow: number; repsHigh: number; timed: boolean
   restSeconds: number; rir: number | null; suggestion: string | null; weightKg: number | null; previous: LoggedSet[]; done: LoggedSet[]
-  original: string | null }
+  original: string | null; superset: string | null; barbell: boolean }
 export interface ExerciseCard { name: string; pattern: string; patternLabel: string; equipment: string[]; timed: boolean
   cues: string[]; cueSource: string; figure: string; zone: string; muscles: string[]; description: string }
-export interface StrengthScreen { date: string; title: string; exercises: StrengthExercise[]; other: string[]; notes: string | null }
+export interface StrengthScreen { date: string; title: string; exercises: StrengthExercise[]; other: string[]; notes: string | null; free: boolean }
 export interface CustomExercise { name: string; pattern: string; timed: boolean }
-export interface RoutineExercise { name: string; sets: number; low: number; high: number }
+export interface RoutineExercise { name: string; sets: number; low: number; high: number; linked: boolean }
+// Entrenar (Training.kt): entreno libre de hoy, la serie que toca y el historial de un ejercicio
+export interface FreeWorkout { date: string; name: string; exercises: RoutineExercise[]; rir: number }
+export interface NextSet { exercise: number; set: number }
+export interface ExerciseDay { date: string; best: string; sets: number; volumeKg: number; e1rm: number | null }
+export interface ExerciseHistory { name: string; days: ExerciseDay[]; chart: Metric | null; records: Milestone[] }
 export interface Routine { id: string; name: string; exercises: RoutineExercise[]; days: string[]; rir: number; since: string }
 export interface FigureLines { head: [number, number]; body: number[][]; work: number[][] }
 
@@ -34,5 +39,6 @@ export interface Metric { key: string; label: string; unit: string; explanation:
 export interface RecentActivity { date: string; title: string; sport: string; minutes: number; detail: string | null; zoneMinutes: number[]; source: string | null }
 export interface ProgressScreen { linked: boolean; metrics: Metric[]; weeklyMinutes: Point[]; status: { label: string; text: string } | null
   predictions: { distance: string; time: string }[]; predictionSource: string | null; recent: RecentActivity[]; garminNote: string | null
-  milestones: Milestone[]; strengthRecords: Milestone[]; thresholds: { label: string; value: string; explanation: string }[] }
+  milestones: Milestone[]; strengthRecords: Milestone[]; thresholds: { label: string; value: string; explanation: string }[]
+  measures: Metric[] }
 export interface Milestone { title: string; value: string; date: string | null; source: string | null }

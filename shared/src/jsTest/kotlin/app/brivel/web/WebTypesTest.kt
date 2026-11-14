@@ -1,5 +1,6 @@
 package app.brivel.web
 
+import app.brivel.app.NextSet
 import app.brivel.app.GoalKind
 import app.brivel.app.library
 import app.brivel.app.Routine
@@ -62,8 +63,13 @@ class WebTypesTest {
             (1..20).map { n -> Workout("w$n", if (n % 2 == 0) "running" else "cycling", "${today.plusDays(-2 * n)}T08:00:00", 50.0,
                 145.0, 170.0, listOf(300.0, 1200.0, 900.0, 300.0, 200.0, 100.0, 0.0), 9000.0) }, today.toString()))
         app.saveRoutine(Routine("", "Torso", listOf(RoutineExercise("Flexiones", 3, 8, 12)), listOf("MON"), since = ""))
+        // Entrenar: una medida, el historial de un ejercicio con peso, la serie que toca y el entreno libre de hoy
+        app.logMeasure("waist", 82.0)
+        app.logSet(today.toString(), "Flexiones", 1, 20.0, 8, null)
         val screens = listOf(json.encodeToString(app.month(2026, 10)), json.encodeToString(app.progress()),
-            json.encodeToString(library()), json.encodeToString(app.routines))  // la biblioteca y las rutinas, en Perfil
+            json.encodeToString(library()), json.encodeToString(app.routines),  // la biblioteca y las rutinas, en Entrenar
+            json.encodeToString(app.exerciseHistory("Flexiones")), json.encodeToString(app.startWorkout(null)),
+            json.encodeToString(NextSet(0, 1)))
         val all = sent + screens.flatMap { keys(Json.parseToJsonElement(it)) }
         val types = fs.readFileSync(js("process.env.WEB_TYPES"), "utf8") as String
         val declared = Regex("""(\w+)\??:\s""").findAll(types.substringAfter("export type Tone")).map { it.groupValues[1] }.toSet()

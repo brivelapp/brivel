@@ -34,7 +34,7 @@ function Editor({ core, act, start, close }: { core: WebApp; act: Act; start: Ro
   const timed = (name: string) => all.find((c) => c.name === name)?.timed ?? false
   const setEx = (i: number, e: RoutineExercise) => setR({ ...r, exercises: r.exercises.map((x, j) => (j === i ? e : x)) })
   const add = (name: string) => setR({ ...r, exercises: [...r.exercises, timed(name)
-    ? { name, sets: 3, low: 20, high: 40 } : { name, sets: 3, low: 8, high: 12 }] })
+    ? { name, sets: 3, low: 20, high: 40, linked: false } : { name, sets: 3, low: 8, high: 12, linked: false }] })
   const [query, setQuery] = useState("")
   const [error, setError] = useState<string | null>(null)
   const found: ExerciseCard[] = JSON.parse(core.libraryJson(query, null, null))
@@ -67,6 +67,9 @@ function Editor({ core, act, start, close }: { core: WebApp; act: Act; start: Ro
             <Num label={timed(e.name) ? "Desde (s)" : "Desde (reps)"} value={e.low} onChange={(low) => setEx(i, { ...e, low })} />
             <Num label={timed(e.name) ? "Hasta (s)" : "Hasta (reps)"} value={e.high} onChange={(high) => setEx(i, { ...e, high })} />
           </div>
+          {i > 0 && (
+            <label className="check"><input type="checkbox" checked={e.linked} onChange={(v) => setEx(i, { ...e, linked: v.target.checked })} /> En superserie con el anterior</label>
+          )}
         </div>
       ))}
       <label className="field">Buscar ejercicio
@@ -122,7 +125,7 @@ function NewExercise({ core, act, close }: { core: WebApp; act: Act; close: () =
   )
 }
 
-/** En Perfil: las rutinas propias y el botón para crear otra. */
+/** En Entrenar: las rutinas propias y el botón para crear otra. */
 export function RoutinesCard({ core, act }: { core: WebApp; act: Act }) {
   const [editing, setEditing] = useState<Routine | null>(null)
   const [adding, setAdding] = useState(false)

@@ -5,8 +5,6 @@ import type { Act } from "./Today"
 import { SyncCard } from "./Sync"
 import { GarminCard } from "./Garmin"
 import { IntervalsCard } from "./Intervals"
-import { RoutinesCard } from "./Routines"
-import { LibraryCard } from "./Library"
 import { LEVEL_CHOICES, Segmented, SportPicker, STRENGTH_CHOICES, WeekBars, type Profile as ProfileData } from "./ProfileParts"
 
 export function Profile({ core, act, synced }: { core: WebApp; act: Act; synced: (m: string | null) => void }) {
@@ -46,8 +44,6 @@ export function Profile({ core, act, synced }: { core: WebApp; act: Act; synced:
           <Segmented options={LEVEL_CHOICES.map(([k, l]) => [k, l])} selected={profile.level} label="Nivel"
             onSelect={(level) => save({ ...profile, level })} />
         </section>
-        <RoutinesCard core={core} act={act} />
-        <LibraryCard core={core} />
         <section className="module">
           <h3>Año de nacimiento</h3>
           <label className="field">Para calcular tus zonas de pulso

@@ -2,13 +2,15 @@
 import { useState } from "react"
 import type { WebApp } from "brivel-shared"
 import type { Metric, Milestone, Point, ProgressScreen, RecentActivity } from "./types"
-import { Icon, SPORT_ICON } from "./Today"
+import { Icon, SPORT_ICON, type Act } from "./Today"
 
 const BODY = ["sleep", "sleepScore", "hrv", "restingHR", "weight", "steps"]
 const fmt = (v: number | null) => v == null ? "—" : v >= 20 ? String(Math.round(v)) : String(Math.round(v * 10) / 10).replace(".", ",")
+/** Con un decimal también por encima de 20: en una medida o un 1RM, medio centímetro o medio kilo cuentan. */
+export const fmt1 = (v: number | null) => v == null ? "—" : String(Math.round(v * 10) / 10).replace(".", ",")
 
 /** Línea de evolución con tu rango de fondo (SVG que escala al ancho). */
-function Sparkline({ points, low, high, warn = false }: { points: Point[]; low: number | null; high: number | null; warn?: boolean }) {
+export function Sparkline({ points, low, high, warn = false }: { points: Point[]; low: number | null; high: number | null; warn?: boolean }) {
   if (points.length < 2) return null
   const values = points.map((p) => p.value)
   const min = Math.min(...values, low ?? Infinity)
@@ -43,7 +45,7 @@ function MetricRow({ m }: { m: Metric }) {
   return (
     <button className="metric" aria-expanded={open} onClick={() => setOpen(!open)}>
       <span className="row between"><span className="metric-label">{m.label}</span>
-        <span className="mono metric-value">{fmt(latest)}{m.unit && ` ${m.unit}`}</span></span>
+        <span className="mono metric-value">{(m.key.startsWith("measure-") ? fmt1 : fmt)(latest)}{m.unit && ` ${m.unit}`}</span></span>
       {m.source && <span className="muted small source">{m.source}</span>}
       {ranged && (
         <>
@@ -112,7 +114,33 @@ function Milestones({ core, screen }: { core: WebApp; screen: ProgressScreen }) 
   )
 }
 
-export function Progress({ core, openProfile }: { core: WebApp; openProfile: () => void }) {
+/** Medidas corporales apuntadas a mano (Training.kt): su evolución y el formulario para apuntar la de hoy. */
+function Measures({ core, act, screen }: { core: WebApp; act: Act; screen: ProgressScreen }) {
+  const kinds: [string, string, string][] = JSON.parse(core.measuresJson())
+  const [kind, setKind] = useState(kinds[0][0])
+  const [value, setValue] = useState("")
+  const unit = kinds.find(([k]) => k === kind)?.[2] ?? ""
+  return (
+    <section className="module">
+      <h3>Tus medidas</h3>
+      <p className="muted small-text">Apunta tu peso o tus perímetros con una cinta para ver cómo cambian. La de hoy sustituye a la que ya hubiera hoy.</p>
+      {screen.measures.map((m) => <MetricRow key={m.key} m={m} />)}
+      <div className="row wrap">
+        <label className="field small-field">Medida
+          <select value={kind} onChange={(e) => setKind(e.target.value)}>
+            {kinds.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+          </select>
+        </label>
+        <label className="field small-field">Valor ({unit})
+          <input inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value.replace(/[^\d.,]/g, ""))} />
+        </label>
+        <button className="secondary" onClick={() => { act(() => { core.logMeasure(kind, value); setValue("") }, "Medida apuntada") }}>Apuntar</button>
+      </div>
+    </section>
+  )
+}
+
+export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; openProfile: () => void }) {
   const screen: ProgressScreen = JSON.parse(core.progressJson())
   const body = screen.metrics.filter((m) => BODY.includes(m.key))
   const training = screen.metrics.filter((m) => !BODY.includes(m.key))
@@ -129,6 +157,7 @@ export function Progress({ core, openProfile }: { core: WebApp; openProfile: () 
             reposo, actívalo en la app del móvil y sincroniza: Perfil → «Usar en otros dispositivos».</p>
           <button className="primary" onClick={openProfile}>Ir a Perfil</button>
         </section>
+        <Measures core={core} act={act} screen={screen} />
         <Milestones core={core} screen={screen} />
         </div>
       ) : (
@@ -174,6 +203,7 @@ export function Progress({ core, openProfile }: { core: WebApp; openProfile: () 
               {screen.recent.map((r, i) => <Recent key={i} r={r} core={core} />)}
             </section>
           )}
+          <Measures core={core} act={act} screen={screen} />
           <Milestones core={core} screen={screen} />
         </div>
       )}

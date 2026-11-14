@@ -1,8 +1,9 @@
 // Biblioteca de ejercicios (Library.kt): buscar y filtrar, la ficha de cada uno y cambiar un ejercicio de la sesión
 import { useEffect, useRef, useState } from "react"
 import type { WebApp } from "brivel-shared"
-import type { ExerciseCard } from "./types"
+import type { ExerciseCard, ExerciseHistory } from "./types"
 import { Figure } from "./Strength"
+import { fmt1, Sparkline } from "./Progress"
 
 /** La ficha: figura, patrón, material y claves de técnica, con su fuente. */
 function Card({ core, card }: { core: WebApp; card: ExerciseCard }) {
@@ -23,6 +24,69 @@ function Card({ core, card }: { core: WebApp; card: ExerciseCard }) {
   )
 }
 
+/** Lo que has hecho en ese ejercicio: la gráfica (1RM estimado o mejor serie), tus marcas y los últimos días. */
+function History({ core, name }: { core: WebApp; name: string }) {
+  const h: ExerciseHistory = JSON.parse(core.exerciseHistoryJson(name))
+  if (h.days.length === 0) return null
+  return (
+    <>
+      <h3>Tu historial</h3>
+      {h.chart && (
+        <>
+          <div className="row between"><span>{h.chart.label}</span><span className="mono">{fmt1(h.chart.latest)}{h.chart.unit && ` ${h.chart.unit}`}</span></div>
+          <Sparkline points={h.chart.points} low={null} high={null} />
+          <p className="muted small">{h.chart.explanation}</p>
+        </>
+      )}
+      {h.records.map((r) => (
+        <div key={r.title} className="row between">
+          <span>{r.title}{r.date && <span className="muted small"> · {core.dateLabel(r.date)}</span>}</span><span className="mono nowrap">{r.value}</span>
+        </div>
+      ))}
+      <table className="sets">
+        <thead><tr><th>Día</th><th>Mejor serie</th><th>Series</th><th>Kilos</th></tr></thead>
+        <tbody>
+          {h.days.map((d) => (
+            <tr key={d.date}><td className="mono nowrap" title={core.dateLabel(d.date)}>{d.date.slice(8)}/{d.date.slice(5, 7)}/{d.date.slice(2, 4)}</td><td className="mono">{d.best}</td><td className="mono">{d.sets}</td>
+              <td className="mono">{d.volumeKg > 0 ? Math.round(d.volumeKg) : "—"}</td></tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  )
+}
+
+/** Elegir un ejercicio de la biblioteca, buscando por nombre: para añadirlo al entreno libre. */
+export function ExercisePicker({ core, close, choose }: { core: WebApp; close: () => void; choose: (name: string) => void }) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  useEffect(() => { dialog.current?.showModal() }, [])
+  const [query, setQuery] = useState("")
+  const [mine, setMine] = useState(false)
+  const owned: string[] = JSON.parse(core.myEquipmentJson())
+  const found: ExerciseCard[] = JSON.parse(core.libraryByZoneJson(query, null, null, mine))
+  return (
+    <dialog ref={dialog} className="sheet" onClose={close} aria-label="Añadir ejercicio">
+      <h2>Añadir ejercicio</h2>
+      <label className="field">Buscar
+        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Sentadilla, remo, espalda…" />
+      </label>
+      {owned.length > 0 && (
+        <label className="check"><input type="checkbox" checked={mine} onChange={(e) => setMine(e.target.checked)} /> Solo con mi material</label>
+      )}
+      <p className="muted small-text">{found.length} ejercicios{found.length > PICK ? `: escribe para acotar (se ven ${PICK})` : ""}</p>
+      {found.slice(0, PICK).map((c) => (
+        <button key={c.name} className="row option" onClick={() => choose(c.name)}>
+          {core.figureJson(c.figure) && <span className="figure-box"><Figure core={core} pattern={c.figure} size={36} /></span>}
+          <span className="grow">{c.name}<span className="muted small"> · {c.patternLabel}</span></span>
+        </button>
+      ))}
+      <button className="secondary" onClick={close}>Cancelar</button>
+    </dialog>
+  )
+}
+
+const PICK = 40
+
 /**
  * La ficha en un diálogo. Con `swap`, también los ejercicios por los que se puede cambiar (mismo patrón) y, si ya es
  * un cambio, volver al del plan.
@@ -37,6 +101,7 @@ export function ExerciseSheet({ core, name, close, swap }: { core: WebApp; name:
   return (
     <dialog ref={dialog} className="sheet" onClose={close} aria-label={swap ? "Cambiar ejercicio" : "Ficha del ejercicio"}>
       {card && <Card core={core} card={card} />}
+      {!swap && <History core={core} name={name} />}
       {swap && (
         <>
           <h3>Cambiar por</h3>
@@ -57,7 +122,7 @@ export function ExerciseSheet({ core, name, close, swap }: { core: WebApp; name:
 
 const PAGE = 60
 
-/** En Perfil: todos los ejercicios, con búsqueda y filtros de zona y de material, y el material que tienes. */
+/** En Entrenar: todos los ejercicios, con búsqueda y filtros de zona y de material, y el material que tienes. */
 export function LibraryCard({ core }: { core: WebApp }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")

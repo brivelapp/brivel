@@ -8,13 +8,14 @@ import { Profile } from "./Profile"
 import { Calendar } from "./Calendar"
 import { Progress } from "./Progress"
 import { Strength } from "./Strength"
+import { Train } from "./Train"
 import { SyncCard } from "./Sync"
 import { loadKeys } from "./sync"
 import { pullGarmin } from "./garmin"
 
 type Entry = "landing" | "onboarding" | "login"
-type Tab = "today" | "calendar" | "progress" | "profile"
-const TABS: [Tab, string][] = [["today", "Hoy"], ["calendar", "Calendario"], ["progress", "Progreso"], ["profile", "Perfil"]]
+type Tab = "today" | "calendar" | "train" | "progress" | "profile"
+const TABS: [Tab, string][] = [["today", "Hoy"], ["calendar", "Calendario"], ["train", "Entrenar"], ["progress", "Progreso"], ["profile", "Perfil"]]
 
 export function App() {
   const core = useMemo(() => new WebApp(), [])
@@ -134,7 +135,8 @@ export function App() {
       </nav>
       {tab === "today" && <Today core={core} act={act} synced={synced} openStrength={setStrengthDate} />}
       {tab === "calendar" && <Calendar core={core} act={act} openStrength={setStrengthDate} />}
-      {tab === "progress" && <Progress core={core} openProfile={() => setTab("profile")} />}
+      {tab === "train" && <Train core={core} act={act} openStrength={setStrengthDate} />}
+      {tab === "progress" && <Progress core={core} act={act} openProfile={() => setTab("profile")} />}
       {tab === "profile" && <Profile core={core} act={act} synced={synced} />}
       {status}
       <Footer core={core} act={act} />

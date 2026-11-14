@@ -234,7 +234,9 @@ tr.done .tick { background: var(--ok); color: var(--on-ok); }
 .features { display: grid; gap: 16px; padding-bottom: 48px; }
 .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--chip); }
 .tabs button { min-height: 40px; padding: 0 18px; background: none; color: var(--text); font-weight: 600; }
-@media (max-width: 400px) { .tabs button { padding: 0 10px; flex: 1; } }  /* a 360 px las cuatro pestañas no cabían */
+/* Cinco pestañas: en el móvil ocupan todo el ancho y cada una mide lo que su texto; a 360 px, letra y márgenes menores */
+@media (max-width: 520px) { .tabs { width: 100%; } .tabs button { flex: 1 1 auto; padding: 0 8px; font-size: 14px; } }
+@media (max-width: 400px) { .tabs button { padding: 0 5px; font-size: 13px; } }
 .tabs button[aria-current=page] { background: var(--ok); color: var(--on-ok); font-weight: 700; }
 .profile-grid { display: grid; gap: 14px; align-items: start; }
 .sheet { border: 0; border-radius: 28px; padding: 22px; width: min(480px, calc(100% - 32px)); background: var(--surface); color: var(--text); }

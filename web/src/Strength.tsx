@@ -1,10 +1,10 @@
 // Sesión de fuerza a pantalla completa, como StrengthSession.kt: Serie (una cada vez) y Sesión (toda la sesión en tabla)
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import type { WebApp } from "brivel-shared"
-import type { FigureLines, LoggedSet, StrengthExercise, StrengthScreen } from "./types"
+import type { FigureLines, LoggedSet, NextSet, StrengthExercise, StrengthScreen } from "./types"
 import { Icon, localToday, type Act } from "./Today"
 import { Segmented } from "./ProfileParts"
-import { ExerciseSheet } from "./Library"
+import { ExercisePicker, ExerciseSheet } from "./Library"
 import check from "../../iosApp/iosApp/Assets.xcassets/check.imageset/check.svg"
 import back from "../../iosApp/iosApp/Assets.xcassets/chevron_left.imageset/chevron_left.svg"
 
@@ -14,6 +14,9 @@ const setText = (s: LoggedSet, timed: boolean) => (s.weightKg != null ? `${kgTex
 const effort = (rir: number) => (rir === 0 ? "Hasta no poder más" : `Termina con ${rir} en reserva`)
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
 const pendingIndex = (list: StrengthExercise[]) => list.findIndex((e) => e.done.length < e.sets)
+// Marca del tipo de serie en la tabla (SET_KINDS del núcleo), con su nombre para quien no vea la letra
+const KIND_SHORT: Record<string, string> = { warmup: "C", drop: "D", failure: "F" }
+const KIND_LABEL: Record<string, string> = { warmup: "Calentamiento", drop: "Descendente", failure: "Al fallo" }
 
 /** Figura del patrón de movimiento: cuerpo en el color del texto y, en verde, lo que trabaja. */
 export function Figure({ core, pattern, size = 52 }: { core: WebApp; pattern: string; size?: number }) {
@@ -42,6 +45,7 @@ export function Strength({ core, date, act, close }: { core: WebApp; date: strin
   const [logged, setLogged] = useState<[StrengthExercise, LoggedSet] | null>(null)  // la última serie apuntada
   const [restView, setRestView] = useState(false)  // tras "Serie hecha"; al abrir una serie de la tabla, la serie y el descanso abajo
   const [now, setNow] = useState(Date.now())
+  const [picking, setPicking] = useState(false)  // entreno libre: eligiendo un ejercicio que añadir
 
   useEffect(() => { if (!screen) close() }, [screen, close])
   const title = useRef<HTMLHeadingElement>(null)
@@ -67,26 +71,35 @@ export function Strength({ core, date, act, close }: { core: WebApp; date: strin
   const e = exercises[current]
   const pending = pendingIndex(exercises)
 
-  const save = (ex: StrengthExercise, weight: string, reps: number) => {
+  /** La serie que toca según el núcleo (alterna las superseries); sin ninguna, la sesión completa. */
+  const goNext = (from: number) => {
+    const json = core.nextSetJson(date, from)
+    const next: NextSet | null = json ? JSON.parse(json) : null
+    if (next) { setCurrent(next.exercise); setSetNo(next.set) }
+    else {
+      const fresh: StrengthExercise[] = JSON.parse(core.strengthJson(date) ?? "null")?.exercises ?? []
+      setCurrent(Math.max(0, Math.min(from, fresh.length - 1)))
+      setSetNo((fresh[from]?.sets ?? 0) + 1)
+    }
+    return next
+  }
+  const save = (ex: StrengthExercise, weight: string, reps: number, kind: string | null) => {
     const editing = ex.done.find((d) => d.set === setNo)
-    act(() => core.logSet(date, ex.name, setNo, weight, reps, editing?.rir ?? null))
+    act(() => core.logSet(date, ex.name, setNo, weight, reps, editing?.rir ?? null, kind))
     const w = weight.trim() === "" ? null : parseFloat(weight.replace(",", "."))
-    setLogged([ex, { set: setNo, weightKg: w, reps, rir: editing?.rir ?? null }])
-    // Siguiente: otra serie de este ejercicio o el primero que falte; sin ninguno, sesión completa
-    const freshJson = core.strengthJson(date)
-    const fresh: StrengthExercise[] = freshJson ? JSON.parse(freshJson).exercises : exercises
-    const p = pendingIndex(fresh)
-    if (!editing && setNo < ex.sets && !fresh[current].done.some((d) => d.set === setNo + 1)) setSetNo(setNo + 1)
-    else if (p >= 0) { setCurrent(p); setSetNo(fresh[p].done.length + 1) }
-    else setSetNo(ex.sets + 1)
-    if (!editing && p >= 0) { setRestTotal(ex.restSeconds); setNow(Date.now()); setRestEnd(Date.now() + ex.restSeconds * 1000); setRestView(true) }
+    setLogged([ex, { set: setNo, weightKg: w, reps, rir: editing?.rir ?? null, kind }])
+    const next = goNext(current)
+    // En una superserie no se descansa hasta acabar la ronda (restSeconds 0)
+    if (!editing && next && ex.restSeconds > 0) { setRestTotal(ex.restSeconds); setNow(Date.now()); setRestEnd(Date.now() + ex.restSeconds * 1000); setRestView(true) }
   }
   const rate = (rir: number) => {
     if (!logged) return
     const [ex, s] = logged
-    act(() => core.logSet(date, ex.name, s.set, s.weightKg == null ? "" : String(s.weightKg), s.reps, rir))
+    act(() => core.logSet(date, ex.name, s.set, s.weightKg == null ? "" : String(s.weightKg), s.reps, rir, s.kind))
     setLogged([ex, { ...s, rir }])
   }
+  // Entreno libre: cada cambio vuelve a buscar la serie que toca (puede haber una nueva, o haberse ido la actual)
+  const edit = (f: () => void, success?: string) => { act(f, success); goNext(current) }
 
   return (
     <main className="strength">
@@ -99,18 +112,44 @@ export function Strength({ core, date, act, close }: { core: WebApp; date: strin
       </div>
       <Segmented options={[["set", "Serie"], ["session", "Sesión"]]} selected={mode} onSelect={setMode} label="Vista" />
       {mode === "session" && screen?.notes && <p className="muted small-text">{screen.notes}</p>}
-      {mode === "session"
+      {screen.free && exercises.length === 0
+        ? <section className="module"><p className="muted">Tu entreno está vacío. Añade el primer ejercicio y apunta cada serie.</p></section>
+        : mode === "session"
         ? exercises.map((ex, i) => (
           <SessionRows key={ex.name} e={ex} isCurrent={i === current} currentSet={setNo}
-            open={(n) => { setCurrent(i); setSetNo(n); setMode("set"); setRestView(false) }} />
+            open={(n) => { setCurrent(i); setSetNo(n); setMode("set"); setRestView(false) }}>
+            {screen.free && (
+              <>
+                <div className="row wrap">
+                  <button className="text" onClick={() => edit(() => core.changeWorkoutSets(ex.name, 1))}>Otra serie</button>
+                  {ex.sets > Math.max(1, ex.done.length) && <button className="text" onClick={() => edit(() => core.changeWorkoutSets(ex.name, -1))}>Una serie menos</button>}
+                  <button className="text" aria-label={`Quitar ${ex.name}`} onClick={() => (ex.done.length === 0 || confirm(`¿Quitar ${ex.name} y sus series de hoy?`))
+                    && edit(() => core.removeWorkoutExercise(ex.name), "Ejercicio quitado")}>Quitar</button>
+                </div>
+                {i > 0 && (
+                  <label className="check"><input type="checkbox" checked={ex.superset != null && exercises[i - 1].superset === ex.superset}
+                    onChange={(v) => edit(() => core.linkWorkoutExercise(ex.name, v.target.checked))} /> En superserie con el anterior</label>
+                )}
+              </>
+            )}
+          </SessionRows>
         ))
         : restEnd != null && restView
           ? <Rest left={left} total={restTotal} e={e} setNo={setNo} logged={logged} rate={rate}
               adjust={(s) => { const end = restEnd + s * 1000; setRestEnd(end <= Date.now() ? null : end) }} skip={() => setRestEnd(null)} />
           : e && !(setNo > e.sets && pending < 0)
-            ? <SetView key={`${e.name}-${setNo}`} core={core} e={e} setNo={setNo} next={exercises[current + 1]} done={(w, r) => save(e, w, r)}
-                swap={date >= localToday() && e.done.length === 0 ? (r) => act(() => core.swapExercise(date, e.name, r), "Ejercicio cambiado") : undefined} />
+            ? <SetView key={`${e.name}-${setNo}`} core={core} e={e} setNo={setNo} next={exercises[current + 1]} done={(w, r, k) => save(e, w, r, k)}
+                swap={!screen.free && date >= localToday() && e.done.length === 0 ? (r) => act(() => core.swapExercise(date, e.name, r), "Ejercicio cambiado") : undefined} />
             : <Finished other={screen.other} close={close} />}
+      {screen.free && (
+        <div className="row wrap">
+          <button className="secondary" onClick={() => setPicking(true)}>Añadir ejercicio</button>
+          {mode === "session" && <button className="link" onClick={() => confirm("¿Descartar el entreno de hoy y las series que has apuntado en él?")
+            && act(() => { core.discardWorkout(); close() }, "Entreno descartado: hoy vuelve a tu plan")}>Descartar el entreno</button>}
+        </div>
+      )}
+      {picking && <ExercisePicker core={core} close={() => setPicking(false)}
+        choose={(name) => { setPicking(false); setRestView(false); edit(() => core.addWorkoutExercise(name)) }} />}
       {restEnd != null && (mode === "session" || !restView) && (
         <div className="rest-bar" role="timer" aria-label="Descanso">
           <strong>Descanso</strong>
@@ -123,15 +162,20 @@ export function Strength({ core, date, act, close }: { core: WebApp; date: strin
 }
 
 function SetView({ core, e, setNo, next, done, swap }: { core: WebApp; e: StrengthExercise; setNo: number
-  next?: StrengthExercise; done: (weight: string, reps: number) => void; swap?: (replacement: string) => void }) {
+  next?: StrengthExercise; done: (weight: string, reps: number, kind: string | null) => void; swap?: (replacement: string) => void }) {
+  const kinds: [string, string][] = Object.entries(JSON.parse(core.setKindsJson()))
   const [sheet, setSheet] = useState<"card" | "swap" | null>(null)
   const today = e.done.find((d) => d.set === setNo)
   const previous = e.previous.find((d) => d.set === setNo)
-  const startWeight = today?.weightKg ?? e.weightKg ?? previous?.weightKg ?? null
+  // El peso de partida: el de la última serie de trabajo de hoy; si no hay, el propuesto o el de la última vez
+  const lastToday = e.done.filter((d) => d.kind !== "warmup" && d.kind !== "drop").at(-1)
+  const startWeight = today ? today.weightKg : lastToday?.weightKg ?? e.weightKg ?? previous?.weightKg ?? null
   const [weight, setWeight] = useState(startWeight == null ? "" : String(startWeight).replace(".", ","))
   // Con el mismo peso, las repeticiones de la última vez; si cambia el peso, el mínimo del rango (progresión doble)
   const [reps, setReps] = useState(today?.reps ?? (previous && previous.weightKg === e.weightKg ? previous.reps : e.repsLow))
+  const [kind, setKind] = useState(today?.kind ?? "")
   const w = weight.trim() === "" ? null : parseFloat(weight.replace(",", "."))
+  const plates = e.barbell && w != null ? core.plates(weight) : null
   const step = e.timed ? 5 : 1
   const setW = (v: number | null) => setWeight(v == null || v <= 0 ? "" : String(v).replace(".", ","))
   return (
@@ -145,6 +189,7 @@ function SetView({ core, e, setNo, next, done, swap }: { core: WebApp; e: Streng
           <h2>{e.name}</h2>
           <p className="muted small-text">Serie {setNo} de {e.sets} · {e.repsLow}–{e.repsHigh} {e.timed ? "segundos" : "repeticiones"}</p>
           {e.original && <p className="muted small">En lugar de {e.original}</p>}
+          {e.superset && <p className="muted small">Superserie {e.superset}: alterna sus ejercicios y descansa al acabar la ronda</p>}
           <div className="row">
             <button className="text" onClick={() => setSheet("card")}>Cómo se hace</button>
             {swap && <button className="text" onClick={() => setSheet("swap")}>Cambiar ejercicio</button>}
@@ -174,7 +219,14 @@ function SetView({ core, e, setNo, next, done, swap }: { core: WebApp; e: Streng
           </div>
         </div>
       </div>
-      <button className="primary" onClick={() => done(weight, reps)}>{today ? "Guardar cambio" : "Serie hecha"}</button>
+      {plates && <p className="muted small-text">{plates}</p>}
+      <label className="field">Tipo de serie
+        <select value={kind} onChange={(ev) => setKind(ev.target.value)}>
+          <option value="">Normal</option>
+          {kinds.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+        </select>
+      </label>
+      <button className="primary" onClick={() => done(weight, reps, kind || null)}>{today ? "Guardar cambio" : "Serie hecha"}</button>
       {!today && previous && <p className="muted small-text">La última vez: {setText(previous, e.timed)}</p>}
       {next && <p className="small-text"><span className="muted">Después: </span><strong>{next.name}</strong></p>}
     </>
@@ -231,10 +283,12 @@ function Rest({ left, total, e, setNo, logged, rate, adjust, skip }: {
 }
 
 /** Un ejercicio en la vista Sesión: una fila por serie con la última vez, lo de hoy y la serie actual marcada. */
-function SessionRows({ e, isCurrent, currentSet, open }: { e: StrengthExercise; isCurrent: boolean; currentSet: number; open: (n: number) => void }) {
+function SessionRows({ e, isCurrent, currentSet, open, children }: { e: StrengthExercise; isCurrent: boolean; currentSet: number
+  open: (n: number) => void; children?: ReactNode }) {
   return (
     <section className="module">
       <div className="row between"><strong>{e.name}</strong><span className="mono muted small">{e.done.length}/{e.sets}</span></div>
+      {e.superset && <span className="muted small">Superserie {e.superset}</span>}
       <table className="sets">
         <thead><tr><th>Serie</th><th>Anterior</th><th>{e.timed ? "Peso" : "Kg"}</th><th>{e.timed ? "Seg" : "Reps"}</th><th><span className="sr-only">Hecha</span></th></tr></thead>
         <tbody>
@@ -246,6 +300,7 @@ function SessionRows({ e, isCurrent, currentSet, open }: { e: StrengthExercise; 
               <tr key={n} className={cls} onClick={() => open(n)}>
                 <td className="mono">
                   <button className="row-open" aria-label={`Abrir la serie ${n}`} onClick={(ev) => { ev.stopPropagation(); open(n) }}>{n}</button>
+                  {today?.kind && <span className="muted small" title={KIND_LABEL[today.kind]}> {KIND_SHORT[today.kind]}</span>}
                 </td>
                 <td className="mono muted">{before ? setText(before, e.timed) : "—"}</td>
                 <td><span className="cell mono">{today ? kgText(today.weightKg) : "—"}</span></td>
@@ -256,6 +311,7 @@ function SessionRows({ e, isCurrent, currentSet, open }: { e: StrengthExercise; 
           })}
         </tbody>
       </table>
+      {children}
     </section>
   )
 }
