@@ -42,8 +42,8 @@ class IntervalsClientTest {
     }
 
     @Test fun anOldKeyGoesAsBasicAndAnOauthTokenAsBearer() = runTest {
-        client().athlete()
-        client(oauth = true).athlete()
+        client { "{}" to HttpStatusCode.OK }.athlete()  // el atleta es un objeto, no una lista
+        client(oauth = true) { "{}" to HttpStatusCode.OK }.athlete()
         assertEquals("Basic QVBJX0tFWTpzZWNyZXRv", seen[0].headers[HttpHeaders.Authorization])  // «API_KEY:secreto» en base64
         assertEquals("Bearer secreto", seen[1].headers[HttpHeaders.Authorization])
     }
