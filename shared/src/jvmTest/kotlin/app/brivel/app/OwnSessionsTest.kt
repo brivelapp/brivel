@@ -110,7 +110,7 @@ class OwnSessionsTest {
         val a = app()
         val ok = OwnStep("x", 10.0, "Z2")
         for (bad in listOf(series.copy(name = " "), series.copy(sport = "strength"), series.copy(steps = emptyList()),
-            series.copy(steps = List(21) { ok }), series.copy(steps = listOf(ok.copy(minutes = 0.0))), series.copy(steps = listOf(ok.copy(zone = "Z9"))),
+            series.copy(steps = List(21) { ok }), series.copy(steps = listOf(ok.copy(minutes = 0.0))), series.copy(steps = listOf(ok.copy(intensityZone = "Z9"))),
             series.copy(steps = listOf(ok.copy(reps = 0))), series.copy(steps = listOf(ok.copy(restMinutes = 31.0))),
             series.copy(days = listOf("LUNES")), series.copy(steps = listOf(ok.copy(minutes = 300.0, reps = 3)))))
             assertFailsWith<IllegalArgumentException> { a.saveOwnSession(bad) }

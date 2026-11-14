@@ -6,7 +6,7 @@ import type { Act } from "./Today"
 import type { OwnSession, OwnStep } from "./types"
 import { attempt, DAYS, DAY_NAME, daysText, Num } from "./Routines"
 
-const EMPTY: OwnSession = { id: "", name: "", sport: "running", steps: [{ name: "", minutes: 30, zone: "Z2", reps: 1, restMinutes: 0 }], days: [], dates: [], since: "" }
+const EMPTY: OwnSession = { id: "", name: "", sport: "running", steps: [{ name: "", minutes: 30, intensityZone: "Z2", reps: 1, restMinutes: 0 }], days: [], dates: [], since: "" }
 const total = (s: OwnSession) => Math.round(s.steps.reduce((a, x) => a + x.reps * x.minutes + (x.reps > 1 ? x.reps * x.restMinutes : 0), 0))
 
 /** Minutos con decimales (30″ = 0,5): se escribe como texto para poder teclear la coma. */
@@ -55,7 +55,7 @@ function Editor({ core, act, start, close }: { core: WebApp; act: Act; start: Ow
             <input className="text" value={step.name} onChange={(e) => setStep(i, { ...step, name: e.target.value })} placeholder="Calentamiento, rápido…" />
           </label>
           <label className="field">Intensidad
-            <select value={step.zone} onChange={(e) => setStep(i, { ...step, zone: e.target.value })}>
+            <select value={step.intensityZone} onChange={(e) => setStep(i, { ...step, intensityZone: e.target.value })}>
               {zones.map(([k, label]) => <option key={k} value={k}>{label} ({k})</option>)}
             </select>
           </label>
@@ -66,7 +66,7 @@ function Editor({ core, act, start, close }: { core: WebApp; act: Act; start: Ow
           </div>
         </div>
       ))}
-      <button className="secondary" onClick={() => setS({ ...s, steps: [...s.steps, { name: "", minutes: 10, zone: "Z2", reps: 1, restMinutes: 0 }] })}>Añadir paso</button>
+      <button className="secondary" onClick={() => setS({ ...s, steps: [...s.steps, { name: "", minutes: 10, intensityZone: "Z2", reps: 1, restMinutes: 0 }] })}>Añadir paso</button>
       <p className="muted small-text">Total: {total(s)} min. El pulso o el ritmo de cada paso salen de tus zonas, como en las sesiones del plan.</p>
       <h3 id="session-days">Qué días la haces</h3>
       <div className="day-chips" role="group" aria-labelledby="session-days">

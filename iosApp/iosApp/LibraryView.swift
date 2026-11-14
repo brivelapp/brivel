@@ -43,7 +43,7 @@ struct ExerciseSheet: View {
                                 .background(Palette.band).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                             Secondary([card.patternLabel, card.equipment.joined(separator: ", "), card.timed ? "por tiempo" : "por repeticiones"].filter { !$0.isEmpty }.joined(separator: " · "))
                         }
-                        if !card.muscles.isEmpty { Secondary("Zona: \(card.zone) · Músculos: \(card.muscles.joined(separator: ", "))") }
+                        if !card.muscles.isEmpty { Secondary("Zona: \(card.zone()) · Músculos: \(card.muscles.joined(separator: ", "))") }
                         if !card.description.isEmpty { Text(card.description).font(.small) }
                         ForEach(card.cues, id: \.self) { Text("• \($0)").font(.small) }
                         Source(text: card.cueSource)

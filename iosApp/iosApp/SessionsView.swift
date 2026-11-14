@@ -120,7 +120,7 @@ private struct SessionEditor: View {
                 sport = start.sport
                 selected = start.days
                 steps = start.steps.map {
-                    DraftStep(name: $0.name, minutes: oneDecimal($0.minutes), zone: $0.zone, reps: String($0.reps), rest: oneDecimal($0.restMinutes))
+                    DraftStep(name: $0.name, minutes: oneDecimal($0.minutes), zone: $0.intensityZone, reps: String($0.reps), rest: oneDecimal($0.restMinutes))
                 }
                 loaded = true
             }
@@ -135,7 +135,7 @@ private struct SessionEditor: View {
 
     private func save() {
         let session = OwnSession(id: start?.id ?? "", name: name, sport: sport,
-                                 steps: steps.map { OwnStep(name: $0.name, minutes: decimal($0.minutes), zone: $0.zone, reps: Int32($0.repeats), restMinutes: decimal($0.rest)) },
+                                 steps: steps.map { OwnStep(name: $0.name, minutes: decimal($0.minutes), intensityZone: $0.zone, reps: Int32($0.repeats), restMinutes: decimal($0.rest)) },
                                  days: selected, dates: start?.dates ?? [], since: "")
         // El aviso general no se ve con la hoja abierta: el error se enseña dentro de ella
         do { _ = try model.core.saveOwnSession(session: session) } catch { saveError = error.localizedDescription; return }

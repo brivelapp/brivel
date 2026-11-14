@@ -89,7 +89,7 @@ private fun SessionEditor(app: BrivelApp, act: Act, start: OwnSession, close: ()
                         Secondary("Intensidad")
                         ChipRow {
                             OWN_ZONES.forEach { (k, label) ->
-                                FilterChip(selected = step.zone == k, label = { Text("$label ($k)") }, onClick = { setStep(i, step.copy(zone = k)) })
+                                FilterChip(selected = step.intensityZone == k, label = { Text("$label ($k)") }, onClick = { setStep(i, step.copy(intensityZone = k)) })
                             }
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -11,9 +11,12 @@ import app.brivel.engine.Session
 import app.brivel.engine.ownSession
 import kotlinx.serialization.Serializable
 
-/** Un paso: `minutes` en la zona `zone`, `reps` veces con `restMinutes` suaves entre una y otra. */
+/**
+ * Un paso: `minutes` en la zona `intensityZone`, `reps` veces con `restMinutes` suaves entre una y otra. No se llama
+ * `zone`: en Swift choca con una propiedad de NSObject.
+ */
 @Serializable
-data class OwnStep(val name: String, val minutes: Double, val zone: String, val reps: Int = 1, val restMinutes: Double = 0.0)
+data class OwnStep(val name: String, val minutes: Double, val intensityZone: String, val reps: Int = 1, val restMinutes: Double = 0.0)
 
 /**
  * Sesión propia. `days`: días de la semana ("MON"…) en los que se hace, desde `since` (lo pasado no cambia al crearla o
@@ -38,7 +41,7 @@ fun OwnSession.minutes(): Double = steps.sumOf { it.reps * it.minutes + (if (it.
 
 /** La sesión del motor: objetivos por zona, techo del cribado y carga, como las del catálogo. */
 internal fun OwnSession.session(profile: Profile): Session = ownSession(id, name, sport,
-    steps.mapIndexed { i, s -> Block(s.name.ifBlank { "Paso ${i + 1}" }, s.reps, s.minutes, s.zone, s.restMinutes) }, profile)
+    steps.mapIndexed { i, s -> Block(s.name.ifBlank { "Paso ${i + 1}" }, s.reps, s.minutes, s.intensityZone, s.restMinutes) }, profile)
 
 /** Comprueba una sesión antes de guardarla; devuelve la misma con los textos limpios. */
 fun validOwnSession(s: OwnSession): OwnSession {
@@ -50,7 +53,7 @@ fun validOwnSession(s: OwnSession): OwnSession {
         val n = i + 1
         require(step.name.length <= 40) { "El nombre del paso $n es demasiado largo" }
         require(step.minutes in 0.5..300.0) { "Paso $n: entre medio minuto y 300 minutos" }
-        require(step.zone in OWN_ZONES) { "Paso $n: elige una intensidad" }
+        require(step.intensityZone in OWN_ZONES) { "Paso $n: elige una intensidad" }
         require(step.reps in 1..50) { "Paso $n: entre 1 y 50 repeticiones" }
         require(step.restMinutes in 0.0..30.0) { "Paso $n: el descanso va de 0 a 30 minutos" }
     }
