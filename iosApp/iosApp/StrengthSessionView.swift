@@ -78,7 +78,7 @@ struct StrengthSessionView: View {
                     VStack(spacing: 0) {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 14) {
-                                content(exercises, other: screen.other, left: left)
+                                content(exercises, other: screen.other, notes: screen.notes, left: left)
                             }.padding(.horizontal, 18).padding(.vertical, 14)
                         }
                         if restEnd != nil && (mode == "session" || !restView) { RestBar(left: left, total: restTotal) }
@@ -108,10 +108,11 @@ struct StrengthSessionView: View {
     }
 
     @ViewBuilder
-    private func content(_ exercises: [StrengthExercise], other: [String], left: Int) -> some View {
+    private func content(_ exercises: [StrengthExercise], other: [String], notes: String?, left: Int) -> some View {
         let e = exercises.indices.contains(current) ? exercises[current] : nil
         let pending = exercises.firstIndex { $0.done.count < Int($0.sets) }
         if mode == "session" {
+            if let notes { Secondary(notes) }  // calentamiento y esfuerzo, como en la tarjeta de Hoy
             ForEach(Array(exercises.enumerated()), id: \.offset) { i, ex in
                 SessionRows(e: ex, isCurrent: i == current, currentSet: setNo) { set in current = i; setNo = set; mode = "set"; restView = false }
             }

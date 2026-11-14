@@ -155,9 +155,12 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
         ) {
             val e = exercises.getOrNull(current)
             when {
-                mode == "session" -> exercises.forEachIndexed { i, ex ->
-                    SessionRows(ex, i == current, setNo) { set ->
-                        current = i; setNo = set; mode = "set"; restView = false
+                mode == "session" -> {
+                    screen.notes?.let { Secondary(it) }  // calentamiento y esfuerzo, como en la tarjeta de Hoy
+                    exercises.forEachIndexed { i, ex ->
+                        SessionRows(ex, i == current, setNo) { set ->
+                            current = i; setNo = set; mode = "set"; restView = false
+                        }
                     }
                 }
                 restEnd > 0 && restView -> {

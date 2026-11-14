@@ -122,4 +122,6 @@ test("la sesión de fuerza de hoy dice cómo calentar y se puede empezar", async
   await expect(page.getByText(/^0\/\d+ series$/)).toBeVisible()
   await expect(page.getByRole("button", { name: "Serie hecha" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Cómo se hace" })).toBeVisible()
+  await page.getByRole("radiogroup", { name: "Vista" }).getByRole("radio", { name: "Sesión" }).click()
+  await expect(page.getByText(/^Calentamiento \(10 min\): /)).toBeVisible()  // también dentro de la sesión
 })

@@ -98,6 +98,7 @@ export function Strength({ core, date, act, close }: { core: WebApp; date: strin
         </span>
       </div>
       <Segmented options={[["set", "Serie"], ["session", "Sesión"]]} selected={mode} onSelect={setMode} label="Vista" />
+      {mode === "session" && screen?.notes && <p className="muted small-text">{screen.notes}</p>}
       {mode === "session"
         ? exercises.map((ex, i) => (
           <SessionRows key={ex.name} e={ex} isCurrent={i === current} currentSet={setNo}
