@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,12 +52,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.KeyboardType
 import kotlin.math.roundToInt
 
-private val BODY = listOf("sleep", "sleepScore", "hrv", "restingHR", "weight", "steps")
+private val BODY = listOf("sleep", "sleepScore", "deepSleep", "remSleep", "hrv", "restingHR", "spo2", "respiration", "stress", "weight", "bodyFat", "steps")
 
 /** Tu evolución: cómo está tu cuerpo frente a tu rango normal, tu forma y tu actividad (punto 8 de la revisión). */
 @Composable
 fun ProgressTab(app: BrivelApp, version: Int, act: Act, openProfile: () -> Unit) {
     val screen = remember(version) { app.progress() }
+    var openActivity by remember { mutableStateOf<String?>(null) }
+    openActivity?.let { ActivitySheet(app, act, it) { openActivity = null } }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ScreenTitle("Progreso", subtitle = "Últimos 90 días")
@@ -67,6 +70,7 @@ fun ProgressTab(app: BrivelApp, version: Int, act: Act, openProfile: () -> Unit)
                 PrimaryButton("Ir a Perfil", onClick = openProfile)
             }
             Measures(app, act, screen)
+            screen.badges?.let { BadgesCard(it) }
             Milestones(screen)
             return@Column
         }
@@ -114,9 +118,11 @@ fun ProgressTab(app: BrivelApp, version: Int, act: Act, openProfile: () -> Unit)
         }
         if (screen.recent.isNotEmpty()) Module {
             SectionTitle("Tus últimos entrenamientos")
-            screen.recent.forEach { r -> RecentRow(r) }
+            screen.recent.forEach { r -> RecentRow(r) { openActivity = it } }
         }
+        Curves(screen.curves)
         Measures(app, act, screen)
+        screen.badges?.let { BadgesCard(it) }
         Milestones(screen)
         Spacer(Modifier.height(24.dp))
     }
@@ -177,7 +183,7 @@ private fun Milestones(screen: ProgressScreen) {
 
 /** Un entrenamiento: al tocarlo, lo medido y los minutos en cada zona. */
 @Composable
-private fun RecentRow(r: RecentActivity) {
+private fun RecentRow(r: RecentActivity, openActivity: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Column(Modifier.clickable { open = !open }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -192,6 +198,7 @@ private fun RecentRow(r: RecentActivity) {
             RowChevron(open)
         }
         if (open) {
+            r.own?.let { id -> TextButton(onClick = { openActivity(id) }) { LinkText("Ver la actividad") } }
             r.detail?.let { Secondary(it) }
             if (r.zoneMinutes.isNotEmpty()) {
                 Row(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(99.dp))) {

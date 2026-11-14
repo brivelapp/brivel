@@ -114,6 +114,7 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act) {
         ReminderCard(app, act, version)
         HealthCard(app, act, version)
         IntervalsCard(app, act, version)
+        GearCard(app, act, version)
         GarminCard(app, act, version)
         SyncCard(app, act, version)
         Module {

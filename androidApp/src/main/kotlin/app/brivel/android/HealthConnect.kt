@@ -3,7 +3,10 @@ package app.brivel.android
 import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.BodyFatRecord
 import androidx.health.connect.client.records.DistanceRecord
+import androidx.health.connect.client.records.OxygenSaturationRecord
+import androidx.health.connect.client.records.RespiratoryRateRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
@@ -33,7 +36,8 @@ import kotlin.reflect.KClass
 class HealthConnectReader(private val context: Context) {
     private val types: List<KClass<out Record>> = listOf(SleepSessionRecord::class, HeartRateVariabilityRmssdRecord::class,
         RestingHeartRateRecord::class, WeightRecord::class, StepsRecord::class, Vo2MaxRecord::class,
-        ExerciseSessionRecord::class, HeartRateRecord::class, DistanceRecord::class)
+        ExerciseSessionRecord::class, HeartRateRecord::class, DistanceRecord::class,
+        OxygenSaturationRecord::class, RespiratoryRateRecord::class, BodyFatRecord::class)
 
     val permissions: Set<String> = types.map { HealthPermission.getReadPermission(it) }.toSet() +
         HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY
@@ -66,8 +70,17 @@ class HealthConnectReader(private val context: Context) {
         suspend fun <T : Record> maybe(type: KClass<T>): List<T> =
             if (HealthPermission.getReadPermission(type) in granted) read(type, from, to) else emptyList()
 
-        val sleep = maybe(SleepSessionRecord::class).groupBy { date(it.endTime) }
-            .mapValues { (_, s) -> s.sumOf { Duration.between(it.startTime, it.endTime).toMinutes() }.toDouble() }
+        val nights = maybe(SleepSessionRecord::class).groupBy { date(it.endTime) }
+        val sleep = nights.mapValues { (_, s) -> s.sumOf { Duration.between(it.startTime, it.endTime).toMinutes() }.toDouble() }
+        // Minutos de una fase del sueño cada noche, si el reloj las apunta
+        fun stage(type: Int) = nights.mapValues { (_, s) ->
+            s.sumOf { n -> n.stages.filter { it.stage == type }.sumOf { Duration.between(it.startTime, it.endTime).toMinutes() } }.toDouble()
+        }.filterValues { it > 0 }
+        val deep = stage(SleepSessionRecord.STAGE_TYPE_DEEP)
+        val rem = stage(SleepSessionRecord.STAGE_TYPE_REM)
+        val spo2 = maybe(OxygenSaturationRecord::class).groupBy { date(it.time) }.mapValues { (_, r) -> r.map { it.percentage.value }.average() }
+        val breathing = maybe(RespiratoryRateRecord::class).groupBy { date(it.time) }.mapValues { (_, r) -> r.map { it.rate }.average() }
+        val fat = maybe(BodyFatRecord::class).groupBy { date(it.time) }.mapValues { (_, r) -> r.maxBy { it.time }.percentage.value }
         val hrv = maybe(HeartRateVariabilityRmssdRecord::class).groupBy { date(it.time) }
             .mapValues { (_, r) -> r.map { it.heartRateVariabilityMillis }.average() }
         val resting = maybe(RestingHeartRateRecord::class).groupBy { date(it.time) }
@@ -81,9 +94,9 @@ class HealthConnectReader(private val context: Context) {
         ).mapNotNull { r -> r.result[StepsRecord.COUNT_TOTAL]?.let { r.startTime.toLocalDate().toString() to it.toDouble() } }.toMap()
         val vo2 = maybe(Vo2MaxRecord::class).groupBy { date(it.time) }
             .mapValues { (_, r) -> r.maxBy { it.time }.vo2MillilitersPerMinuteKilogram }
-        val dates = (sleep.keys + hrv.keys + resting.keys + weight.keys + steps.keys + vo2.keys).sorted()
+        val dates = (sleep.keys + hrv.keys + resting.keys + weight.keys + steps.keys + vo2.keys + spo2.keys + breathing.keys + fat.keys).sorted()
         val dailies = dates.map { d ->
-            DailyHealth(d, sleep[d], hrv[d], resting[d], weight[d], steps[d], vo2[d])
+            DailyHealth(d, sleep[d], hrv[d], resting[d], weight[d], steps[d], vo2[d], deep[d], rem[d], spo2[d], breathing[d], fat[d])
         }
 
         val heart = maybe(HeartRateRecord::class).flatMap { r -> r.samples.map { it.time to it.beatsPerMinute.toDouble() } }

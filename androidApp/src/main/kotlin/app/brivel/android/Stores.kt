@@ -5,6 +5,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import app.brivel.app.KeyValueStore
+import java.io.File
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -14,10 +15,26 @@ import javax.crypto.spec.GCMParameterSpec
 /** Datos de la app en SharedPreferences: solo en el móvil (allowBackup=false en el manifiesto). */
 class PrefsStore(context: Context) : KeyValueStore {
     private val prefs = context.getSharedPreferences("brivel", Context.MODE_PRIVATE)
-    override fun read(key: String): String? = prefs.getString(key, null)
-    override fun write(key: String, value: String?) {
-        prefs.edit().apply { if (value == null) remove(key) else putString(key, value) }.apply()
+    // Las series de cada actividad propia y la grabación en curso van en ficheros: SharedPreferences reescribe todo su
+    // archivo en cada cambio y con decenas de actividades pesaría varios megas
+    private val files = File(context.filesDir, "activities").apply { mkdirs() }
+    private fun file(key: String) = key.takeIf { it.startsWith(FILE_PREFIX) }?.let { File(files, it.replace(Regex("[^A-Za-z0-9.-]"), "_")) }
+
+    override fun read(key: String): String? {
+        val f = file(key) ?: return prefs.getString(key, null)
+        return f.takeIf { it.exists() }?.readText()
     }
+
+    override fun write(key: String, value: String?) {
+        val f = file(key)
+        when {
+            f == null -> prefs.edit().apply { if (value == null) remove(key) else putString(key, value) }.apply()
+            value == null -> f.delete()
+            else -> f.writeText(value)
+        }
+    }
+
+    private companion object { const val FILE_PREFIX = "brivel.activity." }
 }
 
 /** La clave de intervals.icu, cifrada con AES-GCM con una clave del Android Keystore que nunca sale del hardware. */

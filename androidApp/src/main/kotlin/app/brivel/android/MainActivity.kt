@@ -66,8 +66,20 @@ class MainActivity : ComponentActivity() {
         // Iconos de la barra de estado claros u oscuros según el modo del sistema
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT))
-        val app = BrivelApp(PrefsStore(this), KeystoreStore(this), { systemToday() })
+        val app = Core.get(this)
         setContent { BrivelTheme { Root(app, garminReturns.intValue, intervalsReturn.value) } }
+    }
+}
+
+/** El núcleo, uno por proceso: lo comparten las pantallas y el servicio que graba con el GPS (Recording.kt). */
+object Core {
+    @Volatile private var app: BrivelApp? = null
+
+    fun get(context: android.content.Context): BrivelApp = app ?: synchronized(this) {
+        app ?: BrivelApp(PrefsStore(context.applicationContext), KeystoreStore(context.applicationContext), { systemToday() }).also {
+            it.utcOffsetSeconds = { epoch -> java.util.TimeZone.getDefault().getOffset(epoch * 1000) / 1000 }
+            app = it
+        }
     }
 }
 

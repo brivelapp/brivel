@@ -48,6 +48,8 @@ fun TrainTab(app: BrivelApp, version: Int, act: Act) {
             }
         }
         SessionsCard(app, act, version)
+        RecordCard(app, act, version)
+        ActivitiesCard(app, act, version)
         RoutinesCard(app, act, version)
         LibraryCard(app)
         Spacer(Modifier.height(24.dp))

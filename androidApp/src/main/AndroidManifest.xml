@@ -13,6 +13,10 @@
     <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+    <!-- Más salud (VISION §9, bloque E): saturación de oxígeno, respiración y grasa corporal, del reloj y la báscula -->
+    <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION" />
+    <uses-permission android:name="android.permission.health.READ_RESPIRATORY_RATE" />
+    <uses-permission android:name="android.permission.health.READ_BODY_FAT" />
     <!-- Escribir en Health Connect las sesiones del plan como entrenamientos planificados -->
     <uses-permission android:name="android.permission.health.WRITE_PLANNED_EXERCISE" />
     <!-- Recordatorio diario, solo si el usuario lo activa -->
@@ -20,6 +24,12 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Fin del descanso a su hora con la app cerrada (RestAlert.kt); sin él, el aviso puede llegar tarde -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Grabar una actividad con el GPS (Recording.kt): solo mientras se graba, con un aviso fijo a la vista; el
+         recorrido se queda en el móvil. No se pide la ubicación en segundo plano: la grabación empieza con la app abierta -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
     </queries>
@@ -62,6 +72,7 @@
                 <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
             </intent-filter>
         </activity-alias>
+        <service android:name=".RecordService" android:exported="false" android:foregroundServiceType="location" />
         <receiver android:name=".RestReceiver" android:exported="false" />
         <receiver android:name=".ReminderReceiver" android:exported="false">
             <intent-filter>
