@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.kover)  // cobertura de los tests de la JVM (koverLogJvm, koverXmlReportJvm)
 }
 
 kotlin {

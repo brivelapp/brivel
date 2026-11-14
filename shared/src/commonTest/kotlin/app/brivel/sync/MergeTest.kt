@@ -41,7 +41,32 @@ class MergeTest {
         lifts = listOf(LiftLog("2026-11-02", "Sentadilla", 60.0, 8, 3)),
         sets = listOf(SetLog("2026-11-02", "Sentadilla", 1, 60.0, 8)),
         reminderHour = 8,
+        garminLink = app.brivel.app.GarminLink("privada", "publica", "token", "2026-11-02"),
+        swaps = listOf(app.brivel.app.ExerciseSwap("2026-11-02", "Sentadilla con barra", "Prensa de piernas")),
+        moves = listOf(app.brivel.app.SessionMove("2026-11-03", "strength", "2026-11-05")),
+        routines = listOf(app.brivel.app.Routine("r1", "Torso", listOf(app.brivel.app.RoutineExercise("Flexiones", 3, 8, 12)), listOf("MON"), since = "2026-11-02")),
+        equipment = listOf("mancuernas", "goma"),
     )
+
+    /** Guarda de la lista de arriba: si AppData gana un campo y no se añade a `full`, este test falla y lo nombra. */
+    @Test
+    fun theFullSampleChangesEveryField() {
+        val json = kotlinx.serialization.json.Json { encodeDefaults = true }
+        val empty = json.encodeToJsonElement(AppData.serializer(), AppData()) as JsonObject
+        val sample = json.encodeToJsonElement(AppData.serializer(), full) as JsonObject
+        assertEquals(emptyList(), empty.keys.filter { it != "schema" && empty[it] == sample[it] })
+    }
+
+    @Test
+    fun equipmentFollowsTheSideThatChangedAndWarnsWhenBothDid() {
+        val mine = full.copy(equipment = listOf("barra"))
+        val theirs = full.copy(equipment = listOf("pesa rusa"))
+        assertEquals(listOf("barra"), merge(full, mine, full).data.equipment)
+        assertEquals(listOf("pesa rusa"), merge(full, full, theirs).data.equipment)
+        val both = merge(full, mine, theirs)
+        assertEquals(listOf("pesa rusa") to setOf("equipment"), both.data.equipment to both.conflicts)
+        assertEquals(emptyList(), merge(full, full.copy(equipment = emptyList()), full).data.equipment)  // vaciarlo también cuenta
+    }
 
     @Test
     fun everyFieldFollowsTheSideThatChanged() {

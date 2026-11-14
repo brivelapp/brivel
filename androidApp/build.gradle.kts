@@ -36,6 +36,7 @@ kotlin {
 
 dependencies {
     implementation(project(":shared"))
+    testImplementation(kotlin("test"))  // tests de la JVM de lo que no necesita un móvil (src/test)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.material3)
     implementation(libs.compose.ui.tooling.preview)

@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: "21" }
       - uses: gradle/actions/setup-gradle@v6
-      - run: ./gradlew :shared:compileCommonMainKotlinMetadata :shared:jvmTest :shared:jsNodeTest :shared:jsBrowserProductionLibraryDistribution :androidApp:assembleDebug --console=plain
+      - run: ./gradlew :shared:compileCommonMainKotlinMetadata :shared:jvmTest :shared:jsNodeTest :shared:jsBrowserProductionLibraryDistribution :androidApp:testDebugUnitTest :androidApp:assembleDebug --console=plain
       - run: npm ci && npm run build  # la versión web, con el núcleo recién compilado
         working-directory: web
       - uses: actions/upload-artifact@v7
@@ -83,6 +83,32 @@ jobs:
         with:
           name: brivel-ipa
           path: iosApp/Brivel.ipa
+
+  # Cuánto del núcleo ejecutan los tests de la JVM: el informe queda como artefacto y el resumen, en el registro
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with: { distribution: temurin, java-version: "21" }
+      - uses: gradle/actions/setup-gradle@v6
+      - run: ./gradlew :shared:koverLogJvm :shared:koverXmlReportJvm :shared:koverHtmlReportJvm --console=plain
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cobertura
+          path: shared/build/reports/kover
+
+  # La API de la bóveda contra `wrangler dev` con una base de datos local nueva
+  server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with: { node-version: "24" }
+      - run: mkdir -p ../web/dist && npm ci && npm test
 
   prototype:
     runs-on: ubuntu-latest
