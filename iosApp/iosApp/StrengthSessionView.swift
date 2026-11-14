@@ -41,6 +41,18 @@ private func setText(_ s: LoggedSet, timed: Bool) -> String {
 private func effort(_ rir: Int) -> String { rir == 0 ? "Hasta no poder más" : "Termina con \(rir) en reserva" }
 private func clock(_ s: Int) -> String { String(format: "%d:%02d", s / 60, s % 60) }
 
+/// El número de la serie en la tabla y, si tiene tipo (SET_KINDS), su letra: «1 C».
+private func setMark(_ n: Int, _ kind: String?) -> String {
+    guard let kind, let name = DataKt.SET_KINDS[kind] else { return "\(n)" }
+    return "\(n) \(name.prefix(1))"
+}
+
+/// Lo mismo para VoiceOver, con el nombre entero: «Serie 1, calentamiento».
+private func setSpoken(_ n: Int, _ kind: String?) -> String {
+    guard let kind, let name = DataKt.SET_KINDS[kind] else { return "Serie \(n)" }
+    return "Serie \(n), \(name.lowercased())"
+}
+
 struct StrengthSessionView: View {
     @EnvironmentObject var model: AppModel
     let date: String
@@ -467,9 +479,7 @@ private struct SessionRows: View {
                     let now = isCurrent && n == currentSet && today == nil
                     GridRow {
                         // La letra del tipo de serie (C, D o F) junto al número; VoiceOver lee el nombre entero
-                        let kindName = today?.kind.flatMap { DataKt.SET_KINDS[$0] }
-                        Text("\(n)" + (kindName.map { " " + String($0.prefix(1)) } ?? "")).font(.mono(15))
-                            .accessibilityLabel("Serie \(n)" + (kindName.map { ", " + $0.lowercased() } ?? ""))
+                        Text(setMark(n, today?.kind)).font(.mono(15)).accessibilityLabel(setSpoken(n, today?.kind))
                         Text(before.map { setText($0, timed: e.timed) } ?? "—").font(.mono(13)).foregroundStyle(Palette.muted)
                         Cell(text: today.map { kgText($0.weightKg?.doubleValue) } ?? "—", done: today != nil, now: now)
                         Cell(text: today.map { amount(Int($0.reps), timed: e.timed) } ?? "—", done: today != nil, now: now)
