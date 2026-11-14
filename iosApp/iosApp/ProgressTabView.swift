@@ -1,7 +1,7 @@
 import SwiftUI
 import Shared
 
-private let bodyKeys = ["sleep", "sleepScore", "hrv", "restingHR", "weight", "steps"]
+private let bodyKeys = ["sleep", "sleepScore", "deepSleep", "remSleep", "hrv", "restingHR", "spo2", "respiration", "stress", "weight", "bodyFat", "steps"]
 
 /// Tu evolución: cómo está tu cuerpo frente a tu rango normal, tu forma y tu actividad (punto 8 de la revisión).
 struct ProgressTabView: View {
@@ -80,8 +80,10 @@ struct ProgressTabView: View {
                             ForEach(Array(screen.recent.enumerated()), id: \.offset) { _, r in RecentRow(activity: r) }
                         }
                     }
+                    CurvesSection(curves: screen.curves)
                 }
                 MeasuresSection(screen: screen)
+                if let badges = screen.badges { BadgesSection(badges: badges) }
                 MilestonesSection(screen: screen)
             }.padding(.horizontal, 18).padding(.vertical, 16)
         }.background(Palette.bg)
@@ -173,6 +175,7 @@ private extension String {
 private struct RecentRow: View {
     let activity: RecentActivity
     @State private var open = false
+    @State private var detail = false
 
     var body: some View {
         let zones = activity.zoneMinutes.map { $0.intValue }
@@ -189,7 +192,8 @@ private struct RecentRow: View {
                 Text("\(activity.minutes)′").font(.mono(15))
             }
             if open {
-                if let detail = activity.detail { Secondary(detail) }
+                if activity.own != nil { Button("Ver la actividad") { detail = true }.font(.ui(14, .bold)).buttonStyle(TextActionStyle()) }
+                if let text = activity.detail { Secondary(text) }
                 if zones.reduce(0, +) > 0 {
                     GeometryReader { geo in
                         HStack(spacing: 0) {
@@ -205,6 +209,7 @@ private struct RecentRow: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { open.toggle() }
+        .sheet(isPresented: $detail) { if let id = activity.own { ActivitySheet(id: id) } }
     }
 }
 

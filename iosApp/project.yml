@@ -20,9 +20,18 @@ targets:
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon  # claro, oscuro y tintado (Assets.xcassets/AppIcon.appiconset)
         EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64  # el núcleo solo compila el simulador de Apple Silicon
-        INFOPLIST_KEY_NSHealthShareUsageDescription: "Brivel lee tu sueño, tu variabilidad cardíaca, tu pulso en reposo, tu peso, tus pasos y tus entrenamientos para ajustar tu plan y enseñarte tu evolución. Los datos no salen de tu iPhone."
+        INFOPLIST_KEY_NSHealthShareUsageDescription: "Brivel lee tu sueño y sus fases, tu variabilidad cardíaca, tu pulso en reposo, tu oxígeno en sangre, tu respiración, tu peso, tu grasa corporal, tus pasos y tus entrenamientos para ajustar tu plan y enseñarte tu evolución. Los datos no salen de tu iPhone."
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Brivel usa tu ubicación solo mientras grabas una actividad, para medir el recorrido, la distancia y el ritmo. El recorrido se queda en tu iPhone."
         FRAMEWORK_SEARCH_PATHS: $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
         OTHER_LDFLAGS: [-framework, Shared]
+    # Grabar con el GPS con la pantalla apagada (Recorder.swift): el modo en segundo plano no se puede poner con un
+    # ajuste INFOPLIST_KEY_, así que XcodeGen escribe este Info.plist y Xcode le suma los demás valores generados
+    info:
+      path: Info.plist
+      properties:
+        UIBackgroundModes: [location]
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
     entitlements:
       path: iosApp/iosApp.entitlements
       properties:

@@ -51,6 +51,12 @@ jobs:
           xcodegen
           xcodebuild -project iosApp.xcodeproj -scheme iosApp -sdk iphonesimulator -derivedDataPath build \
             -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
+          # Grabar con el GPS: sin estas dos claves en el Info.plist final, iOS no da la ubicación (o cierra la app)
+          PLIST=build/Build/Products/Debug-iphonesimulator/Brivel.app/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :UIBackgroundModes" "$PLIST" | grep -q location
+          /usr/libexec/PlistBuddy -c "Print :NSLocationWhenInUseUsageDescription" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Print :NSHealthShareUsageDescription" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST" | grep -q "^0\.1\.0$"
       # Capturas en el simulador para revisar la interfaz de iOS sin un Mac
       - working-directory: iosApp
         run: |

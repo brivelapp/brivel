@@ -11,7 +11,8 @@ final class HealthKitReader {
     var available: Bool { HKHealthStore.isHealthDataAvailable() }
 
     private let quantities: [HKQuantityTypeIdentifier] = [.heartRateVariabilitySDNN, .restingHeartRate, .bodyMass,
-                                                          .stepCount, .vo2Max, .heartRate]
+                                                          .stepCount, .vo2Max, .heartRate,
+                                                          .oxygenSaturation, .respiratoryRate, .bodyFatPercentage]
 
     private var readTypes: Set<HKObjectType> {
         var types: Set<HKObjectType> = Set(quantities.map { HKQuantityType($0) })
@@ -67,17 +68,32 @@ final class HealthKitReader {
                                 HKCategoryValueSleepAnalysis.asleepDeep.rawValue, HKCategoryValueSleepAnalysis.asleepREM.rawValue]
         let sleep = Dictionary(grouping: sleepSamples.filter { asleep.contains($0.value) }) { dayKey($0.endDate) }
             .mapValues { $0.reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) / 60 } }
+        // Minutos de una fase del sueño cada noche, si el reloj las apunta
+        func stage(_ value: HKCategoryValueSleepAnalysis) -> [String: Double] {
+            Dictionary(grouping: sleepSamples.filter { $0.value == value.rawValue }) { dayKey($0.endDate) }
+                .mapValues { $0.reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) / 60 } }
+        }
+        let deep = stage(.asleepDeep)
+        let rem = stage(.asleepREM)
+        // Más salud (bloque E). Con `try?`: quien conectó Salud antes aún no ha dado permiso a estos tipos, y pedirlos
+        // sin él daría un error que dejaría sin leer todo lo demás
+        let average: ([Double]) -> Double = { $0.reduce(0, +) / Double($0.count) }
+        let spo2 = ((try? await daily(.oxygenSaturation, unit: .percent(), from: from, to: to, reduce: average)) ?? [:]).mapValues { $0 * 100 }
+        let breathing = (try? await daily(.respiratoryRate, unit: bpm, from: from, to: to, reduce: average)) ?? [:]
+        let fat = ((try? await daily(.bodyFatPercentage, unit: .percent(), from: from, to: to) { $0.last ?? 0 }) ?? [:]).mapValues { $0 * 100 }
         let hrv = try await daily(.heartRateVariabilitySDNN, unit: .secondUnit(with: .milli), from: from, to: to) { $0.reduce(0, +) / Double($0.count) }
         let resting = try await daily(.restingHeartRate, unit: bpm, from: from, to: to) { $0.min() ?? 0 }
         let weight = try await daily(.bodyMass, unit: .gramUnit(with: .kilo), from: from, to: to) { $0.last ?? 0 }
         let steps = try await dailySum(.stepCount, unit: .count(), from: from, to: to)
         let vo2 = try await daily(.vo2Max, unit: HKUnit(from: "ml/kg*min"), from: from, to: to) { $0.last ?? 0 }
 
-        let keys = Set(sleep.keys).union(hrv.keys).union(resting.keys).union(weight.keys).union(steps.keys).union(vo2.keys).sorted()
+        let keys = Set(sleep.keys).union(hrv.keys).union(resting.keys).union(weight.keys).union(steps.keys).union(vo2.keys)
+            .union(spo2.keys).union(breathing.keys).union(fat.keys).sorted()
         func k(_ v: Double?) -> KotlinDouble? { v.map { KotlinDouble(double: $0) } }
         let dailies = keys.map { d in
             DailyHealth(date: d, sleepMinutes: k(sleep[d]), hrv: k(hrv[d]), restingHr: k(resting[d]), weightKg: k(weight[d]),
-                        steps: k(steps[d]), vo2max: k(vo2[d]))
+                        steps: k(steps[d]), vo2max: k(vo2[d]), deepSleepMinutes: k(deep[d]), remSleepMinutes: k(rem[d]),
+                        spo2: k(spo2[d]), respiratoryRate: k(breathing[d]), bodyFat: k(fat[d]), stress: nil)
         }
 
         let heart: [HKQuantitySample] = try await samples(HKQuantityType(.heartRate), from: from, to: to, as: HKQuantitySample.self)

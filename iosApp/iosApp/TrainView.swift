@@ -34,6 +34,8 @@ struct TrainView: View {
                     }
                 }
                 SessionsSection()
+                RecordSection()
+                ActivitiesSection()
                 RoutinesSection()
                 LibrarySection()
             }.padding(.horizontal, 18).padding(.vertical, 16)

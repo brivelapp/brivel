@@ -188,12 +188,17 @@ struct ProfileView: View {
                         Text("Conectado: \(health.days.count) días y \(health.workouts.count) entrenamientos").font(.section)
                         Secondary("Datos al día del \(health.syncedAt). Los permisos se cambian en Ajustes → Salud → Acceso a datos.")
                         HStack {
-                            Button("Actualizar ahora") { model.runAsync("Datos actualizados") { try await HealthKitReader.shared.sync(core) } }
+                            Button("Actualizar ahora") {
+                                model.runAsync("Datos actualizados") {
+                                    try await HealthKitReader.shared.requestAccess()  // pide solo los permisos que falten (los datos nuevos)
+                                    try await HealthKitReader.shared.sync(core)
+                                }
+                            }
                                 .buttonStyle(PrimaryStyle())
                             Button("Olvidar") { model.run { core.clearHealth() } }.buttonStyle(SecondaryStyle())
                         }
                     } else if HealthKitReader.shared.available {
-                        Secondary("Lee de Apple Salud tu sueño, tu variabilidad cardíaca, tu pulso en reposo, tu peso, tus pasos y tus entrenamientos de cualquier reloj o app. Solo lectura y solo en este iPhone.")
+                        Secondary("Lee de Apple Salud tu sueño y sus fases, tu variabilidad cardíaca, tu pulso en reposo, tu oxígeno en sangre, tu respiración, tu peso, tu grasa corporal, tus pasos y tus entrenamientos de cualquier reloj o app. Solo lectura y solo en este iPhone.")
                         Button("Conectar Apple Salud") {
                             model.runAsync("Datos de Apple Salud leídos") {
                                 try await HealthKitReader.shared.requestAccess()
@@ -228,6 +233,7 @@ struct ProfileView: View {
                         }.buttonStyle(PrimaryStyle())
                     }
                 }
+                GearSection()
                 GarminSection()
                 SyncSection()
                 Module {

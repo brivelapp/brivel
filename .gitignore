@@ -22,3 +22,4 @@ iosApp/iosApp.xcodeproj/
 
 # Playwright CLI (capturas locales)
 .playwright-cli/
+iosApp/Info.plist

@@ -12,6 +12,10 @@ final class AppModel: ObservableObject {
     init() {
         core = Shared.BrivelApp(store: DefaultsStore(), secrets: KeychainStore(),
                                    today: { BrivelAppKt.systemToday() }, httpEngine: nil)
+        // La hora local de una actividad importada o grabada: el desfase del iPhone en ese momento
+        core.utcOffsetSeconds = { epoch in
+            KotlinInt(int: Int32(TimeZone.current.secondsFromGMT(for: Date(timeIntervalSince1970: TimeInterval(epoch.int64Value)))))
+        }
     }
 
     func refresh() {
