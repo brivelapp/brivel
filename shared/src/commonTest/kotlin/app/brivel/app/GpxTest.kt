@@ -69,7 +69,7 @@ private const val START = 1731051000L  // 2024-11-08T07:30:00Z
 
 class GpxTest {
     @Test
-    fun `lee un GPX - deporte, puntos con hora, pulso y altitud`() {
+    fun `lee un GPX - deporte y puntos con hora y pulso y altitud`() {
         val gpx = parseGpx(GPX)
         assertEquals("running", gpx.sport)
         assertEquals(START, gpx.start)
