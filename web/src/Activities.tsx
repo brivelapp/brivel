@@ -18,7 +18,8 @@ function Line({ points, height, label }: { points: XY[]; height: number; label: 
 /** El detalle de una actividad propia, en un diálogo. */
 export function ActivityDialog({ core, act, id, onClose }: { core: WebApp; act: Act; id: string; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null)
-  useEffect(() => { dialog.current?.showModal() }, [])
+  // Al abrirse, el navegador enfoca el primer botón, que está al final, y baja hasta él: se vuelve arriba
+  useEffect(() => { dialog.current?.showModal(); dialog.current?.scrollTo(0, 0) }, [])
   const json = core.activityJson(id)
   if (!json) return null
   const a: ActivityScreen = JSON.parse(json)
