@@ -174,6 +174,9 @@ Revisado como lo haría un auditor de seguridad. Lo que se añade al diseño:
   con datos reales]. Esos datos viven en intervals.icu y cada dispositivo con la clave los vuelve a descargar, y así el
   servidor guarda menos datos de salud (minimización, RGPD art. 5.1.c). La base guardada tampoco la lleva, y `merge`
   conserva la de cada dispositivo. Los datos de Salud (`health`, unos KB) sí se suben: la web no puede leerlos.
+  **Actividades propias (2026-11-15):** se sube el resumen de las 400 más recientes (`SYNCED_ACTIVITIES`); las anteriores
+  siguen en el dispositivo que las tiene y `merge` no las da por borradas, porque tampoco están en la base. Las series y
+  el recorrido (`brivel.activity.<id>`, fuera de `AppData`) no se suben nunca.
 
 **Paso 2, servidor (2026-11-02, probado en local, sin publicar):** `server/src/index.ts`,
 `server/migrations/0001_bovedas.sql` y `server/test/boveda.test.mjs` (`npm test`: arranca `wrangler dev` con una D1

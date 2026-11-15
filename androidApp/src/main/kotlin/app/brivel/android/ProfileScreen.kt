@@ -237,7 +237,7 @@ private fun HealthCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") v
                 OutlinedButton(onClick = { act.run { app.clearHealth() } }) { Text("Olvidar") }
             }
         } else if (reader.available) {
-            Secondary("Lee de Health Connect tu sueño, tu VFC, tu pulso en reposo, tu peso, tus pasos y tus entrenamientos " +
+            Secondary("Lee de Health Connect tu sueño y sus fases, tu VFC, tu pulso en reposo, tu oxígeno en sangre, tu respiración, tu peso, tu grasa corporal, tus pasos y tus entrenamientos " +
                 "de cualquier reloj o app que escriba allí. Solo lectura y solo en este móvil.")
             Button(onClick = { request.launch(reader.permissions) }) { Text("Conectar Health Connect") }
         } else {

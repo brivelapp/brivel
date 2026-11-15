@@ -108,6 +108,8 @@ objetivo. Todo lo de hoy (Salud, Plan, Hoy) se reparte aquí; nada queda fuera.
 - **Tus rutinas de fuerza y tus sesiones propias de resistencia** (pasos con duración y objetivo), que se pueden poner
   en el calendario y enviar al reloj.
 - **La biblioteca de ejercicios**, con el historial y la gráfica de cada uno.
+- **Tus actividades** (2026-11-15): las que grabas con el GPS o importas de un archivo FIT, con su detalle (resumen,
+  recorrido sin mapa, gráficas, zonas, vueltas y mejores marcas por duración).
 - Rutinas y biblioteca salen de Perfil y pasan aquí.
 
 ### Progreso
@@ -116,11 +118,17 @@ objetivo. Todo lo de hoy (Salud, Plan, Hoy) se reparte aquí; nada queda fuera.
   ("Forma", "Forma física" y "Fatiga" con su explicación, no "TSB/CTL/ATL" a secas).
 - Minutos activos y días de fuerza frente a la recomendación de la OMS, semana a semana.
 - Hitos: mejores marcas, semanas cumplidas.
+- Más salud (2026-11-15): fases del sueño, oxígeno en sangre, respiración, estrés y grasa corporal, con tu rango normal.
+- Curvas de potencia y de ritmo de tus actividades propias (2026-11-15).
+- **Medallas** (2026-11-15): logros con puntos y niveles, propios de Brivel. Premian la constancia semanal, las
+  distancias, la fuerza y el descanso; a propósito no hay rachas de días seguidos entrenando, que empujan a saltarse el
+  descanso. Una medalla ganada no se pierde.
 
 ### Perfil
 
 - Tus datos, deportes, días y minutos, material (gimnasio o peso corporal), conexiones (reloj, intervals.icu), privacidad
   (exportar, borrar). **Sin objetivo.**
+- Zapatillas y bicis con sus kilómetros (2026-11-15): cada actividad se apunta al material en uso de su deporte.
 
 ### Entrenadores (más adelante)
 
@@ -185,6 +193,7 @@ peticiones al día, 5 GB de D1; [`SINCRONIZACION.md`](SINCRONIZACION.md)); solo 
 | intervals.icu | Actividades, carga, umbrales y wellness: sueño (duración, puntuación, calidad), HRV, FC en reposo, pasos, peso, grasa corporal, VO2max, SpO2, tensión arterial, glucosa, fase menstrual, nutrición | Conectado. Campos comprobados en una cuenta real el 2026-10-22 (no todos tienen datos) |
 | Manual en la app | Sesiones hechas, check-in del día | Hecho |
 | Apple Salud / Health Connect | Lo mismo desde el móvil, sin intervals.icu | Exige app móvil nativa (Fase 3) |
+| Actividades propias (2026-11-15) | Las que el usuario importa de un archivo FIT o graba con el GPS del móvil: cuentan en el plan y en Progreso como las del reloj; si una del reloj empieza a menos de 5 minutos, es la misma | Hecho (rama `datos`) |
 | Strava, Garmin directos | Actividades sin pasar por intervals.icu | Fase 5; Garmin exige aprobación de su programa de desarrolladores [Práctica: sin comprobar] |
 
 ## 9. Hoja de ruta
@@ -203,19 +212,21 @@ peticiones al día, 5 GB de D1; [`SINCRONIZACION.md`](SINCRONIZACION.md)); solo 
 |---|---|---|---|---|
 | 1 | A. Fuerza libre | Pestaña Entrenar, entreno sin plan, superseries, tipos de serie, historial y gráfica por ejercicio (1RM estimado, volumen), calculadora de discos, medidas corporales. **Programado el 2026-11-14** (rama `entrenar`, sin publicar); fuera: calculadora de calentamiento, fotos y elegir la barra | Hevy, Strong, Symmetry | M |
 | 2 | C. Constructor de sesiones | Sesiones propias de resistencia al calendario y al reloj. **Programado el 2026-11-14** (rama `entrenar`, sin publicar); fuera: ponerla en un día futuro desde el calendario (hoy solo «Hoy» y días de la semana) | TrainingPeaks, intervals.icu, Garmin | M |
-| 3 | B. Actividades propias | Importar FIT, guardar la actividad con sus series, detalle (mapa, vueltas, gráficas, zonas), curvas de potencia y ritmo, umbrales propios | intervals.icu | L |
-| 4 | G. Grabar con el GPS del móvil | Añadido por Gabriel el 2026-11-14. Va detrás de B porque usa su almacén de actividades | Runna, Garmin | L |
-| 5 | D. Plan de carrera | La vista del plan entero hasta la carrera, en Calendario; los ritmos por sesión ya estaban. **Programado el 2026-11-14** (rama `entrenar`, sin publicar) | Runna | S |
-| 6 | E. Salud | Fases de sueño, estrés, SpO2, respiración, temperatura. Solo lo que miden reloj y báscula | Apple Health, Google Health, Garmin | M |
-| 7 | F. Material | Kilómetros por zapatilla y bici | Garmin, intervals.icu | S |
+| 3 | B. Actividades propias | Importar FIT (lector propio en el núcleo, `Fit.kt`), guardar la actividad, detalle (recorrido, vueltas, gráficas, zonas), curvas de potencia y ritmo y FTP estimado. **Programado el 2026-11-15** (rama `datos`, sin publicar); fuera: mapa de fondo, GPX y TCX, separar un triatlón por deporte, usar el FTP estimado en el plan (solo se enseña) | intervals.icu | L |
+| 4 | G. Grabar con el GPS del móvil | Añadido por Gabriel el 2026-11-14. Carrera, bici o caminata; Android (servicio en primer plano) e iOS (CoreLocation). **Programado el 2026-11-15** (rama `datos`, sin publicar, sin probar en un móvil real); fuera: la web, pulsómetro por Bluetooth, mapa en vivo | Runna, Garmin | L |
+| 5 | D. Plan de carrera | La vista del plan entero hasta la carrera, en Calendario; los ritmos por sesión ya estaban. **Programado el 2026-11-14** | Runna | S |
+| 6 | E. Salud | Fases de sueño, estrés, SpO2, respiración y grasa corporal, de Apple Salud, Health Connect, intervals.icu y Garmin. **Programado el 2026-11-15** (rama `datos`, sin publicar); fuera: temperatura, y SpO2 y respiración por Garmin (son otros resúmenes que hay que activar en su portal) | Apple Health, Google Health, Garmin | M |
+| 7 | F. Material | Kilómetros por zapatilla y bici, con apuntes permanentes (`Gear.kt`). **Programado el 2026-11-15** (rama `datos`, sin publicar) | Garmin, intervals.icu | S |
+| 8 | Medallas | Añadido por Gabriel el 2026-11-14 («sin red social, pero sí medallas como las de Garmin»). Logros propios con puntos y niveles (`Badges.kt`). **Programado el 2026-11-15** (rama `datos`, sin publicar); fuera: medallas repetibles y retos con fecha | Garmin | S |
 
-Avisos antes de empezar B y G:
+Cómo se resolvieron los dos avisos previos a B y G (2026-11-15):
 
-- **B:** la copia cifrada tiene un tope de 1 MB ([`SINCRONIZACION.md`](SINCRONIZACION.md)); las actividades con sus
-  series no caben. Hace falta un almacén local propio y otra forma de sincronizarlas. Sin diseñar.
-- **G:** la ubicación es una categoría nueva de datos: revisar [`CUMPLIMIENTO.md`](CUMPLIMIENTO.md), la política de
-  privacidad y la EIPD, y declarar la ubicación en segundo plano en Google Play. La web no puede grabar con la pantalla
-  apagada [Inferencia], así que sería solo de las apps.
+- **B:** el resumen de cada actividad (con vueltas, zonas y mejores marcas por duración, calculadas al importar) va en
+  `AppData` y se sincroniza; como mucho, las 400 más recientes. Las series y el recorrido se guardan aparte, solo en el
+  dispositivo que importó o grabó la actividad. En otro dispositivo se ve el resumen, sin gráficas.
+- **G:** la ubicación se pide solo al grabar y el recorrido no sale del dispositivo, así que el servidor no trata
+  ubicaciones ([`CUMPLIMIENTO.md`](CUMPLIMIENTO.md) §2, política de privacidad v6). Queda declarar el permiso en las
+  tiendas antes de publicar en ellas.
 
 ## 10. La revisión del 2026-10-22 en esta estructura
 
@@ -247,7 +258,7 @@ Avisos antes de empezar B y G:
 | Salud | Sigue limitada a reloj y báscula; nutrición, medicación e historial médico, de momento no |
 | Grabar con el GPS del móvil | Sí (bloque G) |
 | Orden | A → C → B → G → D → E → F (sección 9) |
-| Red social y retos | Sin decidir; fuera mientras tanto |
+| Red social y retos | **Sin red social** (decidido el 2026-11-14). Medallas sí, como las de Garmin (sección 9) |
 
 ## 12. Nombre
 

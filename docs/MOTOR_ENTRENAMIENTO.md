@@ -697,6 +697,11 @@ Python del prototipo queda congelado. Cada regla está cubierta por `ValidationT
 | Objetivos sin fecha con reloj o móvil: el día se ajusta con las mismas reglas que en carrera (`watchReadiness`) | `HealthPlan.kt` | [Inferencia] |
 | Umbral (LTHR) sin intervals.icu: FC media de la sesión más dura de 20–70 min, si llegó al 85 % de la FC máx. (tope 95 %); FC máx. medida sin picos > 220 | `HealthData.kt` | [Práctica: test de Friel; límites: Inferencia] |
 | Carga sin pulso por deporte (caminar 25/h, correr 60, bici 45, nadar 50, fuerza 35) | `HealthData.kt` | [Inferencia] |
+| Actividades propias (archivo FIT o GPS del móvil, 2026-11-15): entran en la carga, la forma y las sesiones hechas como las del reloj; una del reloj que empieza a menos de 5 minutos de una propia es la misma. Con intervals.icu vinculado se añaden a la lista, pero la forma sigue siendo la de intervals.icu | `deviceData`, `Activities.kt` | [Inferencia: los 5 minutos] |
+| En una actividad propia: un hueco de más de 10 s entre dos puntos es una pausa; el desnivel solo suma subidas de 3 m o más; la mejor media por duración se calcula sobre el tiempo en marcha | `Activities.kt` | [Inferencia] |
+| Al grabar con el GPS: se descartan los puntos con más de 30 m de error y los movimientos de menos de 3 m | `Recorder.kt` | [Inferencia] |
+| FTP estimado: 95 % de la mejor potencia de 20 min de los últimos 90 días. Solo se enseña en Progreso; el plan no lo usa | `estimatedFtp` | [Práctica: test de 20 min de Allen y Coggan; el libro no se ha leído] |
+| Medallas: sueño de 7 h o más por noche; el resto de umbrales (distancias, kilos, semanas) son de diseño. Sin rachas de días seguidos entrenando | `Badges.kt` | [Práctica: consenso AASM/SRS, Watson 2015, PMID 26039963; cita comprobada, la frase de las 7 h no se ha podido leer] |
 | Natación con CSS en metros, en largos de 25 m al ritmo medio de su zona (`mtr` en intervals.icu) | `swimMeters`, `describe` | [Práctica] |
 | Menores de 18: meta de 60 min al día de media (420/semana) y fuerza 3 días | `HealthPlan.kt` | [Verificado: Bull 2020, OMS] |
 | Monotonía (V9): también semanas con aeróbico solo en algunos días de fuerza o en ninguno | `weekPlan`, `weekCardio` | [Foster 1998; orden: Inferencia] |
@@ -763,6 +768,7 @@ Python del prototipo queda congelado. Cada regla está cubierta por `ValidationT
 
 | Versión | Fecha | Cambios |
 |---|---|---|
+| 0.9 | 2026-11-15 | Actividades propias (lector FIT y grabación con GPS) como fuente de carga, FTP estimado solo a título informativo y medallas (§15.2). Los números del motor no cambian: las pruebas de paridad siguen pasando. |
 | 0.8 | 2026-11-14 | Entrenar por tu cuenta (§5.5): entreno libre, tipos de serie, superseries, 1RM estimado (Epley, hasta 10 repeticiones), historial del ejercicio, discos y medidas corporales. Sesiones propias de resistencia (§4.4). Esquema 10. |
 | 0.7 | 2026-10-29 | El núcleo de Kotlin es la única fuente; reglas nuevas de §15.2 tras la validación ampliada (carreras, ajuste del día, natación, 600 combinaciones generadas y 100 usuarios simulados). |
 | 0.6 | 2026-10-21 | Plantilla ajustada a los días del usuario (`fit_days`) y emparejado de lo hecho con lo planificado con motivo visible (`match_day`) (§15.1). |
