@@ -108,7 +108,7 @@ objetivo. Todo lo de hoy (Salud, Plan, Hoy) se reparte aquí; nada queda fuera.
 - **Tus rutinas de fuerza y tus sesiones propias de resistencia** (pasos con duración y objetivo), que se pueden poner
   en el calendario y enviar al reloj.
 - **La biblioteca de ejercicios**, con el historial y la gráfica de cada uno.
-- **Tus actividades** (2026-11-15): las que grabas con el GPS o importas de un archivo FIT, con su detalle (resumen,
+- **Tus actividades** (2026-11-15): las que grabas con el GPS o importas de un archivo FIT, GPX o TCX, con su detalle (resumen,
   recorrido sin mapa, gráficas, zonas, vueltas y mejores marcas por duración).
 - Rutinas y biblioteca salen de Perfil y pasan aquí.
 
@@ -193,7 +193,7 @@ peticiones al día, 5 GB de D1; [`SINCRONIZACION.md`](SINCRONIZACION.md)); solo 
 | intervals.icu | Actividades, carga, umbrales y wellness: sueño (duración, puntuación, calidad), HRV, FC en reposo, pasos, peso, grasa corporal, VO2max, SpO2, tensión arterial, glucosa, fase menstrual, nutrición | Conectado. Campos comprobados en una cuenta real el 2026-10-22 (no todos tienen datos) |
 | Manual en la app | Sesiones hechas, check-in del día | Hecho |
 | Apple Salud / Health Connect | Lo mismo desde el móvil, sin intervals.icu | Exige app móvil nativa (Fase 3) |
-| Actividades propias (2026-11-15) | Las que el usuario importa de un archivo FIT o graba con el GPS del móvil: cuentan en el plan y en Progreso como las del reloj; si una del reloj empieza a menos de 5 minutos, es la misma | Hecho (rama `datos`) |
+| Actividades propias (2026-11-15) | Las que el usuario importa de un archivo FIT, GPX o TCX (2026-11-15) o graba con el GPS del móvil: cuentan en el plan y en Progreso como las del reloj; si una del reloj empieza a menos de 5 minutos, es la misma | Hecho (rama `datos`) |
 | Strava, Garmin directos | Actividades sin pasar por intervals.icu | Fase 5; Garmin exige aprobación de su programa de desarrolladores [Práctica: sin comprobar] |
 
 ## 9. Hoja de ruta
@@ -212,7 +212,7 @@ peticiones al día, 5 GB de D1; [`SINCRONIZACION.md`](SINCRONIZACION.md)); solo 
 |---|---|---|---|---|
 | 1 | A. Fuerza libre | Pestaña Entrenar, entreno sin plan, superseries, tipos de serie, historial y gráfica por ejercicio (1RM estimado, volumen), calculadora de discos, medidas corporales. **Programado el 2026-11-14** (rama `entrenar`, sin publicar); fuera: calculadora de calentamiento, fotos y elegir la barra | Hevy, Strong, Symmetry | M |
 | 2 | C. Constructor de sesiones | Sesiones propias de resistencia al calendario y al reloj. **Programado el 2026-11-14** (rama `entrenar`, sin publicar); fuera: ponerla en un día futuro desde el calendario (hoy solo «Hoy» y días de la semana) | TrainingPeaks, intervals.icu, Garmin | M |
-| 3 | B. Actividades propias | Importar FIT (lector propio en el núcleo, `Fit.kt`), guardar la actividad, detalle (recorrido, vueltas, gráficas, zonas), curvas de potencia y ritmo y FTP estimado. **Programado el 2026-11-15** (rama `datos`, sin publicar); fuera: mapa de fondo, GPX y TCX, separar un triatlón por deporte, usar el FTP estimado en el plan (solo se enseña) | intervals.icu | L |
+| 3 | B. Actividades propias | Importar FIT (lector propio en el núcleo, `Fit.kt`), guardar la actividad, detalle (recorrido, vueltas, gráficas, zonas), curvas de potencia y ritmo y FTP estimado. **Programado el 2026-11-15** (rama `datos`, sin publicar); GPX y TCX el 2026-11-15 (rama `importar-gpx`); fuera: mapa de fondo, separar un triatlón por deporte, usar el FTP estimado en el plan (solo se enseña) | intervals.icu | L |
 | 4 | G. Grabar con el GPS del móvil | Añadido por Gabriel el 2026-11-14. Carrera, bici o caminata; Android (servicio en primer plano) e iOS (CoreLocation). **Programado el 2026-11-15** (rama `datos`, sin publicar, sin probar en un móvil real); fuera: la web, pulsómetro por Bluetooth, mapa en vivo | Runna, Garmin | L |
 | 5 | D. Plan de carrera | La vista del plan entero hasta la carrera, en Calendario; los ritmos por sesión ya estaban. **Programado el 2026-11-14** | Runna | S |
 | 6 | E. Salud | Fases de sueño, estrés, SpO2, respiración y grasa corporal, de Apple Salud, Health Connect, intervals.icu y Garmin. **Programado el 2026-11-15** (rama `datos`, sin publicar); fuera: temperatura, y SpO2 y respiración por Garmin (son otros resúmenes que hay que activar en su portal) | Apple Health, Google Health, Garmin | M |

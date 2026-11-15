@@ -107,8 +107,24 @@ class ActivitiesTest {
         val cut = run().copyOf(4000)  // cortado a mitad de los puntos: se lee lo que hay
         assertTrue(parseFit(cut).samples.size in 100..200)
         val a = app()
-        assertEquals("No es un archivo FIT", assertFailsWith<IllegalArgumentException> { a.importFit(ByteArray(40)) }.message)
+        assertEquals("No es un archivo de actividad: Brivel lee FIT, GPX y TCX", assertFailsWith<IllegalArgumentException> { a.importFit(ByteArray(40)) }.message)
         assertTrue(a.activities().isEmpty())
+    }
+
+    @Test
+    fun `importa GPX y TCX con la distancia calculada o la de las vueltas`() {
+        val a = app()
+        val gpx = a.importFit(GPX.encodeToByteArray())
+        val run = a.data.activities.single { it.id == gpx }
+        assertEquals("gpx", run.source)
+        assertEquals(6.0, run.meters!!, 0.1)  // 2 × 3 m con el GPS
+        assertEquals(2.0, run.seconds)
+        assertEquals("Importada de un archivo GPX", a.activity(gpx)!!.source)
+        val tcx = a.importFit(TCX.encodeToByteArray())
+        val ride = a.data.activities.single { it.id == tcx }
+        assertEquals("cycling", ride.sport)
+        assertEquals(10100.0, ride.meters)
+        assertEquals(2, ride.laps.size)
     }
 
     @Test

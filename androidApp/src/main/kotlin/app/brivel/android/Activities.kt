@@ -68,7 +68,7 @@ import app.brivel.app.XY
 import app.brivel.app.dateLabel
 import app.brivel.app.systemToday
 
-// Actividades propias (importar un archivo FIT y ver su detalle), material con sus kilómetros y medallas, como
+// Actividades propias (importar un archivo FIT, GPX o TCX y ver su detalle), material con sus kilómetros y medallas, como
 // web/src/Activities.tsx: lo calcula el núcleo y aquí solo se pinta.
 
 /** Una línea del núcleo (puntos dentro de un cuadrado de lado 1) estirada al tamaño que se le dé. */
@@ -160,7 +160,7 @@ fun ActivitySheet(app: BrivelApp, act: Act, id: String, close: () -> Unit) {
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancelar") } })
 }
 
-/** Entrenar: las actividades propias y el botón de importar un archivo FIT. */
+/** Entrenar: las actividades propias y el botón de importar un archivo de actividad. */
 @Composable
 fun ActivitiesCard(app: BrivelApp, act: Act, version: Int) {
     val rows = remember(version) { app.activities() }
@@ -177,7 +177,7 @@ fun ActivitiesCard(app: BrivelApp, act: Act, version: Int) {
     open?.let { ActivitySheet(app, act, it) { open = null } }
     Module {
         SectionTitle("Tus actividades")
-        Secondary("Las que grabas con el GPS o importas de un archivo FIT de tu reloj o tu ciclocomputador. Cuentan en tu plan y en Progreso como las del reloj.")
+        Secondary("Las que grabas con el GPS o importas de un archivo FIT de tu reloj o tu ciclocomputador, o de un GPX o TCX de otra app. Cuentan en tu plan y en Progreso como las del reloj.")
         (if (all) rows else rows.take(5)).forEach { r ->
             Row(Modifier.fillMaxWidth().clickable { open = r.id }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 SportBadge(r.sport, 32.dp)
@@ -190,7 +190,7 @@ fun ActivitiesCard(app: BrivelApp, act: Act, version: Int) {
             }
         }
         if (!all && rows.size > 5) TextButton(onClick = { all = true }) { LinkText("Ver las ${rows.size}") }
-        OutlinedButton(onClick = { picker.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) { Text("Importar un archivo FIT") }
+        OutlinedButton(onClick = { picker.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) { Text("Importar un archivo FIT, GPX o TCX") }
     }
 }
 

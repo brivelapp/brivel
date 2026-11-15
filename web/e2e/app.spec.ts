@@ -276,7 +276,7 @@ test("actividad propia: se importa un FIT, se apunta al material, sale su detall
   // El archivo es sintético (e2e/fixtures): 10 min de bici a 210 W y 140 ppm, 4,8 km, escrito con otra librería
   await nav.getByRole("button", { name: "Entrenar" }).click()
   const activities = page.locator("section.module", { hasText: "Tus actividades" })
-  await activities.getByLabel("Archivo FIT").setInputFiles("e2e/fixtures/salida.fit")
+  await activities.getByLabel("Archivo de actividad").setInputFiles("e2e/fixtures/salida.fit")
   await expect(page.getByRole("status")).toHaveText("Actividad importada")
   const detail = page.getByRole("dialog", { name: "Bici" })
   await expect(detail.getByText("4,80 km")).toBeVisible()
@@ -289,8 +289,8 @@ test("actividad propia: se importa un FIT, se apunta al material, sale su detall
   await expect(activities.getByRole("button", { name: /Bici.*4,8 km/ })).toBeVisible()
 
   // Un archivo que no es FIT se rechaza con su motivo
-  await activities.getByLabel("Archivo FIT").setInputFiles({ name: "nota.fit", mimeType: "application/octet-stream", buffer: Buffer.from("esto no es un FIT, es texto") })
-  await expect(page.getByRole("status")).toHaveText("No es un archivo FIT")
+  await activities.getByLabel("Archivo de actividad").setInputFiles({ name: "nota.fit", mimeType: "application/octet-stream", buffer: Buffer.from("esto no es un FIT, es texto") })
+  await expect(page.getByRole("status")).toHaveText("No es un archivo de actividad: Brivel lee FIT, GPX y TCX")
 
   // Progreso: sin reloj, la actividad propia ya da datos, su curva de potencia y la primera medalla
   await nav.getByRole("button", { name: "Progreso" }).click()

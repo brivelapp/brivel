@@ -899,14 +899,14 @@ class BrivelApp(
     fun activity(id: String): ActivityScreen? =
         data.activities.firstOrNull { it.id == id }?.let { activityScreen(it, detailOf(id), gearOf(data, id)) }
 
-    /** Importa un archivo FIT; devuelve el id de la actividad. Importar otra vez el mismo archivo la sustituye. */
+    /** Importa un archivo FIT, GPX o TCX; devuelve el id de la actividad. Importar otra vez el mismo archivo la sustituye. */
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
     fun importFit(bytes: ByteArray): String {
-        val file = runCatching { parseFit(bytes) }.getOrElse {
-            throw IllegalArgumentException(if (it is IllegalArgumentException) it.message else "No se pudo leer el archivo: no parece un FIT de actividad")
+        val (file, format) = runCatching { parseActivityFile(bytes) }.getOrElse {
+            throw IllegalArgumentException(if (it is IllegalArgumentException) it.message else "No se pudo leer el archivo: no parece un FIT, GPX o TCX de actividad")
         }
         require(localStart(file.start).take(10) <= today().toString()) { "La actividad tiene una fecha futura: revisa la hora del dispositivo que la grabó" }
-        return addActivity(file, "fit")
+        return addActivity(file, format)
     }
 
     /** Lo mismo con el archivo en base64 (Swift no tiene un ByteArray de Kotlin a mano). */

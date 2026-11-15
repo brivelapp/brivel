@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 import Shared
 
-// Actividades propias (grabar con el GPS, importar un archivo FIT y ver su detalle), material con sus kilómetros y
+// Actividades propias (grabar con el GPS, importar un archivo FIT, GPX o TCX y ver su detalle), material con sus kilómetros y
 // medallas, como Activities.kt de Android y web/src/Activities.tsx: lo calcula el núcleo y aquí solo se pinta.
 
 /// Una línea del núcleo (puntos dentro de un cuadrado de lado 1) estirada al tamaño que se le dé.
@@ -133,7 +133,7 @@ struct ActivitySheet: View {
     }
 }
 
-/// Entrenar: las actividades propias y el botón de importar un archivo FIT.
+/// Entrenar: las actividades propias y el botón de importar un archivo de actividad.
 struct ActivitiesSection: View {
     @EnvironmentObject var model: AppModel
     @State private var open: String?
@@ -154,7 +154,7 @@ struct ActivitiesSection: View {
         let rows = model.core.activities()
         Module {
             Text("Tus actividades").font(.section)
-            Secondary("Las que grabas con el GPS o importas de un archivo FIT de tu reloj o tu ciclocomputador. Cuentan en tu plan y en Progreso como las del reloj.")
+            Secondary("Las que grabas con el GPS o importas de un archivo FIT de tu reloj o tu ciclocomputador, o de un GPX o TCX de otra app. Cuentan en tu plan y en Progreso como las del reloj.")
             ForEach(all ? rows : Array(rows.prefix(5)), id: \.id) { r in
                 Button { open = r.id } label: {
                     HStack(spacing: 10) {
@@ -170,7 +170,7 @@ struct ActivitiesSection: View {
                 }.buttonStyle(.plain)
             }
             if !all && rows.count > 5 { Button("Ver las \(rows.count)") { all = true }.font(.ui(14, .bold)).buttonStyle(TextActionStyle()) }
-            Button("Importar un archivo FIT") { importing = true }.buttonStyle(SecondaryStyle())
+            Button("Importar un archivo FIT, GPX o TCX") { importing = true }.buttonStyle(SecondaryStyle())
         }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.data]) { result in
             if case .success(let url) = result { load(url) }

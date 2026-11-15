@@ -1,4 +1,4 @@
-// Actividades propias (importar un archivo FIT y ver su detalle), material con sus kilómetros y medallas: lo que calcula el
+// Actividades propias (importar un archivo FIT, GPX o TCX y ver su detalle), material con sus kilómetros y medallas: lo que calcula el
 // núcleo (Activities.kt, Gear.kt, Badges.kt) y aquí solo se pinta
 import { useEffect, useRef, useState } from "react"
 import type { WebApp } from "brivel-shared"
@@ -67,7 +67,7 @@ export function ActivityDialog({ core, act, id, onClose }: { core: WebApp; act: 
   )
 }
 
-/** Entrenar: las actividades propias y el botón de importar un archivo FIT. */
+/** Entrenar: las actividades propias y el botón de importar un archivo de actividad. */
 export function ActivitiesCard({ core, act }: { core: WebApp; act: Act }) {
   const rows: ActivityRow[] = JSON.parse(core.activitiesJson())
   const [open, setOpen] = useState<string | null>(null)
@@ -82,7 +82,7 @@ export function ActivitiesCard({ core, act }: { core: WebApp; act: Act }) {
   return (
     <section className="module">
       <h3>Tus actividades</h3>
-      <p className="muted small-text">Importa el archivo FIT de tu reloj o tu ciclocomputador, o graba con el GPS desde la app del móvil. Cuentan
+      <p className="muted small-text">Importa el archivo FIT de tu reloj o tu ciclocomputador, o un GPX o TCX de otra app, o graba con el GPS desde la app del móvil. Cuentan
         en tu plan y en Progreso como las del reloj.</p>
       {(all ? rows : rows.slice(0, 5)).map((r) => (
         <button key={r.id} className="metric" onClick={() => setOpen(r.id)}>
@@ -93,8 +93,8 @@ export function ActivitiesCard({ core, act }: { core: WebApp; act: Act }) {
         </button>
       ))}
       {!all && rows.length > 5 && <button className="link" onClick={() => setAll(true)}>Ver las {rows.length}</button>}
-      <input ref={file} type="file" accept=".fit" hidden aria-label="Archivo FIT" onChange={(e) => load(e.target.files?.[0])} />
-      <button className="secondary" onClick={() => file.current?.click()}>Importar un archivo FIT</button>
+      <input ref={file} type="file" accept=".fit,.gpx,.tcx" hidden aria-label="Archivo de actividad" onChange={(e) => load(e.target.files?.[0])} />
+      <button className="secondary" onClick={() => file.current?.click()}>Importar un archivo FIT, GPX o TCX</button>
       {open && <ActivityDialog core={core} act={act} id={open} onClose={() => setOpen(null)} />}
     </section>
   )

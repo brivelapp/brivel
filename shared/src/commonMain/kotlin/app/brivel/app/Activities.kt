@@ -39,7 +39,7 @@ data class OwnActivity(
     val power: Map<Int, Double> = emptyMap(),
     val speed: Map<Int, Double> = emptyMap(),
     val laps: List<Lap> = emptyList(),
-    val source: String = "fit",  // fit (archivo importado) o gps (grabada con el móvil)
+    val source: String = "fit",  // fit, gpx o tcx (archivo importado) o gps (grabada con el móvil)
 )
 
 /** Las series de una actividad, reducidas a DETAIL_POINTS puntos; una lista vacía es un canal que no se midió. */
@@ -313,7 +313,7 @@ internal fun activityScreen(a: OwnActivity, detail: ActivityDetail?, gear: Strin
     )
     return ActivityScreen(a.id, a.title(), dateLabel(a.start.take(10)) + ", " + a.start.substring(11, 16), a.sport, stats,
         a.zoneSeconds?.map { pyRound(it / 60) } ?: emptyList(), laps, bests, charts, detail?.let { track(it) } ?: emptyList(),
-        if (a.source == "gps") "Grabada con este móvil" else "Importada de un archivo FIT", gear)
+        if (a.source == "gps") "Grabada con este móvil" else "Importada de un archivo ${a.source.uppercase()}", gear)
 }
 
 // ---------------------------------------------------------------- curvas (Progreso)
