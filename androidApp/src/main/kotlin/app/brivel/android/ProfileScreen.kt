@@ -34,6 +34,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -220,9 +221,12 @@ private fun ReminderCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER")
 
 /** Health Connect: los datos del reloj y la báscula sin intervals.icu (solo lectura, en el propio móvil). */
 @Composable
-private fun HealthCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: Int) {  // version: redibuja tras cada acción
+private fun HealthCard(app: BrivelApp, act: Act, version: Int) {  // version: redibuja tras cada acción
     val context = LocalContext.current
     val reader = remember { HealthConnectReader(context) }
+    // Permisos que faltan: los de los datos añadidos después de conectar (oxígeno, respiración, grasa corporal…)
+    var missing by remember { mutableStateOf(emptySet<String>()) }
+    LaunchedEffect(version) { missing = if (reader.available) reader.permissions - reader.granted() else emptySet() }
     val request = rememberLauncherForActivityResult(PermissionController.createRequestPermissionResultContract()) { granted ->
         if (granted.isNotEmpty()) act.suspend("Datos de Health Connect leídos") { reader.sync(app) }
     }
@@ -235,6 +239,10 @@ private fun HealthCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") v
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { act.suspend("Datos actualizados") { reader.sync(app) } }) { Text("Actualizar ahora") }
                 OutlinedButton(onClick = { act.run { app.clearHealth() } }) { Text("Olvidar") }
+            }
+            if (missing.isNotEmpty()) {
+                Secondary("Brivel ya puede leer también las fases del sueño, el oxígeno en sangre, la respiración y la grasa corporal. Necesita tu permiso.")
+                OutlinedButton(onClick = { request.launch(missing) }) { Text("Dar permiso a los datos nuevos") }
             }
         } else if (reader.available) {
             Secondary("Lee de Health Connect tu sueño y sus fases, tu VFC, tu pulso en reposo, tu oxígeno en sangre, tu respiración, tu peso, tu grasa corporal, tus pasos y tus entrenamientos " +

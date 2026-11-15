@@ -120,6 +120,17 @@ internal fun awardBadges(data: AppData, today: LocalDate): AppData {
     return if (earned.isEmpty()) data else data.copy(badges = data.badges + earned)
 }
 
+/**
+ * Las medallas tras borrar una actividad del día `since`: se quitan las ganadas desde ese día que ya no se cumplen. Una
+ * medalla depende de una actividad solo si se ganó el día de esa actividad o después, así que las anteriores se quedan
+ * (también las que salieron de datos del reloj ya caducados).
+ */
+internal fun revokeBadges(data: AppData, since: String, today: LocalDate): Map<String, String> {
+    val facts = BadgeFacts(data, today)
+    val defs = BADGES.associateBy { it.id }
+    return data.badges.filter { (id, date) -> date < since || defs[id]?.let { it.value(facts).first >= it.target } != false }
+}
+
 @Serializable
 data class BadgeView(val id: String, val title: String, val text: String, val group: String, val points: Int,
     val earned: String?,  // "12 nov 2026"; null si falta

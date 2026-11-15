@@ -26,7 +26,15 @@ struct SyncSection: View {
         let _ = model.version
         let core = model.core
         Module {
-            if let code = core.syncCode {
+            if core.syncNeedsConsent {
+                Text("Sincronización en pausa").font(.section)
+                Secondary(TextsKt.SYNC_POLICY_CHANGED)
+                Button(TextsKt.SYNC_ACCEPT) { core.acceptSyncPolicy(); model.syncNow() }.buttonStyle(PrimaryStyle())
+                Button("Dejar de sincronizar aquí") {
+                    model.run("Este móvil ya no sincroniza. La copia sigue en el servidor") { core.forgetSync() }
+                }.font(.small).buttonStyle(TextActionStyle())
+                Button("Borrar la copia del servidor", role: .destructive) { confirmDelete = true }.font(.small).buttonStyle(TextActionStyle())
+            } else if let code = core.syncCode {
                 Text("Sincronización activada").font(.section)
                 Secondary(TextsKt.SYNC_ACTIVE)
                 if showCode {

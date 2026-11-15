@@ -116,6 +116,22 @@ class GearBadgesTest {
     }
 
     @Test
+    fun `borrar una actividad quita sus kilometros y las medallas que solo se cumplian con ella`() {
+        val a = app()
+        a.saveGear(null, "Pegasus", "running", "2026-11-01", 0.0, null)
+        a.importHealth(health(run("2026-11-03T08:00:00", 5.2)))  // del reloj: 5 km y primer paso
+        val t0 = 1_794_700_000L  // 2026-11-14
+        a.startRecording("running", t0)
+        for (t in 0..400) a.recordPoint(t0 + t, 38.5 + t * 30 / 111195.0, -0.1, null, 5.0)  // mal grabada: 12 km en 7 min
+        val bad = a.finishRecording()
+        assertTrue("run-10" in a.data.badges)
+        assertEquals(2, a.data.gearUses.size)
+        a.deleteActivity(bad)
+        assertEquals(setOf("first-1", "run-5"), a.data.badges.keys)  // las del reloj se quedan
+        assertEquals("5 km", a.gear().rows.single().km)
+    }
+
+    @Test
     fun `al combinar dos dispositivos se quedan las medallas de los dos con la fecha mas antigua`() {
         val base = AppData()
         val mine = base.copy(badges = mapOf("run-5" to "2026-11-10", "first-1" to "2026-11-03"))

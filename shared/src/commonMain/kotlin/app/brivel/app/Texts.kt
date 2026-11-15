@@ -123,6 +123,10 @@ const val SYNC_ACTIVE = "Una copia cifrada en el servidor que solo tus dispositi
 const val SYNC_CONSENT = "Acepto que Brivel guarde en su servidor una copia cifrada de mis datos, también los de salud, para usarlos " +
     "en mis dispositivos. Puedo retirarlo cuando quiera borrando la copia. Detalles en brivel.app/privacidad."
 const val SYNC_AGE = "Tengo 14 años o más"
+const val SYNC_POLICY_CHANGED = "La política de privacidad ha cambiado: la copia cifrada lleva ahora también el resumen de tus " +
+    "actividades importadas o grabadas (sin el recorrido), tu material, tus medallas y más datos de salud de tu reloj y tu " +
+    "báscula. Hasta que lo aceptes, este dispositivo no sincroniza. Detalles en brivel.app/privacidad."
+const val SYNC_ACCEPT = "Acepto y sigo sincronizando"
 const val SYNC_NO_RECOVERY = "Nadie puede recuperar el código. Si lo pierdes y no te queda ningún dispositivo con Brivel, la copia " +
     "se pierde; los datos de cada dispositivo siguen en él."
 const val SYNC_JOIN_NOTE = "Se juntan los datos de este móvil con los de la copia."

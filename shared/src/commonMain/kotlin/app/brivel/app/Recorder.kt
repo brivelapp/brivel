@@ -13,9 +13,11 @@ val RECORD_SPORTS = listOf("running", "cycling", "walking")
 
 private const val MAX_ACCURACY_M = 30.0  // un punto con más error no se usa [Inferencia]
 private const val MIN_MOVE_M = 3.0  // menos que esto es el temblor del GPS estando parado [Inferencia]
+private const val MAX_SPEED = 40.0  // m/s (144 km/h): más rápido no es correr ni ir en bici, es un salto del GPS [Inferencia]
 
 @Serializable
-internal data class RecordedPoint(val t: Long, val lat: Double, val lon: Double, val alt: Double? = null)
+internal data class RecordedPoint(val t: Long, val lat: Double, val lon: Double, val alt: Double? = null,
+    val d: Double = 0.0)  // metros acumulados hasta este punto: la actividad guardada mide lo mismo que se vio al grabar
 
 /** Lo que enseña la pantalla mientras se graba. */
 @Serializable
@@ -33,10 +35,11 @@ internal class Recording(val sport: String, val startedAt: Long, val points: Mut
             if (time <= last.t) return false
             val moved = metersBetween(last.lat, last.lon, lat, lon)
             if (moved < MIN_MOVE_M) return false
-            // Tras una pausa (o sin señal) no se suma el salto entre los dos puntos
-            if (time - last.t <= 10) meters += moved
+            // Tras una pausa (o sin señal) no se suma el salto entre los dos puntos; tampoco un salto imposible del GPS
+            // (el primer punto puede ser una posición vieja, a kilómetros de aquí)
+            if (time - last.t <= 10 && moved / (time - last.t) <= MAX_SPEED) meters += moved
         }
-        points += RecordedPoint(time, lat, lon, altitude)
+        points += RecordedPoint(time, lat, lon, altitude, meters)
         return true
     }
 
@@ -55,5 +58,5 @@ internal class Recording(val sport: String, val startedAt: Long, val points: Mut
 
     /** La grabación con la forma de un archivo: el tiempo en marcha sale de los puntos (parado no cuenta). */
     fun file() = FitFile(sport, points.first().t, null, null, null, null, null, null,
-        points.map { FitSample(it.t, it.lat, it.lon, it.alt) }, emptyList())
+        points.map { FitSample(it.t, it.lat, it.lon, it.alt, distance = it.d) }, emptyList())
 }

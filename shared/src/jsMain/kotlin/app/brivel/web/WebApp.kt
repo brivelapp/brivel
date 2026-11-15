@@ -35,6 +35,7 @@ import app.brivel.app.OWN_ZONES
 import app.brivel.app.OwnSession
 import app.brivel.app.SET_KINDS
 import app.brivel.app.GEAR_LABEL
+import app.brivel.app.SYNC_POLICY_CHANGED
 import app.brivel.sync.SyncCode
 import app.brivel.sync.Syncer
 import kotlinx.browser.window
@@ -107,6 +108,11 @@ class WebApp {
     // Activada = hay llaves. Si el estado local se perdió, la próxima sincronización se junta como la primera vez
     val syncActive: Boolean get() = syncer != null
 
+    /** Activada con una política anterior a la vigente: en pausa hasta que se acepte la nueva (política, apartado 13). */
+    val syncNeedsConsent: Boolean get() = syncer != null && !app.syncConsentCurrent
+    val syncPolicyChanged: String get() = SYNC_POLICY_CHANGED
+    fun acceptSyncPolicy() = app.recordSyncConsent()
+
     /** Al abrir la web: las llaves guardadas en IndexedDB (web/src/sync.ts). */
     fun useSync(keys: WebSyncKeys) {
         syncer = syncerFor(keys)
@@ -117,6 +123,7 @@ class WebApp {
         val code = SyncCode.generate()
         val keys = webKeys(code.secret)
         syncerFor(keys).also { it.sync(create = true); syncer = it }
+        app.recordSyncConsent()
         WebSyncStart(code.text, keys)
     }
 
@@ -125,12 +132,14 @@ class WebApp {
         val code = SyncCode.parse(text) ?: throw IllegalArgumentException("El código no es válido: revisa las letras")
         val keys = webKeys(code.secret)
         syncerFor(keys).also { it.sync(); syncer = it }
+        app.recordSyncConsent()
         keys
     }
 
     /** Devuelve el aviso si los dos dispositivos cambiaron lo mismo; null si no. */
     fun retireFromWatch(): Promise<Unit> = promise { app.retireFromWatch() }
     fun syncNow(): Promise<String?> = promise {
+        if (syncNeedsConsent) return@promise null  // en pausa: la tarjeta pide aceptar la política nueva
         conflictMessage(checkNotNull(syncer) { "La sincronización no está activada" }.sync().conflicts)
     }
 
@@ -138,6 +147,7 @@ class WebApp {
     fun forgetSync() {
         syncer?.forget()
         syncer = null
+        app.clearSyncConsent()
     }
 
     /** Borra la copia del servidor (RGPD art. 17); los datos de este navegador se quedan. */

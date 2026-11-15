@@ -233,6 +233,20 @@ class ActivitiesTest {
     }
 
     @Test
+    fun `grabar - un primer punto viejo a miles de kilometros no suma distancia, ni en vivo ni al guardar`() {
+        val a = app()
+        val t0 = 1_800_000_000L
+        a.startRecording("running", t0)
+        a.recordPoint(t0, 37.42, -122.08, 0.0, 5.0)  // lo que da el emulador (o una posición guardada) antes del primer punto bueno
+        for (t in 1..60) a.recordPoint(t0 + t, 38.5 + t * 4 / 111195.0, -0.1, 0.0, 5.0)
+        assertEquals("0,24 km", a.recordingView(t0 + 60)!!.distance)
+        val id = a.finishRecording()
+        val activity = a.data.activities.single { it.id == id }
+        assertEquals(236.0, activity.meters!!, 1.0)  // 59 tramos de 4 m: el salto no cuenta
+        assertTrue(activity.speed.values.all { it < 5 })
+    }
+
+    @Test
     fun `grabar - en pausa no cuenta ni el tiempo ni los puntos, y se puede descartar`() {
         val a = app()
         val t0 = 1_800_000_000L

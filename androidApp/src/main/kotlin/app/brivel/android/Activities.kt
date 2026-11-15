@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,6 +26,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ModalBottomSheet
@@ -245,6 +251,7 @@ private fun km(text: String): Double? = text.trim().replace(',', '.').let {
     if (it.isEmpty()) null else it.toDoubleOrNull() ?: throw IllegalArgumentException("Escribe los kilómetros con números")
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GearEditor(app: BrivelApp, act: Act, old: GearRow?, close: () -> Unit) {
     var name by remember { mutableStateOf(old?.name ?: "") }
@@ -253,33 +260,52 @@ private fun GearEditor(app: BrivelApp, act: Act, old: GearRow?, close: () -> Uni
     var startKm by remember { mutableStateOf(old?.startKm?.takeIf { it > 0 }?.let { oneDecimal(it) } ?: "") }
     var limitKm by remember { mutableStateOf(old?.limitKm?.let { oneDecimal(it) } ?: "") }
     var error by remember { mutableStateOf<String?>(null) }
+    var picking by remember { mutableStateOf(false) }
+    if (picking) {
+        // El selector trabaja en UTC: la fecha elegida es la de ese instante en UTC; no deja elegir un día futuro
+        val state = rememberDatePickerState(
+            initialSelectedDateMillis = java.time.LocalDate.parse(since).atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli(),
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= System.currentTimeMillis()
+            })
+        DatePickerDialog(onDismissRequest = { picking = false },
+            confirmButton = { TextButton(onClick = {
+                state.selectedDateMillis?.let { since = java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).toLocalDate().toString() }
+                picking = false
+            }) { Text("Aceptar") } },
+            dismissButton = { TextButton(onClick = { picking = false }) { Text("Cancelar") } }) { DatePicker(state) }
+    }
     fun decimal(t: String) = t.filter { it.isDigit() || it == ',' || it == '.' }
-    AlertDialog(onDismissRequest = close, containerColor = Palette.surface,
-        title = { Text(if (old == null) "Añadir material" else "Cambiar material") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(name, { name = it }, label = { Text("Nombre") }, singleLine = true)
-                if (old == null) ChipRow {
-                    GEAR_LABEL.forEach { (k, label) -> FilterChip(selected = sport == k, label = { Text(label) }, onClick = { sport = k }) }
-                }
-                OutlinedTextField(since, { since = it.filter { c -> c.isDigit() || c == '-' }.take(10) },
-                    label = { Text("Cuenta desde (AAAA-MM-DD)") }, singleLine = true)
-                OutlinedTextField(startKm, { startKm = decimal(it) }, label = { Text("Kilómetros que ya llevaba") }, singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-                OutlinedTextField(limitKm, { limitKm = decimal(it) }, label = { Text("Avisar al pasar de (km, opcional)") }, singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-                error?.let { Secondary(it, Palette.caution) }
+    // En una hoja, como los demás formularios con texto (Routines.kt): con imePadding el teclado no tapa «Guardar»
+    ModalBottomSheet(onDismissRequest = close, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = Palette.surface) {
+        Column(Modifier.imePadding().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(if (old == null) "Añadir material" else "Cambiar material", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            OutlinedTextField(name, { name = it }, label = { Text("Nombre") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            if (old == null) ChipRow {
+                GEAR_LABEL.forEach { (k, label) -> FilterChip(selected = sport == k, label = { Text(label) }, onClick = { sport = k }) }
             }
-        },
-        // El error se enseña dentro del diálogo: un aviso de abajo quedaría tapado por él
-        confirmButton = { TextButton(onClick = {
-            try {
-                app.saveGear(old?.id, name, sport, since, km(startKm) ?: 0.0, km(limitKm))
-                act.run("Material guardado") {}
-                close()
-            } catch (e: Exception) { error = e.message }
-        }) { Text("Guardar") } },
-        dismissButton = { TextButton(onClick = close) { Text("Cancelar") } })
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Cuenta las actividades desde el ${dateLabel(since).substringAfter(' ')}", Modifier.weight(1f), fontSize = 14.sp)
+                TextButton(onClick = { picking = true }) { LinkText("Cambiar") }
+            }
+            OutlinedTextField(startKm, { startKm = decimal(it) }, label = { Text("Kilómetros que ya llevaba") }, singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(limitKm, { limitKm = decimal(it) }, label = { Text("Avisar al pasar de (km, opcional)") }, singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
+            // El error se enseña dentro de la hoja: un aviso de abajo quedaría tapado por ella
+            error?.let { Secondary(it, Palette.caution) }
+            PrimaryButton("Guardar", Modifier.fillMaxWidth()) {
+                try {
+                    app.saveGear(old?.id, name, sport, since, km(startKm) ?: 0.0, km(limitKm))
+                    act.run("Material guardado") {}
+                    close()
+                } catch (e: Exception) { error = e.message }
+            }
+            TextButton(onClick = close) { LinkText("Cancelar") }
+        }
+    }
 }
 
 @Composable

@@ -383,4 +383,21 @@ class BrivelAppTest {
         assertEquals(null, store.read("trainsync.data"))
         assertNotNull(store.read("brivel.data"))
     }
+
+    @Test
+    fun `si la politica cambio, la sincronizacion se para hasta aceptarla`() {
+        val store = MemoryStore()
+        val secrets = MemoryStore()
+        secrets.write("sync.code", app.brivel.sync.SyncCode.generate().text)
+        store.write("brivel.syncConsent", "2026-11-02 2026-11-02.2")  // aceptó una versión anterior
+        // Sin red: si intentara sincronizar, fallaría
+        val a = app(store, secrets, MockEngine { error("no debe salir a la red") })
+        assertTrue(a.syncNeedsConsent)
+        assertEquals(null, runBlocking { a.syncDevices() })
+        a.acceptSyncPolicy()
+        assertFalse(a.syncNeedsConsent)
+        assertEquals("$today $PRIVACY_POLICY_VERSION", store.read("brivel.syncConsent"))
+        a.forgetSync()
+        assertFalse(a.syncNeedsConsent)  // sin sincronización no hay nada que aceptar
+    }
 }

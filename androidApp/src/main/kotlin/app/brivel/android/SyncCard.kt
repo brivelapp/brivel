@@ -29,7 +29,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.brivel.app.SYNC_ACTIVE
 import app.brivel.app.SYNC_AGE
+import app.brivel.app.SYNC_ACCEPT
 import app.brivel.app.SYNC_CONSENT
+import app.brivel.app.SYNC_POLICY_CHANGED
 import app.brivel.app.SYNC_INTRO
 import app.brivel.app.SYNC_JOIN_NOTE
 import app.brivel.app.SYNC_NO_RECOVERY
@@ -66,6 +68,15 @@ fun SyncCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: In
     Module {
         val code = app.syncCode
         when {
+            code != null && app.syncNeedsConsent -> {
+                SectionTitle("Sincronización en pausa")
+                Secondary(SYNC_POLICY_CHANGED)
+                Button(onClick = { app.acceptSyncPolicy(); act.syncNow() }) { Text(SYNC_ACCEPT) }
+                TextButton(onClick = { act.run("Este móvil ya no sincroniza. La copia sigue en el servidor") { app.forgetSync() } }) {
+                    LinkText("Dejar de sincronizar aquí")
+                }
+                TextButton(onClick = { confirmDelete = true }) { LinkText("Borrar la copia del servidor", color = Palette.danger) }
+            }
             code != null -> {
                 SectionTitle("Sincronización activada")
                 Secondary(SYNC_ACTIVE)

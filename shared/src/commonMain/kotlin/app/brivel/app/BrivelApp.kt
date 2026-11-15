@@ -833,8 +833,20 @@ class BrivelApp(
 
     private fun startSync(code: SyncCode) {
         secrets.write(SYNC_CODE_KEY, code.text)
-        store.write(SYNC_CONSENT_KEY, "${today()} $PRIVACY_POLICY_VERSION")
+        recordSyncConsent()
     }
+
+    /** Apunta la fecha y la versión de la política aceptada (CUMPLIMIENTO #6). También la web, al activar o unirse. */
+    internal fun recordSyncConsent() = store.write(SYNC_CONSENT_KEY, "${today()} $PRIVACY_POLICY_VERSION")
+    internal fun clearSyncConsent() = store.write(SYNC_CONSENT_KEY, null)
+
+    /** Si lo aceptado es la política vigente. Si cambió lo que se sube, hay que volver a aceptarla (política, apartado 13). */
+    internal val syncConsentCurrent: Boolean get() = store.read(SYNC_CONSENT_KEY)?.endsWith(" $PRIVACY_POLICY_VERSION") == true
+
+    /** La sincronización está activada pero con una política anterior: no se sube nada hasta que se acepte la nueva. */
+    val syncNeedsConsent: Boolean get() = syncCode != null && !syncConsentCurrent
+
+    fun acceptSyncPolicy() = recordSyncConsent()
 
     /** Código nuevo: sube los datos de este móvil y devuelve el código. Requiere el consentimiento en la pantalla. */
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
@@ -857,6 +869,7 @@ class BrivelApp(
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
     suspend fun syncDevices(): String? {
         val code = syncCode?.let { SyncCode.parse(it) } ?: return null
+        if (!syncConsentCurrent) return null  // en pausa: la tarjeta de sincronización pide aceptar la política nueva
         return conflictMessage(syncerFor(code).sync().conflicts)
     }
 
@@ -920,9 +933,12 @@ class BrivelApp(
         return activity.id
     }
 
+    /** Borra la actividad, sus kilómetros en el material y las medallas que solo se cumplían con ella (una actividad mal grabada no deja nada). */
     fun deleteActivity(id: String) {
+        val gone = data.activities.firstOrNull { it.id == id } ?: return
         store.write(DETAIL_KEY + id, null)
-        save(data.copy(activities = data.activities.filterNot { it.id == id }))
+        val rest = data.copy(activities = data.activities.filterNot { it.id == id }, gearUses = data.gearUses.filterNot { it.activity == id })
+        save(rest.copy(badges = revokeBadges(rest, gone.start.take(10), today())))
     }
 
     // ------------------------------------------------------------ material (Gear.kt)

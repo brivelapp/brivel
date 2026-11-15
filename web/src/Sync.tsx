@@ -67,6 +67,21 @@ export function SyncCard({ core, onDone, joinOnly = false }:
     )
   }
 
+  if (core.syncNeedsConsent) {
+    return (
+      <section className="module">
+        <h3>Sincronización en pausa</h3>
+        <p className="muted">{core.syncPolicyChanged}</p>
+        <button className="primary" disabled={busy}
+          onClick={() => run(async () => { core.acceptSyncPolicy(); return (await core.syncNow()) ?? "Sincronizado" })}>Acepto y sigo sincronizando</button>
+        <div className="row wrap">
+          <button className="link" disabled={busy} onClick={forget}>Dejar de sincronizar aquí</button>
+          <button className="link" disabled={busy} onClick={erase}>Borrar la copia del servidor</button>
+        </div>
+      </section>
+    )
+  }
+
   if (core.syncActive) {
     return (
       <section className="module">
