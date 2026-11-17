@@ -183,19 +183,17 @@ tr.done .tick { background: var(--ok); color: var(--on-ok); }
 .pills { display: flex; flex-wrap: wrap; gap: 8px; }
 .pill { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; background: var(--chip); color: var(--text); font-weight: 600; }
 .pill.on { background: var(--ok); color: var(--on-ok); font-weight: 700; }
+.week-rows { display: flex; flex-direction: column; gap: 4px; }
+.week-row { display: grid; grid-template-columns: 6.5em minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 48px; }
+.week-row.free .week-day { color: var(--muted); }
+.week-day { font-weight: 700; }
+.week-row input[type="range"] { width: 100%; height: 32px; margin: 0; accent-color: var(--ok); }
+.week-minutes { display: flex; align-items: center; gap: 6px; }
+.week-minutes input { width: 4.4em; min-height: 44px; padding: 0 8px; border-radius: 12px; border: 1px solid var(--muted); background: var(--bg);
+  color: var(--text); font: 600 16px "IBM Plex Mono", ui-monospace, monospace; text-align: right; }
 .week-total { font-size: 17px; font-weight: 600; color: var(--ok); }
-.bars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; user-select: none; -webkit-user-select: none; }
-.bar-col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.bar-area { width: 100%; height: 262px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; border-radius: 10px; }
-.bars:not(.editable) .bar-area { height: 130px; }
 .day-chips { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .day-chips .chip { padding-inline: 0; }
-.bars.editable .bar-area { cursor: ns-resize; touch-action: none; }
-.bar-area:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
-.bar-value { font-size: 12px; font-weight: 600; }
-.bar { width: 100%; border-radius: 10px; background: var(--ok); }
-.bar.empty { height: 12px; background: none; border: 2px dashed var(--chip); }
-.bar-day { font-size: 13px; font-weight: 700; }
 .segmented { display: flex; gap: 4px; padding: 4px; border-radius: 16px; background: var(--chip); }
 .segmented button { flex: 1; min-height: 48px; padding: 0 8px; border-radius: 12px; background: none; color: var(--text); font-weight: 600; }
 .segmented button.on { background: var(--ok); color: var(--on-ok); font-weight: 700; }

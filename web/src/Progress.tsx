@@ -160,8 +160,8 @@ export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; o
         <div className="profile-grid">
         <section className="module">
           <p className="muted">El navegador no puede leer Apple Salud ni Health Connect. Para ver aquí tu sueño, tu VFC o tu pulso en
-            reposo, actívalo en la app del móvil y sincroniza: Perfil → «Usar en otros dispositivos».</p>
-          <button className="primary" onClick={openProfile}>Ir a Perfil</button>
+            reposo, actívalo en la app del móvil y sincroniza: Perfil → Ajustes → «Usar en otros dispositivos».</p>
+          <button className="primary" onClick={openProfile}>Ir a Ajustes</button>
         </section>
         <Measures core={core} act={act} screen={screen} />
         {screen.badges && <BadgesCard badges={screen.badges} />}

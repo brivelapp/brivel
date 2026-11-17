@@ -1,5 +1,4 @@
 // Piezas del perfil (lienzo de Pulso, opción B), las mismas que ProfileParts.kt y ProfileParts.swift de las apps
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import type { WebApp } from "brivel-shared"
 import { Icon, SPORT_ICON } from "./Today"
 
@@ -41,58 +40,38 @@ export function SportPicker({ core, cardio, onChange }: { core: WebApp; cardio: 
 }
 
 /**
- * La semana como barras: tocar o arrastrar pone esos minutos, de 15 en 15; abajo del todo, ese día queda libre. Con el
- * teclado, flecha arriba y abajo. `editable: false` en el Perfil: se cambia en un diálogo, porque en el móvil desplazar la
- * página movería las barras.
+ * La semana, un día por fila: deslizar de 15 en 15 o escribir los minutos (de 0 a 5 h; 0 o vacío, ese día queda libre).
+ * En filas y en horizontal, desplazar la página no mueve nada, y escribir la cifra evita afinar con el dedo.
  */
-export function WeekBars({ core, days, editable = true, onCommit }:
-  { core: WebApp; days: Record<string, number>; editable?: boolean; onCommit?: (d: Record<string, number>) => void }) {
-  const [live, setLive] = useState<Record<string, number> | null>(null)
-  const shown = live ?? days
-  const latest = useRef(shown)
-  latest.current = shown
+export function WeekBars({ core, days, onCommit }:
+  { core: WebApp; days: Record<string, number>; onCommit: (d: Record<string, number>) => void }) {
   const top = core.maxDayMinutes
-  const count = Object.values(shown).filter((m) => m > 0).length
-  const set = (d: string, m: number) => setLive({ ...latest.current, [d]: Math.min(top, Math.max(0, m)) })
-  const commit = () => { onCommit?.(latest.current); setLive(null) }
-  // La barra mide el alto menos los 22 px de los minutos: el dedo marca su tope
-  const at = (e: PointerEvent<HTMLDivElement>) => {
-    const r = e.currentTarget.getBoundingClientRect()
-    return Math.round((r.bottom - e.clientY) / (r.height - 22) * top / 15) * 15
-  }
-  const key = (d: string, m: number) => (e: KeyboardEvent) => {
-    const step = e.key === "ArrowUp" ? 15 : e.key === "ArrowDown" ? -15 : 0
-    if (!step) return
-    e.preventDefault()
-    onCommit?.({ ...shown, [d]: Math.min(top, Math.max(0, m + step)) })
-  }
+  const count = Object.values(days).filter((m) => m > 0).length
+  const put = (d: string, m: number) => onCommit({ ...days, [d]: Math.min(top, Math.max(0, Math.round(m) || 0)) })
   return (
     <div className="stack">
       <div className="row between">
         <span className="muted">{count === 1 ? "1 día" : `${count} días`}</span>
-        <span className="mono week-total">{core.weekTime(JSON.stringify(shown))}</span>
+        <span className="mono week-total">{core.weekTime(JSON.stringify(days))}</span>
       </div>
-      <div className={`bars${editable ? " editable" : ""}`}>
-        {DAYS.map(([d, letter, name]) => {
-          const m = shown[d] ?? 0
+      <div className="week-rows">
+        {DAYS.map(([d, , name]) => {
+          const m = days[d] ?? 0
           return (
-            <div key={d} className="bar-col">
-              <div className="bar-area" role={editable ? "slider" : "img"} tabIndex={editable ? 0 : undefined}
-                aria-label={name} aria-valuemin={editable ? 0 : undefined} aria-valuemax={editable ? top : undefined}
-                aria-valuenow={editable ? m : undefined} aria-valuetext={m === 0 ? "libre" : `${m} minutos`}
-                onKeyDown={editable ? key(d, m) : undefined}
-                onPointerDown={editable ? (e) => { e.currentTarget.setPointerCapture(e.pointerId); set(d, at(e)) } : undefined}
-                onPointerMove={editable ? (e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) set(d, at(e)) } : undefined}
-                onPointerUp={editable ? commit : undefined} onPointerCancel={editable ? commit : undefined}>
-                <span className={`bar-value mono${m === 0 ? " muted" : ""}`}>{m === 0 ? "—" : m}</span>
-                {m === 0 ? <span className="bar empty" /> : <span className="bar" style={{ height: `calc((100% - 22px) * ${m / top})` }} />}
-              </div>
-              <span className={`bar-day${m === 0 ? " muted" : ""}`} aria-hidden>{letter}</span>
+            <div key={d} className={`week-row${m === 0 ? " free" : ""}`}>
+              <span className="week-day">{name}</span>
+              <input type="range" min={0} max={top} step={15} value={m} aria-label={name}
+                aria-valuetext={m === 0 ? "libre" : `${m} minutos`} onChange={(e) => put(d, Number(e.target.value))} />
+              <label className="week-minutes">
+                <input type="number" inputMode="numeric" min={0} max={top} value={m === 0 ? "" : m} placeholder="—"
+                  aria-label={`Minutos el ${name.toLowerCase()}`} onChange={(e) => put(d, Number(e.target.value))} />
+                <span className="muted" aria-hidden>min</span>
+              </label>
             </div>
           )
         })}
       </div>
-      {editable && <p className="muted small-text">Toca o arrastra cada barra hasta los minutos que tienes, hasta 5 h. Abajo del todo, ese día queda libre.</p>}
+      <p className="muted small-text">Desliza o escribe los minutos de cada día, hasta 5 h. Sin minutos, ese día queda libre.</p>
     </div>
   )
 }

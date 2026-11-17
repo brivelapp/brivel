@@ -68,6 +68,25 @@ test("los datos siguen ahí al recargar la página", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "El sistema operativo de tu cuerpo" })).toHaveCount(0)
 })
 
+test("en Perfil se escriben 45 minutos los siete días, y las conexiones están en Ajustes", async ({ page }) => {
+  await signUp(page)
+  await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Perfil" }).click()
+  for (const day of ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]) {
+    await page.getByRole("spinbutton", { name: `Minutos el ${day}` }).fill("45")
+  }
+  await expect(page.getByText("7 días")).toBeVisible()
+  await expect(page.getByText("5 h 15 min")).toBeVisible()
+  await page.reload()
+  await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Perfil" }).click()
+  await expect(page.getByRole("spinbutton", { name: "Minutos el domingo" })).toHaveValue("45")
+  await expect(page.getByRole("slider", { name: "Domingo" })).toHaveValue("45")
+  await expect(page.getByRole("heading", { name: "Tus datos" })).toHaveCount(0)
+  await page.getByRole("button", { name: "Ajustes y conexiones" }).click()
+  await expect(page.getByRole("heading", { name: "Tus datos" })).toBeVisible()
+  await page.getByRole("button", { name: "Volver a Perfil" }).click()
+  await expect(page.getByRole("heading", { name: "Tu semana" })).toBeVisible()
+})
+
 test("la biblioteca filtra por zona y búsqueda, y enseña la ficha con músculos y descripción", async ({ page }) => {
   await signUp(page)
   const library = await openLibrary(page)

@@ -22,8 +22,9 @@ export function App() {
   const [, setVersion] = useState(0)
   const [message, setMessage] = useState<string | null>(null)
   const [entry, setEntry] = useState<Entry>("landing")
-  // De vuelta de Garmin (#garmin) o de intervals.icu (/intervals?code=…), a Perfil
+  // De vuelta de Garmin (#garmin) o de intervals.icu (/intervals?code=…), a Perfil → Ajustes
   const [tab, setTab] = useState<Tab>(() => (location.hash === "#garmin" || location.pathname === "/intervals" ? "profile" : "today"))
+  const [settings, setSettings] = useState(() => location.hash === "#garmin" || location.pathname === "/intervals")
   const [strengthDate, setStrengthDate] = useState<string | null>(null)  // sesión de fuerza abierta, a pantalla completa
   const closeStrength = useCallback(() => setStrengthDate(null), [])
   // Al cerrar la sesión, el foco vuelve al botón que la abrió (para quien usa el teclado o un lector de pantalla)
@@ -100,7 +101,7 @@ export function App() {
         <main className="question">
           <button className="back" aria-label="Atrás" onClick={() => setEntry("landing")}>‹</button>
           <h1 className="question-title">Iniciar sesión</h1>
-          <p className="muted">Brivel no tiene cuentas con contraseña: en el móvil, abre Perfil → «Usar en otros dispositivos» → «Ver código» y escríbelo aquí.</p>
+          <p className="muted">Brivel no tiene cuentas con contraseña: en el móvil, abre Perfil → Ajustes → «Usar en otros dispositivos» → «Ver código» y escríbelo aquí.</p>
           <SyncCard core={core} onDone={synced} joinOnly />
           {status}
         </main>
@@ -129,15 +130,15 @@ export function App() {
         <span className="brand"><span className="brand-mark"><Pulse size={20} /></span>brivel</span>
         <div className="tabs">
           {TABS.map(([t, label]) => (
-            <button key={t} aria-current={tab === t ? "page" : undefined} onClick={() => setTab(t)}>{label}</button>
+            <button key={t} aria-current={tab === t ? "page" : undefined} onClick={() => { setTab(t); setSettings(false) }}>{label}</button>
           ))}
         </div>
       </nav>
       {tab === "today" && <Today core={core} act={act} synced={synced} openStrength={setStrengthDate} />}
       {tab === "calendar" && <Calendar core={core} act={act} openStrength={setStrengthDate} />}
       {tab === "train" && <Train core={core} act={act} openStrength={setStrengthDate} />}
-      {tab === "progress" && <Progress core={core} act={act} openProfile={() => setTab("profile")} />}
-      {tab === "profile" && <Profile core={core} act={act} synced={synced} />}
+      {tab === "progress" && <Progress core={core} act={act} openProfile={() => { setTab("profile"); setSettings(true) }} />}
+      {tab === "profile" && <Profile core={core} act={act} synced={synced} settings={settings} setSettings={setSettings} />}
       {status}
       <Footer core={core} act={act} />
     </>
