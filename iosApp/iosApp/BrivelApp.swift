@@ -130,7 +130,7 @@ struct BrivelMain: App {
 struct RootView: View {
     @EnvironmentObject var model: AppModel
     @State private var tab = UserDefaults.standard.integer(forKey: "tab")  // `-tab N` al lanzar: capturas del CI
-    @State private var settings = false  // Perfil → Ajustes y conexiones
+    @State private var settings = false  // la rueda del Perfil abre Ajustes
     @Environment(\.scenePhase) private var phase
 
     var body: some View {

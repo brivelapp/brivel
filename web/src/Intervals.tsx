@@ -22,18 +22,19 @@ export function IntervalsCard({ core, onDone }: { core: WebApp; onDone: (message
   const athlete = core.intervalsAthlete
   return (
     <section className="module">
-      <h3>Reloj (intervals.icu)</h3>
       {athlete ? (
         <>
-          <p className="muted">Conectado: {athlete}. Se actualiza solo al abrir Brivel y al volver a esta pestaña; al
-            cerrar la pestaña hay que volver a conectar.</p>
+          <p className="ok-text">Conectado · {athlete}</p>
+          <p className="muted small-text">Al cerrar la pestaña hay que volver a conectar.</p>
           <button className="link" disabled={busy}
-            onClick={() => run(async () => { await core.disconnectIntervals(); return "intervals.icu desvinculado" })}>Desvincular</button>
+            onClick={() => run(async () => { await core.disconnectIntervals(); return "intervals.icu desvinculado" })}>Desconectar</button>
         </>
       ) : (
         <>
-          <p className="muted">intervals.icu es gratis y recoge los datos de tu reloj (Garmin, Polar, Coros, Suunto,
-            Wahoo…). Inicia sesión allí y da permiso a Brivel.</p>
+          <p>Gratis; recoge los datos de cualquier reloj.</p>
+          <details><summary>¿Qué relojes?</summary>
+            <p className="muted small-text">intervals.icu recoge los datos de Garmin, Polar, Coros, Suunto, Wahoo y otros. Inicia
+              sesión allí y da permiso a Brivel.</p></details>
           <button className="secondary" disabled={busy}
             onClick={() => run(async () => { location.assign(await core.startIntervals()); return null })}>Conectar con intervals.icu</button>
         </>

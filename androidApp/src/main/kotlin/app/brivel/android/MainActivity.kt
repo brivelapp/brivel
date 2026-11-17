@@ -153,7 +153,7 @@ private val TABS = listOf("Hoy" to R.drawable.ic_tab_today, "Calendario" to R.dr
 fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null) {
     var version by remember { mutableIntStateOf(0) }
     var tab by remember { mutableIntStateOf(0) }
-    var settings by rememberSaveable { mutableStateOf(false) }  // Perfil → Ajustes y conexiones
+    var settings by rememberSaveable { mutableStateOf(false) }  // la rueda del Perfil abre Ajustes
     var strengthDate by rememberSaveable { mutableStateOf<String?>(null) }  // sesión de fuerza abierta, a pantalla completa
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()

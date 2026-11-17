@@ -1,6 +1,18 @@
 package app.brivel.android
 
 import android.Manifest
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.saveable.rememberSaveable
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -67,7 +79,9 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openSe
     val context = LocalContext.current
     var draft by remember(version) { mutableStateOf(app.data.profile ?: UserProfile()) }
     var confirmDelete by remember { mutableStateOf(false) }
-    BackHandler(settings) { openSettings(false) }
+    // Dentro de Ajustes, cada fila abre su página: health, intervals, garmin, sync, notice, about
+    var page by rememberSaveable(settings) { mutableStateOf<String?>(null) }
+    BackHandler(settings) { if (page != null) page = null else openSettings(false) }
     // Se guarda solo: cada cambio rehace el plan al momento (lienzo de Pulso, opción B)
     fun save(p: UserProfile) {
         draft = p
@@ -77,7 +91,8 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openSe
         if (!settings) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Perfil", fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                OutlinedButton(onClick = { openSettings(true) }) { Text("Ajustes y conexiones") }
+                IconButton(onClick = { openSettings(true) }, modifier = Modifier.size(48.dp).clip(CircleShape).background(Palette.chip)
+                    .semantics { contentDescription = "Ajustes" }) { Glyph(R.drawable.ic_settings, 22.dp) }
             }
             Module {
                 SectionTitle("Tus deportes")
@@ -108,45 +123,66 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openSe
             Spacer(Modifier.height(24.dp))
             return@Column
         }
+        val title = when (page) {
+            "health" -> "Health Connect"; "intervals" -> "intervals.icu"; "garmin" -> "Garmin Connect™"
+            "sync" -> "Otros dispositivos"; "notice" -> "Aviso de salud"; "about" -> "Sobre Brivel"; else -> "Ajustes"
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { openSettings(false) }, modifier = Modifier.semantics { contentDescription = "Volver a Perfil" }) {
+            IconButton(onClick = { if (page != null) page = null else openSettings(false) },
+                modifier = Modifier.semantics { contentDescription = if (page != null) "Volver a Ajustes" else "Volver a Perfil" }) {
                 Glyph(R.drawable.ic_chevron_left, 24.dp)
             }
-            Text("Ajustes", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         }
-        ReminderCard(app, act, version)
-        HealthCard(app, act, version)
-        IntervalsCard(app, act, version)
-        GarminCard(app, act, version)
-        SyncCard(app, act, version)
-        Module {
-            SectionTitle("Tus datos")
-            Secondary(PRIVACY_NOTE)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Poner a tus actividades de intervals.icu un título que diga lo que fueron", modifier = Modifier.weight(1f), fontSize = 14.sp)
-                Switch(checked = draft.renameActivities, onCheckedChange = {
-                    draft = draft.copy(renameActivities = it)
-                    act.run { app.saveProfile(draft) }
-                })
+        when (page) {
+            "health" -> HealthCard(app, act, version)
+            "intervals" -> {
+                IntervalsCard(app, act, version)
+                Module {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            SectionTitle("Renombrar mis actividades")
+                            Secondary("Les pone un título que dice lo que fueron.")
+                        }
+                        Switch(checked = draft.renameActivities, onCheckedChange = { save(draft.copy(renameActivities = it)) })
+                    }
+                }
             }
-            OutlinedButton(onClick = {
-                val send = Intent(Intent.ACTION_SEND).setType("application/json").putExtra(Intent.EXTRA_TEXT, app.exportJson())
-                context.startActivity(Intent.createChooser(send, "Exportar mis datos"))
-            }) { Text("Exportar todos mis datos (JSON)") }
-            Button(onClick = { confirmDelete = true }, colors = ButtonDefaults.buttonColors(containerColor = Palette.danger)) {
-                Text("Borrar todo de este móvil")
+            "garmin" -> GarminCard(app, act, version)
+            "sync" -> SyncCard(app, act, version)
+            "notice" -> Module { Secondary(HEALTH_NOTICE) }
+            "about" -> Module {
+                Text("Gratis y de código abierto (AGPL-3.0). Sin pagos, sin anuncios.", fontSize = 15.sp)
+                Secondary(PRIVACY_NOTE)
+                val links = LocalUriHandler.current
+                TextButton(onClick = { links.openUri(PRIVACY_URL) }) { LinkText("Política de privacidad") }
+                TextButton(onClick = { links.openUri(TERMS_URL) }) { LinkText("Términos") }
+                TextButton(onClick = { links.openUri(SOURCE_URL) }) { LinkText("Código fuente") }
             }
-        }
-        Module {
-            SectionTitle("Aviso de salud")
-            Secondary(HEALTH_NOTICE)
-        }
-        Secondary("Brivel es gratis y de código abierto (AGPL-3.0). Sin niveles de pago, sin anuncios y sin notificaciones comerciales.")
-        val links = LocalUriHandler.current
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            TextButton(onClick = { links.openUri(PRIVACY_URL) }) { LinkText("Privacidad") }
-            TextButton(onClick = { links.openUri(TERMS_URL) }) { LinkText("Términos") }
-            TextButton(onClick = { links.openUri(SOURCE_URL) }) { LinkText("Código fuente") }
+            else -> {
+                val health = app.data.health != null
+                SettingsGroup("Conexiones") {
+                    SettingsRow("Health Connect", if (health) "Conectado" else "Sin conectar", health) { page = "health" }
+                    SettingsRow("Garmin Connect™", if (app.garminConnected) "Conectado" else "Sin conectar", app.garminConnected) { page = "garmin" }
+                    val linked = app.linkedAthlete != null
+                    SettingsRow("intervals.icu", if (linked) "Conectado" else "Sin conectar", linked) { page = "intervals" }
+                }
+                SettingsGroup("Avisos") { ReminderCard(app, act, version) }
+                SettingsGroup("Tus datos") {
+                    val synced = app.syncCode != null && !app.syncNeedsConsent
+                    SettingsRow("Otros dispositivos",
+                        if (app.syncNeedsConsent) "En pausa" else if (app.syncCode != null) "Sincronizado" else "Solo aquí", synced) { page = "sync" }
+                    SettingsRow("Exportar mis datos") {
+                        val send = Intent(Intent.ACTION_SEND).setType("application/json").putExtra(Intent.EXTRA_TEXT, app.exportJson())
+                        context.startActivity(Intent.createChooser(send, "Exportar mis datos"))
+                    }
+                    SettingsRow("Borrar todo", color = Palette.danger) { confirmDelete = true }
+                }
+                SettingsGroup("Sobre Brivel") {
+                    SettingsRow("Aviso de salud") { page = "notice" }
+                    SettingsRow("Privacidad, términos y código") { page = "about" }
+                }
+            }
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -197,12 +233,10 @@ private fun ReminderCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER")
         if (granted) set(8) else act.run("Sin permiso para avisarte: actívalo en Ajustes → Notificaciones") {}
     }
     val hour = app.data.reminderHour
-    Module {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {  // fila dentro del grupo «Avisos»
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                SectionTitle("Recordatorio diario")
-                Secondary("Un aviso con la sesión del día. Los días de descanso o con todo hecho no avisa.")
-            }
+            SectionTitle("Recordatorio diario")
+            Spacer(Modifier.weight(1f))
             Switch(checked = hour != null, onCheckedChange = { on ->
                 when {
                     !on -> set(null)
@@ -217,6 +251,7 @@ private fun ReminderCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER")
             Text("${hour.toString().padStart(2, '0')}:00", fontFamily = Mono)
             TextButton(onClick = { set((hour + 1) % 24) }) { Text("+") }
         }
+        if (hour != null) MoreInfo("¿Cuándo avisa?", "Un aviso con la sesión del día. Los días de descanso o con todo hecho no avisa.")
     }
 }
 
@@ -232,22 +267,23 @@ private fun HealthCard(app: BrivelApp, act: Act, version: Int) {  // version: re
         if (granted.isNotEmpty()) act.suspend("Datos de Health Connect leídos") { reader.sync(app) }
     }
     Module {
-        SectionTitle("Datos de salud del móvil (Health Connect)")
         val health = app.data.health
         if (health != null) {
-            Text("Conectado: ${health.days.size} días y ${health.workouts.size} entrenamientos", fontWeight = FontWeight.Bold)
-            Secondary("Datos al día del ${health.syncedAt}. Los permisos se cambian en Ajustes → Health Connect.")
+            StateLine("Estado", "Conectado", ok = true)
+            StateLine("Leído", "${health.days.size} días · ${health.workouts.size} entrenos")
+            StateLine("Al día", health.syncedAt)
+            MoreInfo("¿Qué lee exactamente?", HEALTH_READS)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { act.suspend("Datos actualizados") { reader.sync(app) } }) { Text("Actualizar ahora") }
-                OutlinedButton(onClick = { act.run { app.clearHealth() } }) { Text("Olvidar") }
+                OutlinedButton(onClick = { act.run { app.clearHealth() } }) { Text("Desconectar") }
             }
             if (missing.isNotEmpty()) {
                 Secondary("Brivel ya puede leer también las fases del sueño, el oxígeno en sangre, la respiración y la grasa corporal. Necesita tu permiso.")
                 OutlinedButton(onClick = { request.launch(missing) }) { Text("Dar permiso a los datos nuevos") }
             }
         } else if (reader.available) {
-            Secondary("Lee de Health Connect tu sueño y sus fases, tu VFC, tu pulso en reposo, tu oxígeno en sangre, tu respiración, tu peso, tu grasa corporal, tus pasos y tus entrenamientos " +
-                "de cualquier reloj o app que escriba allí. Solo lectura y solo en este móvil.")
+            Text("Brivel lee tu sueño, pulso y entrenos de Health Connect. Solo en este móvil.", fontSize = 15.sp)
+            MoreInfo("¿Qué lee exactamente?", HEALTH_READS)
             Button(onClick = { request.launch(reader.permissions) }) { Text("Conectar Health Connect") }
         } else {
             Secondary("Health Connect no está en este móvil. Viene con Android 14 o posterior; en versiones anteriores " +
@@ -260,18 +296,18 @@ private fun HealthCard(app: BrivelApp, act: Act, version: Int) {  // version: re
 private fun IntervalsCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: Int) {
     val context = LocalContext.current
     Module {
-        SectionTitle("Reloj (intervals.icu)")
         val linked = app.linkedAthlete
         if (linked != null) {
-            Text("Vinculado: $linked", fontWeight = FontWeight.Bold)
-            app.data.cache?.let { Secondary("Datos al día del ${it.syncedAt}") }
+            StateLine("Estado", "Conectado", ok = true)
+            StateLine("Cuenta", linked)
+            app.data.cache?.let { StateLine("Al día", it.syncedAt) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { act.suspend("Datos actualizados") { app.sync() } }) { Text("Actualizar ahora") }
-                OutlinedButton(onClick = { act.suspend("intervals.icu desvinculado") { app.disconnectIntervals() } }) { Text("Desvincular") }
+                OutlinedButton(onClick = { act.suspend("intervals.icu desvinculado") { app.disconnectIntervals() } }) { Text("Desconectar") }
             }
         } else {
-            Secondary("intervals.icu es gratis y recoge los datos de tu reloj (Garmin, Polar, Coros, Suunto, Wahoo…). " +
-                "Inicia sesión allí y da permiso a Brivel.")
+            Text("Gratis; recoge los datos de cualquier reloj.", fontSize = 15.sp)
+            MoreInfo("¿Qué relojes?", "intervals.icu recoge los datos de Garmin, Polar, Coros, Suunto, Wahoo y otros. Inicia sesión allí y da permiso a Brivel.")
             Button(onClick = {
                 act.suspend(null) {
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(app.startIntervals("brivel://intervals"))))
@@ -279,4 +315,47 @@ private fun IntervalsCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER"
             }) { Text("Conectar con intervals.icu") }
         }
     }
+}
+
+private const val HEALTH_READS = "Tu sueño y sus fases, tu VFC, tu pulso en reposo, tu oxígeno en sangre, tu respiración, tu peso, " +
+    "tu grasa corporal, tus pasos y tus entrenamientos, de cualquier reloj o app que escriba allí. Solo lectura. " +
+    "Los permisos se cambian en Ajustes → Health Connect."
+
+/** Un grupo de Ajustes: título pequeño y una tarjeta con sus filas. */
+@Composable
+private fun SettingsGroup(title: String, rows: @Composable ColumnScope.() -> Unit) {
+    Text(title.uppercase(), color = Palette.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp,
+        modifier = Modifier.padding(start = 4.dp, top = 4.dp))
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Palette.surface), content = rows)
+}
+
+/** Una fila de Ajustes: punto de estado, nombre y estado en una palabra; se toca entera. */
+@Composable
+private fun SettingsRow(name: String, state: String? = null, on: Boolean = false, color: Color = Palette.text, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable(onClick = onClick).padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (state != null) Box(Modifier.size(8.dp).clip(CircleShape).background(if (on) Palette.ok else Palette.chip))
+        Text(name, color = color, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, modifier = Modifier.weight(1f))
+        if (state != null) Text(state, color = if (on) Palette.ok else Palette.muted, fontSize = 13.sp,
+            fontWeight = if (on) FontWeight.Bold else FontWeight.Normal)
+        Glyph(R.drawable.ic_chevron_right, 18.dp, Palette.muted)
+    }
+}
+
+/** «Estado · Conectado»: etiqueta a la izquierda, dato a la derecha. */
+@Composable
+private fun StateLine(label: String, value: String, ok: Boolean = false) {
+    Row(Modifier.fillMaxWidth()) {
+        Text(label, color = Palette.muted, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        Text(value, color = if (ok) Palette.ok else Palette.text, fontSize = 14.sp,
+            fontWeight = if (ok) FontWeight.Bold else FontWeight.Normal, fontFamily = if (ok) null else Mono)
+    }
+}
+
+/** Lo largo, plegado: una línea basta para la mayoría y quien quiera el detalle lo abre. */
+@Composable
+private fun MoreInfo(title: String, text: String) {
+    var open by remember { mutableStateOf(false) }
+    TextButton(onClick = { open = !open }, contentPadding = PaddingValues(0.dp)) { LinkText(if (open) "Ocultar" else title, Palette.ok) }
+    if (open) Secondary(text)
 }

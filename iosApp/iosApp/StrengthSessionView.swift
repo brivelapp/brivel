@@ -366,7 +366,7 @@ private struct StepButton: View {
     let action: () -> Void
     var body: some View {
         Button(action: action) {
-            Text(text).font(.ui(22, .bold)).frame(width: 56, height: 48).background(Palette.chip).clipShape(Capsule())
+            Text(text).font(.ui(22, .bold)).frame(width: 56, height: 48).glass(Palette.chip, in: Capsule())
         }.buttonStyle(.plain).accessibilityLabel(label)
     }
 }
@@ -411,7 +411,7 @@ private struct RestView: View {
                             Button { rate(n) } label: {
                                 Text(n == 4 ? "4+" : "\(n)").font(.mono(16, .semibold)).frame(maxWidth: .infinity, minHeight: 44)
                                     .foregroundStyle(on ? Palette.onOk : Palette.text)
-                                    .background(on ? Palette.ok : Palette.surface).clipShape(Capsule())
+                                    .glass(on ? Palette.ok : Palette.surface, tint: on ? Palette.ok : nil, in: Capsule())
                             }
                             .buttonStyle(.plain).accessibilityLabel("Me quedaban \(n == 4 ? "4 o más" : "\(n)")")
                             .accessibilityAddTraits(on ? .isSelected : [])

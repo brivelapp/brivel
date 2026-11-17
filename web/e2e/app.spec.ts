@@ -68,7 +68,7 @@ test("los datos siguen ahí al recargar la página", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "El sistema operativo de tu cuerpo" })).toHaveCount(0)
 })
 
-test("en Perfil se escriben 45 minutos los siete días, y las conexiones están en Ajustes", async ({ page }) => {
+test("en Perfil se escriben 45 minutos los siete días, y las conexiones están en Ajustes, tras la rueda", async ({ page }) => {
   await signUp(page)
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Perfil" }).click()
   for (const day of ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]) {
@@ -80,9 +80,13 @@ test("en Perfil se escriben 45 minutos los siete días, y las conexiones están 
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Perfil" }).click()
   await expect(page.getByRole("spinbutton", { name: "Minutos el domingo" })).toHaveValue("45")
   await expect(page.getByRole("slider", { name: "Domingo" })).toHaveValue("45")
-  await expect(page.getByRole("heading", { name: "Tus datos" })).toHaveCount(0)
-  await page.getByRole("button", { name: "Ajustes y conexiones" }).click()
-  await expect(page.getByRole("heading", { name: "Tus datos" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Conexiones" })).toHaveCount(0)
+  await page.getByRole("button", { name: "Ajustes" }).click()
+  await expect(page.getByRole("heading", { name: "Conexiones" })).toBeVisible()
+  await expect(page.getByRole("button", { name: /intervals\.icu.*Sin conectar/ })).toBeVisible()
+  await page.getByRole("button", { name: /intervals\.icu/ }).click()
+  await expect(page.getByRole("checkbox", { name: "Renombrar mis actividades" })).toBeChecked()
+  await page.getByRole("button", { name: "Volver a Ajustes" }).click()
   await page.getByRole("button", { name: "Volver a Perfil" }).click()
   await expect(page.getByRole("heading", { name: "Tu semana" })).toBeVisible()
 })

@@ -28,7 +28,7 @@ private struct Question<Content: View>: View {
                 if let back {
                     Button(action: back) {
                         Image(systemName: "chevron.left").font(.ui(17, .semibold)).frame(width: 44, height: 44)
-                            .background(Palette.surface).clipShape(Circle())
+                            .glass(Palette.surface, in: Circle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Atrás")

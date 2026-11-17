@@ -329,3 +329,19 @@ main.wide ~ .legal { padding-block: 8px 32px; }
 .medal.on { color: var(--surface); background: var(--ok); border: 2px solid var(--ok); }
 .progress { display: block; height: 6px; margin: 6px 0 2px; border-radius: 99px; background: var(--chip); overflow: hidden; }
 .progress > span { display: block; height: 100%; background: var(--ok); }
+
+/* Ajustes (2026-11-17): la rueda del Perfil y una lista corta por grupos, como en las apps */
+.gear { width: 44px; height: 44px; padding: 0; border-radius: 50%; background: var(--chip); color: var(--text); display: grid; place-items: center; }
+.settings { display: flex; flex-direction: column; gap: 14px; max-width: 560px; }
+.settings-group { display: flex; flex-direction: column; gap: 6px; }
+.settings-title { font-size: 12px; line-height: 16px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-left: 4px; }
+.settings-list { background: var(--surface); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; }
+.settings-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 16px; border-radius: 0; background: none;
+  color: var(--text); font: 600 15px Figtree, system-ui, sans-serif; text-align: left; width: 100%; }
+.settings-row + .settings-row { border-top: 1px solid var(--chip); }
+.settings-name { flex: 1; min-width: 0; }
+.settings-state { font-size: 13px; font-weight: 400; color: var(--muted); }
+.settings-state.on { color: var(--ok); font-weight: 700; }
+.settings-row .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--chip); flex: none; }
+.settings-row .dot.on { background: var(--ok); }
+.settings-row .chev { color: var(--muted); font-size: 20px; line-height: 1; }

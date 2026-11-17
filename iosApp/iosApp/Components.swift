@@ -132,6 +132,19 @@ struct ZoneChip: View {
     }
 }
 
+extension View {
+    /// Controles en Liquid Glass en iOS 26, como la barra inferior del sistema; antes de iOS 26, el relleno plano de Pulso.
+    /// `tint` colorea el cristal (lo elegido, la acción principal). Solo controles: las tarjetas de contenido siguen planas,
+    /// como pide Apple para el cristal.
+    @ViewBuilder func glass<S: Shape>(_ fill: Color, tint: Color? = nil, in shape: S, enabled: Bool = true) -> some View {
+        if #available(iOS 26, *), enabled {
+            glassEffect(tint.map { Glass.regular.tint($0).interactive() } ?? Glass.regular.interactive(), in: shape)
+        } else {
+            background(fill).clipShape(shape)
+        }
+    }
+}
+
 struct PrimaryStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View { Primary(configuration: configuration) }
 
@@ -140,7 +153,7 @@ struct PrimaryStyle: ButtonStyle {
         @Environment(\.isEnabled) private var enabled
         var body: some View {
             configuration.label.font(.ui(15, .bold)).padding(.horizontal, 20).frame(minHeight: 50)
-                .background(enabled ? Palette.ok : Palette.chip).foregroundStyle(enabled ? Palette.onOk : Palette.muted).clipShape(Capsule())
+                .foregroundStyle(enabled ? Palette.onOk : Palette.muted).glass(enabled ? Palette.ok : Palette.chip, tint: enabled ? Palette.ok : nil, in: Capsule())
                 .opacity(configuration.isPressed ? 0.8 : 1).scaleEffect(configuration.isPressed ? 0.98 : 1)
         }
     }
@@ -168,7 +181,7 @@ struct RowChevron: View {
 struct SecondaryStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.font(.ui(15, .semibold)).padding(.horizontal, 18).frame(minHeight: 50)
-            .background(Palette.chip).foregroundStyle(Palette.text).clipShape(Capsule())
+            .foregroundStyle(Palette.text).glass(Palette.chip, in: Capsule())
             .opacity(configuration.isPressed ? 0.8 : 1).scaleEffect(configuration.isPressed ? 0.98 : 1)
     }
 }
@@ -336,9 +349,8 @@ struct Chip: View {
     var body: some View {
         Button(action: action) {
             Text(label).font(.ui(14, .semibold, relativeTo: .subheadline)).padding(.horizontal, 14).padding(.vertical, 8)
-                .background(selected ? Palette.okSoft : Palette.chip)
                 .foregroundStyle(selected ? Palette.ok : Palette.text)
-                .clipShape(Capsule())
+                .glass(selected ? Palette.okSoft : Palette.chip, tint: selected ? Palette.okSoft : nil, in: Capsule())
                 .overlay(Capsule().stroke(selected ? Palette.ok : .clear, lineWidth: 1.5))
         }.buttonStyle(.plain)
     }

@@ -24,7 +24,12 @@
           "size": 5163069,
           "minOSVersion": "17.0"
         }
-      ]
+      ],
+      "version": "0.1.0",
+      "versionDate": "2026-11-17T12:21:28Z",
+      "versionDescription": "prueba-2026-11-17-1",
+      "downloadURL": "https://github.com/brivelapp/brivel/releases/download/prueba-2026-11-17-1/Brivel.ipa",
+      "size": 5163069
     }
   ],
   "news": []
