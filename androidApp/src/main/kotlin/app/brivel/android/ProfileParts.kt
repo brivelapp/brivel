@@ -4,15 +4,11 @@ package app.brivel.android
 // «Caminar» (siempre cuenta), la semana como barras que se suben y bajan con el dedo, fuerza, nivel y año de nacimiento.
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
@@ -23,38 +19,31 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.brivel.app.MAX_DAY_MINUTES
 import app.brivel.app.PICKABLE_CARDIO
 import app.brivel.app.WEEKDAY_LABEL
-import app.brivel.app.WEEKDAY_SHORT
 import app.brivel.app.toggleCardio
 import app.brivel.app.weekTimeText
 import kotlin.math.roundToInt
@@ -96,80 +85,45 @@ fun SportPicker(cardio: List<String>, onChange: (List<String>) -> Unit) {
 }
 
 /**
- * La semana como barras: tocar o arrastrar a una altura pone esos minutos, de 15 en 15; abajo del todo, ese día queda
- * libre. Para arrastrar hay que mantener pulsado (si no, deslizar la pantalla movería las barras). `onCommit` llega
- * al soltar, no en cada movimiento. Con TalkBack cada barra se sube y baja como un deslizador.
+ * La semana, un día por fila: deslizar de 15 en 15 o escribir los minutos (de 0 a 5 h; sin minutos, ese día queda
+ * libre). En horizontal, desplazar la pantalla no mueve nada, y escribir la cifra evita afinar con el dedo (con las
+ * barras verticales costaba acertar en 45). `onCommit` llega al soltar el deslizador o con cada cifra escrita.
  */
 @Composable
-fun WeekBars(days: Map<String, Int>, editable: Boolean = true, onCommit: (Map<String, Int>) -> Unit = {}) {
+fun WeekBars(days: Map<String, Int>, onCommit: (Map<String, Int>) -> Unit) {
     var live by remember(days) { mutableStateOf(days) }
-    val commit by rememberUpdatedState(onCommit)
-    val area = if (editable) 240.dp else 108.dp  // en el Perfil solo se ve  // la barra más alta (5 h: cada paso de 15 son 12 dp); encima van los minutos
-    val haptic = LocalHapticFeedback.current
-    // Un toque suave en cada paso de 15 minutos, para notarlos sin mirar
-    fun set(d: String, v: Int) {
-        if ((live[d] ?: 0) == v) return
-        live = live + (d to v)
-        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-    }
-    val empty = Palette.chip
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    fun put(d: String, m: Int) = (live + (d to m.coerceIn(0, MAX_DAY_MINUTES))).also { live = it }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
             Secondary(if (live.values.count { it > 0 } == 1) "1 día" else "${live.values.count { it > 0 }} días")
             Text(weekTimeText(live), fontFamily = Mono, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Palette.ok)
         }
-        run {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                DAYS.forEach { d ->
-                    val m = live[d] ?: 0
-                    val color = if (m == 0) Palette.muted else Palette.text
-                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Box(
-                            Modifier.fillMaxWidth().height(area + 22.dp)
-                                // Toda la columna responde al dedo. Solo donde no hay que desplazar la pantalla (hoja y bienvenida)
-                                .then(if (!editable) Modifier else Modifier.pointerInput(d) {
-                                    awaitEachGesture {
-                                        val down = awaitFirstDown()
-                                        set(d, minutesAt(down.position.y, size.height))
-                                        down.consume()
-                                        drag(down.id) { set(d, minutesAt(it.position.y, size.height)); it.consume() }
-                                        commit(live)
-                                    }
-                                })
-                                .semantics {
-                                    contentDescription = WEEKDAY_LABEL[d]!!
-                                    stateDescription = if (m == 0) "libre" else "$m minutos"
-                                    progressBarRangeInfo = ProgressBarRangeInfo(m.toFloat(), 0f..MAX_DAY_MINUTES.toFloat(), MAX_DAY_MINUTES / 15 - 1)
-                                    if (editable) setProgress { v ->
-                                        live = live + (d to ((v / 15).roundToInt() * 15).coerceIn(0, MAX_DAY_MINUTES))
-                                        commit(live)
-                                        true
-                                    }
-                                },
-                            contentAlignment = Alignment.BottomCenter,
-                        ) {
-                            // Los minutos, justo encima de la barra
-                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(if (m == 0) "—" else "$m", fontFamily = Mono, fontSize = 12.sp, color = color)
-                                if (m == 0) Box(Modifier.fillMaxWidth().height(12.dp).drawBehind {
-                                    drawRoundRect(empty, cornerRadius = CornerRadius(10.dp.toPx()),
-                                        style = Stroke(2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))))
-                                })
-                                else Box(Modifier.fillMaxWidth().height(area * m / MAX_DAY_MINUTES).clip(RoundedCornerShape(10.dp)).background(Palette.ok))
-                            }
-                        }
-                        Text(WEEKDAY_SHORT[d]!!, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = color)
-                    }
-                }
+        DAYS.forEach { d ->
+            val m = live[d] ?: 0
+            val name = WEEKDAY_LABEL[d]!!
+            var text by remember(m) { mutableStateOf(if (m == 0) "" else "$m") }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(name, Modifier.width(84.dp), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = if (m == 0) Palette.muted else Palette.text)
+                Slider(m.toFloat(), { put(d, (it / 15).roundToInt() * 15) }, Modifier.weight(1f).semantics {
+                    contentDescription = name
+                    stateDescription = if (m == 0) "libre" else "$m minutos"
+                }, valueRange = 0f..MAX_DAY_MINUTES.toFloat(), steps = MAX_DAY_MINUTES / 15 - 1,
+                    onValueChangeFinished = { onCommit(live) },
+                    colors = SliderDefaults.colors(thumbColor = Palette.ok, activeTrackColor = Palette.ok, inactiveTrackColor = Palette.chip,
+                        activeTickColor = Color.Transparent, inactiveTickColor = Color.Transparent))
+                OutlinedTextField(text, { t ->
+                    text = t.filter { it.isDigit() }.take(3)
+                    onCommit(put(d, text.toIntOrNull() ?: 0))
+                }, Modifier.width(72.dp).semantics { contentDescription = "Minutos el ${name.lowercase()}" },
+                    placeholder = { Text("—") }, singleLine = true,
+                    textStyle = LocalTextStyle.current.copy(fontFamily = Mono, textAlign = TextAlign.End),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                Secondary("min")
             }
         }
-        if (editable) Secondary("Toca o arrastra cada barra hasta los minutos que tienes, hasta 5 h. Abajo del todo, ese día queda libre.")
+        Secondary("Desliza o escribe los minutos de cada día, hasta 5 h. Sin minutos, ese día queda libre.")
     }
 }
-
-// La barra mide el alto menos los 22 dp de los minutos: el dedo marca su tope. De 15 en 15, de 0 a MAX_DAY_MINUTES
-private fun androidx.compose.ui.unit.Density.minutesAt(y: Float, height: Int): Int =
-    ((height - y) / (height - 22.dp.toPx()) * MAX_DAY_MINUTES / 15).roundToInt().times(15).coerceIn(0, MAX_DAY_MINUTES)
 
 /** Opciones cortas en una sola fila (fuerza y nivel en el Perfil). */
 @Composable

@@ -65,9 +65,9 @@ fun ProgressTab(app: BrivelApp, version: Int, act: Act, openProfile: () -> Unit)
         ScreenTitle("Progreso", subtitle = "Últimos 90 días")
         if (!screen.linked) {
             Module {
-                Secondary("Para ver tu sueño, tu VFC, tu pulso en reposo o tu VO2max, conecta en Perfil Health Connect " +
-                    "(los datos de tu reloj o tu báscula en este móvil) o tu cuenta de intervals.icu (gratis).")
-                PrimaryButton("Ir a Perfil", onClick = openProfile)
+                Secondary("Para ver tu sueño, tu VFC, tu pulso en reposo o tu VO2max, conecta Health Connect " +
+                    "(los datos de tu reloj o tu báscula en este móvil) o tu cuenta de intervals.icu (gratis) en Perfil → Ajustes.")
+                PrimaryButton("Ir a Ajustes", onClick = openProfile)
             }
             Measures(app, act, screen)
             screen.badges?.let { BadgesCard(it) }

@@ -19,13 +19,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
@@ -64,58 +63,60 @@ import app.brivel.app.dateLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileTab(app: BrivelApp, version: Int, act: Act) {
+fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openSettings: (Boolean) -> Unit) {
     val context = LocalContext.current
     var draft by remember(version) { mutableStateOf(app.data.profile ?: UserProfile()) }
     var confirmDelete by remember { mutableStateOf(false) }
-    var editingWeek by remember { mutableStateOf(false) }
+    BackHandler(settings) { openSettings(false) }
+    // Se guarda solo: cada cambio rehace el plan al momento (lienzo de Pulso, opción B)
+    fun save(p: UserProfile) {
+        draft = p
+        act.run { app.saveProfile(p) }
+    }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Perfil", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        // Se guarda solo: cada cambio rehace el plan al momento (lienzo de Pulso, opción B)
-        fun save(p: UserProfile) {
-            draft = p
-            act.run { app.saveProfile(p) }
-        }
-        Module {
-            SectionTitle("Qué haces además de caminar")
-            SportPicker(draft.cardio) { save(draft.copy(cardio = it)) }
-        }
-        Module {
-            SectionTitle("Tu semana")
-            Box(Modifier.clickable(onClickLabel = "Cambiar tu semana") { editingWeek = true }) { WeekBars(draft.days, editable = false) }
-            OutlinedButton(onClick = { editingWeek = true }) { Text("Cambiar tu semana") }
-        }
-        // En una hoja aparte: dentro del Perfil, desplazar la pantalla movería las barras
-        if (editingWeek) ModalBottomSheet(onDismissRequest = { editingWeek = false }, sheetGesturesEnabled = false,
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = Palette.surface) {
-            Column(Modifier.navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Tu semana", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        if (!settings) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Perfil", fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                OutlinedButton(onClick = { openSettings(true) }) { Text("Ajustes y conexiones") }
+            }
+            Module {
+                SectionTitle("Qué haces además de caminar")
+                SportPicker(draft.cardio) { save(draft.copy(cardio = it)) }
+            }
+            Module {
+                SectionTitle("Tu semana")
                 WeekBars(draft.days) { save(draft.copy(days = it)) }
-                Button(onClick = { editingWeek = false }, modifier = Modifier.fillMaxWidth()) { Text("Hecho") }
             }
-        }
-        Module {
-            SectionTitle("Fuerza")
-            Segmented(STRENGTH_CHOICES.map { it.first to it.second }, draft.strength) { save(draft.copy(strength = it)) }
-        }
-        Module {
-            SectionTitle("Tu nivel")
-            Segmented(LEVEL_CHOICES.map { it.first to it.second }, draft.level) { save(draft.copy(level = it)) }
-        }
-        Module {
-            var year by remember(version) { mutableStateOf(draft.birthYear) }
-            SectionTitle("Año de nacimiento")
-            BirthYearField(year, label = null) { y ->
-                year = y
-                if (y != null && ageAllowed(y, systemToday().year)) save(draft.copy(birthYear = y))
+            Module {
+                SectionTitle("Fuerza")
+                Segmented(STRENGTH_CHOICES.map { it.first to it.second }, draft.strength) { save(draft.copy(strength = it)) }
             }
-            if (year != null && year!! >= 1000 && !ageAllowed(year!!, systemToday().year)) Secondary("Hace falta tener al menos $MIN_AGE años.", Palette.caution)
+            Module {
+                SectionTitle("Tu nivel")
+                Segmented(LEVEL_CHOICES.map { it.first to it.second }, draft.level) { save(draft.copy(level = it)) }
+            }
+            Module {
+                var year by remember(version) { mutableStateOf(draft.birthYear) }
+                SectionTitle("Año de nacimiento")
+                BirthYearField(year, label = null) { y ->
+                    year = y
+                    if (y != null && ageAllowed(y, systemToday().year)) save(draft.copy(birthYear = y))
+                }
+                if (year != null && year!! >= 1000 && !ageAllowed(year!!, systemToday().year)) Secondary("Hace falta tener al menos $MIN_AGE años.", Palette.caution)
+            }
+            GearCard(app, act, version)
+            Spacer(Modifier.height(24.dp))
+            return@Column
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { openSettings(false) }, modifier = Modifier.semantics { contentDescription = "Volver a Perfil" }) {
+                Glyph(R.drawable.ic_chevron_left, 24.dp)
+            }
+            Text("Ajustes", fontSize = 22.sp, fontWeight = FontWeight.Bold)
         }
         ReminderCard(app, act, version)
         HealthCard(app, act, version)
         IntervalsCard(app, act, version)
-        GearCard(app, act, version)
         GarminCard(app, act, version)
         SyncCard(app, act, version)
         Module {

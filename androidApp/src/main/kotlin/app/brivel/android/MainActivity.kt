@@ -153,6 +153,7 @@ private val TABS = listOf("Hoy" to R.drawable.ic_tab_today, "Calendario" to R.dr
 fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null) {
     var version by remember { mutableIntStateOf(0) }
     var tab by remember { mutableIntStateOf(0) }
+    var settings by rememberSaveable { mutableStateOf(false) }  // Perfil → Ajustes y conexiones
     var strengthDate by rememberSaveable { mutableStateOf<String?>(null) }  // sesión de fuerza abierta, a pantalla completa
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -194,7 +195,7 @@ fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null
         bottomBar = {
             if (!onboarding && strengthDate == null) NavigationBar(containerColor = Palette.surface) {
                 TABS.forEachIndexed { i, (label, icon) ->
-                    NavigationBarItem(selected = tab == i, onClick = { tab = i },
+                    NavigationBarItem(selected = tab == i, onClick = { tab = i; settings = false },
                         icon = { Icon(painterResource(icon), contentDescription = null) },
                         label = { Text(label, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1, softWrap = false) },  // cinco pestañas: que quepa «Calendario»
                         colors = NavigationBarItemDefaults.colors(indicatorColor = Palette.chip,
@@ -215,8 +216,8 @@ fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null
                 0 -> TodayTab(app, version, act) { act.run { app.abandonGoal() } }
                 1 -> CalendarTab(app, version, act)
                 2 -> TrainTab(app, version, act)
-                3 -> ProgressTab(app, version, act) { tab = 4 }
-                else -> ProfileTab(app, version, act)
+                3 -> ProgressTab(app, version, act) { tab = 4; settings = true }
+                else -> ProfileTab(app, version, act, settings) { settings = it }
             }
         }
     }
