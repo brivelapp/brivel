@@ -17,6 +17,15 @@
       "versions": [
         {
           "version": "0.1.0",
+          "buildVersion": "167",
+          "date": "2026-11-17T17:29:35Z",
+          "localizedDescription": "prueba-2026-11-17-2: Ajustes con rueda, cristal de iOS 26, teclado numérico que se cierra",
+          "downloadURL": "https://github.com/brivelapp/brivel/releases/download/prueba-2026-11-17-2/Brivel.ipa",
+          "size": 5215881,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "0.1.0",
           "buildVersion": "1",
           "date": "2026-11-17T12:21:28Z",
           "localizedDescription": "prueba-2026-11-17-1",
@@ -26,10 +35,10 @@
         }
       ],
       "version": "0.1.0",
-      "versionDate": "2026-11-17T12:21:28Z",
-      "versionDescription": "prueba-2026-11-17-1",
-      "downloadURL": "https://github.com/brivelapp/brivel/releases/download/prueba-2026-11-17-1/Brivel.ipa",
-      "size": 5163069
+      "versionDate": "2026-11-17T17:29:35Z",
+      "versionDescription": "prueba-2026-11-17-2: Ajustes con rueda, cristal de iOS 26, teclado numérico que se cierra",
+      "downloadURL": "https://github.com/brivelapp/brivel/releases/download/prueba-2026-11-17-2/Brivel.ipa",
+      "size": 5215881
     }
   ],
   "news": []
