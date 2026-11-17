@@ -41,12 +41,11 @@ struct SportPicker: View {
     }
 }
 
-/// La semana como barras: tocar o arrastrar a una altura pone esos minutos, de 15 en 15; abajo del todo, ese día queda
-/// libre. Para arrastrar hay que mantener pulsado (si no, deslizar la pantalla movería las barras). `onCommit` llega al
-/// soltar. Con VoiceOver cada barra se ajusta deslizando arriba o abajo.
+/// La semana, un día por fila: deslizar de 15 en 15 o escribir los minutos (de 0 a 5 h; sin minutos, ese día queda
+/// libre). En horizontal, desplazar la pantalla no mueve nada, y escribir la cifra evita afinar con el dedo (con las
+/// barras verticales costaba acertar en 45). `onCommit` llega al soltar el deslizador o con cada cifra escrita.
 struct WeekBars: View {
     let days: [String: Int]
-    var editable = true  // en el Perfil, solo se ve: se cambia en una hoja (si no, desplazar la pantalla movería las barras)
     var onCommit: ([String: Int]) -> Void = { _ in }
     @State private var live: [String: Int]?
     private let top = Int(TextsKt.MAX_DAY_MINUTES)
@@ -54,68 +53,42 @@ struct WeekBars: View {
     var body: some View {
         let shown = live ?? days
         let count = shown.values.filter { $0 > 0 }.count
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .lastTextBaseline) {
                 Secondary(count == 1 ? "1 día" : "\(count) días")
                 Spacer()
                 Text(TextsKt.weekTimeText(days: shown.mapValues { KotlinInt(int: Int32($0)) }))
                     .font(.mono(17, .semibold)).foregroundStyle(Palette.ok)
             }
-            HStack(alignment: .bottom, spacing: 4) {
-                ForEach(weekDays, id: \.self) { d in
-                    let m = shown[d] ?? 0
-                    VStack(spacing: 6) {
-                        GeometryReader { geo in
-                            ZStack(alignment: .bottom) {
-                                Color.clear
-                                // Los minutos, justo encima de la barra
-                                VStack(spacing: 4) {
-                                    Text(m == 0 ? "—" : "\(m)").font(.mono(12, .semibold)).foregroundStyle(m == 0 ? Palette.muted : Palette.text)
-                                    if m == 0 {
-                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                            .strokeBorder(Palette.chip, style: StrokeStyle(lineWidth: 2, dash: [4, 3])).frame(height: 12)
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Palette.ok)
-                                            .frame(height: (geo.size.height - 22) * CGFloat(m) / CGFloat(top))
-                                    }
-                                }
-                                // Toda la columna responde al dedo
-                                if editable {
-                                    Color.clear.contentShape(Rectangle())
-                                        .highPriorityGesture(DragGesture(minimumDistance: 0, coordinateSpace: .named(d))
-                                            .onChanged { set(d, minutes(at: $0.location.y, height: geo.size.height)) }
-                                            .onEnded { _ in commit() })
-                                }
-                            }
-                            .coordinateSpace(name: d)
-                        }
-                        .frame(height: editable ? 262 : 130)  // 240 de barra (5 h: cada paso de 15 son 12 pt) y 22 de minutos
-                        .sensoryFeedback(.selection, trigger: m)  // un toque suave en cada paso de 15 minutos
-                        .accessibilityElement()
-                        .accessibilityLabel(TextsKt.WEEKDAY_LABEL[d] ?? d)
+            ForEach(weekDays, id: \.self) { d in
+                let m = shown[d] ?? 0
+                let name = TextsKt.WEEKDAY_LABEL[d] ?? d
+                HStack(spacing: 8) {
+                    Text(name).font(.ui(14, .bold)).foregroundStyle(m == 0 ? Palette.muted : Palette.text).frame(width: 84, alignment: .leading)
+                    Slider(value: Binding(get: { Double(m) }, set: { set(d, Int(($0 / 15).rounded()) * 15) }),
+                           in: 0...Double(top), step: 15, onEditingChanged: { editing in if !editing { commit() } })
+                        .tint(Palette.ok)
+                        .accessibilityLabel(name)
                         .accessibilityValue(m == 0 ? "libre" : "\(m) minutos")
-                        .accessibilityAdjustableAction { direction in
-                            guard editable else { return }
-                            set(d, min(top, max(0, m + (direction == .increment ? 15 : -15))))
-                            commit()
-                        }
-                        Text(TextsKt.WEEKDAY_SHORT[d] ?? d).font(.ui(13, .bold)).foregroundStyle(m == 0 ? Palette.muted : Palette.text)
-                    }
-                    .frame(maxWidth: .infinity)
+                    TextField("—", text: Binding(get: { m == 0 ? "" : "\(m)" }, set: { t in
+                        set(d, Int(String(t.filter(\.isNumber).prefix(3))) ?? 0)
+                        commit()
+                    }))
+                    .keyboardType(.numberPad).multilineTextAlignment(.trailing).font(.mono(16, .semibold))
+                    .padding(.horizontal, 8).frame(width: 64, height: 44)
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Palette.muted, lineWidth: 1))
+                    .accessibilityLabel("Minutos el \(name.lowercased())")
+                    Secondary("min")
                 }
+                .sensoryFeedback(.selection, trigger: m)  // un toque suave en cada paso de 15 minutos
             }
-            if editable { Secondary("Toca o arrastra cada barra hasta los minutos que tienes, hasta 5 h. Abajo del todo, ese día queda libre.") }
+            Secondary("Desliza o escribe los minutos de cada día, hasta 5 h. Sin minutos, ese día queda libre.")
         }
-    }
-
-    // La barra mide el alto menos los 22 pt de los minutos: el dedo marca su tope
-    private func minutes(at y: CGFloat, height: CGFloat) -> Int {
-        min(top, max(0, Int(((height - y) / (height - 22) * CGFloat(top) / 15).rounded()) * 15))
     }
 
     private func set(_ day: String, _ minutes: Int) {
         var next = live ?? days
-        next[day] = minutes
+        next[day] = min(top, max(0, minutes))
         live = next
     }
 

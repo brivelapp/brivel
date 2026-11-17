@@ -130,6 +130,7 @@ struct BrivelMain: App {
 struct RootView: View {
     @EnvironmentObject var model: AppModel
     @State private var tab = UserDefaults.standard.integer(forKey: "tab")  // `-tab N` al lanzar: capturas del CI
+    @State private var settings = false  // Perfil → Ajustes y conexiones
     @Environment(\.scenePhase) private var phase
 
     var body: some View {
@@ -145,9 +146,9 @@ struct RootView: View {
                         .tabItem { Label { Text("Calendario") } icon: { Image("tab_calendar").renderingMode(.template) } }.tag(1)
                     TrainView()
                         .tabItem { Label { Text("Entrenar") } icon: { Image("sport_strength").renderingMode(.template) } }.tag(2)
-                    ProgressTabView(openProfile: { tab = 4 })
+                    ProgressTabView(openProfile: { tab = 4; settings = true })
                         .tabItem { Label { Text("Progreso") } icon: { Image("tab_progress").renderingMode(.template) } }.tag(3)
-                    ProfileView()
+                    ProfileView(settings: $settings)
                         .tabItem { Label { Text("Perfil") } icon: { Image("tab_profile").renderingMode(.template) } }.tag(4)
                 }
             }

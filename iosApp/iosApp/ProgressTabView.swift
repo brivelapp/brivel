@@ -16,8 +16,8 @@ struct ProgressTabView: View {
                 ScreenTitle(text: "Progreso", subtitle: "Últimos 90 días")
                 if !screen.linked {
                     Module {
-                        Secondary("Para ver tu sueño, tu VFC, tu pulso en reposo o tu VO2max, conecta en Perfil Apple Salud (los datos de tu reloj o tu báscula en este iPhone) o tu cuenta de intervals.icu (gratis).")
-                        Button("Ir a Perfil", action: openProfile).buttonStyle(PrimaryStyle())
+                        Secondary("Para ver tu sueño, tu VFC, tu pulso en reposo o tu VO2max, conecta Apple Salud (los datos de tu reloj o tu báscula en este iPhone) o tu cuenta de intervals.icu (gratis) en Perfil → Ajustes.")
+                        Button("Ir a Ajustes", action: openProfile).buttonStyle(PrimaryStyle())
                     }
                 } else {
                     let bodyMetrics = screen.metrics.filter { bodyKeys.contains($0.key) }
