@@ -187,7 +187,16 @@ tr.done .tick { background: var(--ok); color: var(--on-ok); }
 .week-row { display: grid; grid-template-columns: 6.5em minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 48px; }
 .week-row.free .week-day { color: var(--muted); }
 .week-day { font-weight: 700; }
-.week-row input[type="range"] { width: 100%; height: 32px; margin: 0; accent-color: var(--ok); }
+/* Deslizador de la muestra A (2026-11-17): pista fina con el tramo lleno en verde y punto pequeño con aro; --p lo pone ProfileParts */
+.week-row input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 32px; margin: 0; background: transparent; }
+.week-row input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px;
+  background: linear-gradient(to right, var(--ok) var(--p, 0%), var(--chip) var(--p, 0%)); }
+.week-row input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--chip); }
+.week-row input[type="range"]::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--ok); }
+.week-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -7px;
+  border-radius: 50%; background: var(--surface); border: 3px solid var(--ok); }
+.week-row input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--surface); border: 3px solid var(--ok); }
+.week-row input[type="range"]:focus-visible { outline: 2px solid var(--ok); outline-offset: 2px; }
 .week-minutes { display: flex; align-items: center; gap: 6px; }
 .week-minutes input { width: 4.4em; min-height: 44px; padding: 0 8px; border-radius: 12px; border: 1px solid var(--muted); background: var(--bg);
   color: var(--text); font: 600 16px "IBM Plex Mono", ui-monospace, monospace; text-align: right; }

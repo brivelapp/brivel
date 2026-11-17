@@ -37,6 +37,14 @@ class WorkoutTest {
     }
 
     @Test
+    fun oldHealthGoalBecomesFitness() {
+        // «Mejorar mi salud» ya no se ofrece: quien lo tenía sigue con el mismo plan, ahora como «Ponerme en forma»
+        val goal = UserGoal(GoalKind.HEALTH, since = "2026-01-05")
+        assertEquals(UserGoal(GoalKind.FITNESS, since = "2026-01-05"), migrate(AppData(schema = SCHEMA, goal = goal)).goal)
+        assertNull(migrate(AppData(schema = SCHEMA)).goal)
+    }
+
+    @Test
     fun setByStepWithLastTimeAndSuggestion() {
         val today = LocalDate(2026, 10, 22)
         val app = BrivelApp(MemoryStore(), MemoryStore(), { today })
@@ -80,7 +88,7 @@ class WorkoutTest {
     @Test
     fun everyPlannedExerciseIsInTheCatalog() {
         val today = LocalDate(2026, 10, 22)
-        for (kit in listOf("gym", "bodyweight")) for (goal in listOf(GoalKind.STRENGTH, GoalKind.FITNESS, GoalKind.HEALTH)) {
+        for (kit in listOf("gym", "bodyweight")) for (goal in listOf(GoalKind.STRENGTH, GoalKind.FITNESS)) {
             val app = BrivelApp(MemoryStore(), MemoryStore(), { today })
             app.saveProfile(UserProfile(birthYear = 1950, strength = kit, days = listOf("MON", "WED", "FRI", "SAT").associateWith { 60 }))
             app.setGoal(goal)

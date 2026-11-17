@@ -5,7 +5,6 @@ private let goals: [(GoalKind, String, String)] = [
     (.race, "Preparar una carrera", "Un plan con fecha hacia tu prueba: carrera, bici, natación, triatlón…"),
     (.fitness, "Ponerme en forma", "Más resistencia y fuerza para el día a día, sin fecha."),
     (.strength, "Ganar fuerza y músculo", "Fuerza primero, con algo de cardio para la salud."),
-    (.health, "Mejorar mi salud a largo plazo", "Cumplir lo que recomienda la OMS, con constancia."),
 ]
 private let raceSports = [("running", "Carrera a pie"), ("cycling", "Bici"), ("swimming_pool", "Natación"),
                           ("triathlon", "Triatlón"), ("duathlon", "Duatlón")]

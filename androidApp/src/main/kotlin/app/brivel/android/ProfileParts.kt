@@ -19,6 +19,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.LocalTextStyle
@@ -88,6 +92,7 @@ fun SportPicker(cardio: List<String>, onChange: (List<String>) -> Unit) {
  * libre). En horizontal, desplazar la pantalla no mueve nada, y escribir la cifra evita afinar con el dedo (con las
  * barras verticales costaba acertar en 45). `onCommit` llega al soltar el deslizador o con cada cifra escrita.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeekBars(days: Map<String, Int>, onCommit: (Map<String, Int>) -> Unit) {
     var live by remember(days) { mutableStateOf(days) }
@@ -108,8 +113,11 @@ fun WeekBars(days: Map<String, Int>, onCommit: (Map<String, Int>) -> Unit) {
                     stateDescription = if (m == 0) "libre" else "$m minutos"
                 }, valueRange = 0f..MAX_DAY_MINUTES.toFloat(), steps = MAX_DAY_MINUTES / 15 - 1,
                     onValueChangeFinished = { onCommit(live) },
-                    colors = SliderDefaults.colors(thumbColor = Palette.ok, activeTrackColor = Palette.ok, inactiveTrackColor = Palette.chip,
-                        activeTickColor = Color.Transparent, inactiveTickColor = Color.Transparent))
+                    // Pista fina y punto pequeño con aro (muestra A, 2026-11-17), igual en web e iOS
+                    thumb = { Box(Modifier.size(20.dp).background(Palette.surface, CircleShape).border(3.dp, Palette.ok, CircleShape)) },
+                    track = { state -> SliderDefaults.Track(state, Modifier.height(6.dp), drawStopIndicator = null, thumbTrackGapSize = 0.dp,
+                        colors = SliderDefaults.colors(activeTrackColor = Palette.ok, inactiveTrackColor = Palette.chip,
+                            activeTickColor = Color.Transparent, inactiveTickColor = Color.Transparent)) })
                 OutlinedTextField(text, { t ->
                     text = t.filter { it.isDigit() }.take(3)
                     onCommit(put(d, text.toIntOrNull() ?: 0))

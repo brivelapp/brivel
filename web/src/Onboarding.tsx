@@ -8,7 +8,6 @@ const GOALS: [string, string, string][] = [
   ["RACE", "Preparar una carrera", "Un plan con fecha hacia tu prueba: carrera, bici, natación, triatlón…"],
   ["FITNESS", "Ponerme en forma", "Más resistencia y fuerza para el día a día, sin fecha."],
   ["STRENGTH", "Ganar fuerza y músculo", "Fuerza primero, con algo de cardio para la salud."],
-  ["HEALTH", "Mejorar mi salud a largo plazo", "Cumplir lo que recomienda la OMS, con constancia."],
 ]
 const RACE_SPORTS: [string, string][] = [["running", "Carrera a pie"], ["cycling", "Bici"], ["swimming_pool", "Natación"],
   ["triathlon", "Triatlón"], ["duathlon", "Duatlón"]]

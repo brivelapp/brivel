@@ -13,6 +13,7 @@ interface KeyValueStore {
 }
 
 /** Qué quiere conseguir el usuario. El objetivo vive fuera del perfil y siempre se puede cambiar (VISION §5). */
+// HEALTH ya no se ofrece (2026-11-17): se queda para leer datos antiguos y `migrate` lo pasa a FITNESS, que hacía el mismo plan
 enum class GoalKind { RACE, FITNESS, STRENGTH, HEALTH }
 
 @Serializable
@@ -154,7 +155,11 @@ data class AppData(
  * `measurements` y `ownSessions` (vacíos), el tipo de cada serie y las superseries de las rutinas, por lo mismo.
  * v10 → v11: añade `activities`, `gear`, `gearUses` y `badges` (vacíos) y más datos de salud por día, por lo mismo.
  */
-fun migrate(data: AppData): AppData = when {
+fun migrate(data: AppData): AppData = migrateSchema(data).let {
+    if (it.goal?.kind == GoalKind.HEALTH) it.copy(goal = it.goal.copy(kind = GoalKind.FITNESS)) else it
+}
+
+private fun migrateSchema(data: AppData): AppData = when {
     data.schema >= SCHEMA && data.lifts.isEmpty() -> data
     else -> {
         val logged = data.sets.map { it.date to it.exercise }.toSet()

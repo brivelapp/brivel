@@ -61,7 +61,6 @@ private val GOALS = listOf(
     GoalKind.RACE to ("Preparar una carrera" to "Un plan con fecha hacia tu prueba: carrera, bici, natación, triatlón…"),
     GoalKind.FITNESS to ("Ponerme en forma" to "Más resistencia y fuerza para el día a día, sin fecha."),
     GoalKind.STRENGTH to ("Ganar fuerza y músculo" to "Fuerza primero, con algo de cardio para la salud."),
-    GoalKind.HEALTH to ("Mejorar mi salud a largo plazo" to "Cumplir lo que recomienda la OMS, con constancia."),
 )
 private val RACE_SPORTS = listOf("running" to "Carrera a pie", "cycling" to "Bici", "swimming_pool" to "Natación",
     "triathlon" to "Triatlón", "duathlon" to "Duatlón")

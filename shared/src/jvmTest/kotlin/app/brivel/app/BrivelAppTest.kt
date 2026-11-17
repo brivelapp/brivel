@@ -268,7 +268,7 @@ class BrivelAppTest {
         val store = MemoryStore()
         val a = app(store)
         a.saveProfile(profile)
-        a.setGoal(GoalKind.HEALTH)
+        a.setGoal(GoalKind.FITNESS)
         assertFalse(a.progress().linked)
         store.write("brivel.data", Json.encodeToString(AppData.serializer(), a.data.copy(cache = cache())))
         val p = app(store).progress()

@@ -1,4 +1,5 @@
 // Piezas del perfil (lienzo de Pulso, opción B), las mismas que ProfileParts.kt y ProfileParts.swift de las apps
+import type { CSSProperties } from "react"
 import type { WebApp } from "brivel-shared"
 import { Icon, SPORT_ICON } from "./Today"
 
@@ -60,6 +61,7 @@ export function WeekBars({ core, days, onCommit }:
             <div key={d} className={`week-row${m === 0 ? " free" : ""}`}>
               <span className="week-day">{name}</span>
               <input type="range" min={0} max={top} step={15} value={m} aria-label={name}
+                style={{ "--p": `${(m / top) * 100}%` } as CSSProperties}
                 aria-valuetext={m === 0 ? "libre" : `${m} minutos`} onChange={(e) => put(d, Number(e.target.value))} />
               <label className="week-minutes">
                 <input type="number" inputMode="numeric" min={0} max={top} value={m === 0 ? "" : m} placeholder="—"

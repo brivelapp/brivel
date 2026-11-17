@@ -64,9 +64,7 @@ struct WeekBars: View {
                 let name = TextsKt.WEEKDAY_LABEL[d] ?? d
                 HStack(spacing: 8) {
                     Text(name).font(.ui(14, .bold)).foregroundStyle(m == 0 ? Palette.muted : Palette.text).frame(width: 84, alignment: .leading)
-                    Slider(value: Binding(get: { Double(m) }, set: { set(d, Int(($0 / 15).rounded()) * 15) }),
-                           in: 0...Double(top), step: 15, onEditingChanged: { editing in if !editing { commit() } })
-                        .tint(Palette.ok)
+                    WeekSlider(minutes: m, top: top, set: { set(d, $0) }, commit: commit)
                         .accessibilityLabel(name)
                         .accessibilityValue(m == 0 ? "libre" : "\(m) minutos")
                     TextField("—", text: Binding(get: { m == 0 ? "" : "\(m)" }, set: { t in
@@ -146,4 +144,47 @@ struct ChoiceCards: View {
 func ageOk(_ year: Int?) -> Bool {
     guard let year else { return false }
     return TextsKt.ageAllowed(birthYear: Int32(year), currentYear: Int32(Calendar.current.component(.year, from: Date())))
+}
+
+/// Deslizador de la muestra A (2026-11-17), igual que en Android y la web: pista fina con el tramo lleno en verde y un punto
+/// pequeño con aro. El `Slider` de SwiftUI no deja cambiar la pista. Pasos de 15 min; VoiceOver lo ajusta de 15 en 15.
+private struct WeekSlider: View {
+    let minutes: Int
+    let top: Int
+    let set: (Int) -> Void
+    let commit: () -> Void
+
+    private func move(_ x: CGFloat, _ usable: CGFloat) {
+        let raw = Double(min(max(0, x - 10), usable) / usable) * Double(top)
+        set(Int((raw / 15).rounded()) * 15)
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let usable = max(1, geo.size.width - 20)
+            let x = usable * CGFloat(minutes) / CGFloat(top)
+            ZStack(alignment: .leading) {
+                Capsule().fill(Palette.chip).frame(height: 6)
+                Capsule().fill(Palette.ok).frame(width: x + 10, height: 6)
+                Circle().fill(Palette.surface).overlay(Circle().stroke(Palette.ok, lineWidth: 3))
+                    .frame(width: 20, height: 20).offset(x: x)
+            }
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            // Tocar salta al punto; arrastrar desde 6 pt, para que desplazar la pantalla no mueva el día por error
+            .onTapGesture(coordinateSpace: .local) { p in move(p.x, usable); commit() }
+            .gesture(DragGesture(minimumDistance: 6)
+                .onChanged { g in move(g.location.x, usable) }
+                .onEnded { _ in commit() })
+        }
+        .frame(height: 44)
+        .accessibilityElement()
+        .accessibilityAdjustableAction { dir in
+            switch dir {
+            case .increment: set(min(top, minutes + 15)); commit()
+            case .decrement: set(max(0, minutes - 15)); commit()
+            @unknown default: break
+            }
+        }
+    }
 }
