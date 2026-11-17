@@ -49,6 +49,7 @@ private struct Question<Content: View>: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .keyboardDone()
             Button(next, action: onNext).buttonStyle(PrimaryStyle()).frame(maxWidth: .infinity).disabled(!nextEnabled)
         }
         .padding(20)

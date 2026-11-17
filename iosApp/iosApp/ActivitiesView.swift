@@ -378,6 +378,7 @@ private struct GearEditor: View {
                 Button("Cancelar") { dismiss() }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
             }.padding(20)
         }
+        .keyboardDone()
         .background(Palette.surface)
         .onAppear {
             guard let old else { return }

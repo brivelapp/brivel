@@ -87,6 +87,7 @@ struct ProgressTabView: View {
                 MilestonesSection(screen: screen)
             }.padding(.horizontal, 18).padding(.vertical, 16)
         }.background(Palette.bg)
+        .keyboardDone()
     }
 }
 

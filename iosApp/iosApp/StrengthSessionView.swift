@@ -96,6 +96,7 @@ struct StrengthSessionView: View {
                                 content(exercises, other: screen.other, notes: screen.notes, left: left, free: screen.free)
                             }.padding(.horizontal, 18).padding(.vertical, 14)
                         }
+                        .keyboardDone()
                         if restEnd != nil && (mode == "session" || !restView) { RestBar(left: left, total: restTotal) }
                     }
                     .onChange(of: left) { _, l in if l == 0 && restEnd != nil { restEnd = nil; restDone += 1 } }

@@ -154,6 +154,7 @@ struct ProfileView: View {
             }.padding(16)
         }
         .background(Palette.bg)
+        .keyboardDone()
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(isPresented: $settings) { SettingsView() }
         }

@@ -145,6 +145,20 @@ extension View {
     }
 }
 
+extension View {
+    /// El teclado numérico de iOS no trae «Intro»: «Listo» encima del teclado y deslizar hacia abajo lo cierran.
+    func keyboardDone() -> some View {
+        scrollDismissesKeyboard(.interactively).toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Listo") {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }.font(.ui(16, .bold))
+            }
+        }
+    }
+}
+
 struct PrimaryStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View { Primary(configuration: configuration) }
 

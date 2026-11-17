@@ -92,6 +92,7 @@ private struct RoutineEditor: View {
                     if start != nil { Button("Borrar rutina", role: .destructive) { confirmDelete = true }.buttonStyle(TextActionStyle()) }
                 }.padding(18)
             }
+            .keyboardDone()
             .background(Palette.bg)
             .navigationTitle(start == nil ? "Nueva rutina" : "Editar rutina").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() } } }
@@ -129,6 +130,7 @@ private struct RoutineEditor: View {
                     }
                 }
             }
+            .keyboardDone()
             .searchable(text: $query, prompt: "Buscar")
             .navigationTitle("Añadir ejercicio").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cerrar") { picking = false } } }
