@@ -124,7 +124,7 @@ struct ProfileView: View {
                     }
                     // Se guarda solo: cada cambio rehace el plan al momento (lienzo de Pulso, opción B)
                     Module {
-                        Text("Qué haces además de caminar").font(.section)
+                        Text("Tus deportes").font(.section)
                         SportPicker(cardio: draft.cardio) { draft.cardio = $0; save() }
                     }
                     Module {

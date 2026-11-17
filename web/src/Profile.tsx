@@ -52,7 +52,7 @@ export function Profile({ core, act, synced, settings, setSettings }:
       </div>
       <div className="profile-grid">
         <section className="module">
-          <h3>Qué haces además de caminar</h3>
+          <h3>Tus deportes</h3>
           <SportPicker core={core} cardio={profile.cardio} onChange={(cardio) => save({ ...profile, cardio })} />
         </section>
         <section className="module">

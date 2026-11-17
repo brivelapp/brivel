@@ -136,7 +136,7 @@ fun Onboarding(app: BrivelApp, act: Act) {
             }
             if (goal == GoalKind.RACE) RaceForm(race) { race = it }
         }
-        2 -> Question(2, "¿Qué haces además de caminar?", "Si no marcas nada, el plan es de caminar.", { step = 1 }, "Siguiente", true,
+        2 -> Question(2, "¿Qué deportes haces?", "Si no marcas nada, el plan es de caminar.", { step = 1 }, "Siguiente", true,
             { step = 3 }) {
             SportPicker(profile.cardio) { profile = profile.copy(cardio = it) }
         }

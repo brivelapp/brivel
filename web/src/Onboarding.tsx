@@ -92,7 +92,7 @@ export function Onboarding({ core, onExit, onDone }: { core: WebApp; onExit: () 
       )
     case 2:
       return (
-        <Question number={2} title="¿Qué haces además de caminar?" subtitle="Si no marcas nada, el plan es de caminar."
+        <Question number={2} title="¿Qué deportes haces?" subtitle="Si no marcas nada, el plan es de caminar."
           onBack={() => setStep(1)} onNext={() => setStep(3)}>
           <SportPicker core={core} cardio={profile.cardio} onChange={(cardio) => setProfile({ ...profile, cardio })} />
         </Question>

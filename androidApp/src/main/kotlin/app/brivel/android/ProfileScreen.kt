@@ -80,7 +80,7 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openSe
                 OutlinedButton(onClick = { openSettings(true) }) { Text("Ajustes y conexiones") }
             }
             Module {
-                SectionTitle("Qué haces además de caminar")
+                SectionTitle("Tus deportes")
                 SportPicker(draft.cardio) { save(draft.copy(cardio = it)) }
             }
             Module {

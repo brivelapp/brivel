@@ -13,7 +13,15 @@ jobs:
       - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: "21" }
       - uses: gradle/actions/setup-gradle@v6
-      - run: ./gradlew :shared:compileCommonMainKotlinMetadata :shared:jvmTest :shared:jsNodeTest :shared:jsBrowserProductionLibraryDistribution :androidApp:testDebugUnitTest :androidApp:assembleDebug --console=plain
+      # La clave fija de las versiones de prueba; sin el secreto (forks) se firma con la de depuración del runner
+      - name: Clave de firma
+        env: { KEYSTORE_B64: "${{ secrets.BRIVEL_KEYSTORE_B64 }}" }
+        if: env.KEYSTORE_B64 != ''
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/brivel.jks"
+          echo "BRIVEL_KEYSTORE=$RUNNER_TEMP/brivel.jks" >> "$GITHUB_ENV"
+      - env: { BRIVEL_KEYSTORE_PASSWORD: "${{ secrets.BRIVEL_KEYSTORE_PASSWORD }}" }
+        run: ./gradlew :shared:compileCommonMainKotlinMetadata :shared:jvmTest :shared:jsNodeTest :shared:jsBrowserProductionLibraryDistribution :androidApp:testDebugUnitTest :androidApp:assembleDebug --console=plain
       - run: npm ci && npm run build  # la versión web, con el núcleo recién compilado
         working-directory: web
       - run: npx playwright install --with-deps chromium && npm run e2e  # la web construida, en un navegador
@@ -95,7 +103,7 @@ jobs:
       - working-directory: iosApp
         run: |
           xcodebuild -project iosApp.xcodeproj -scheme iosApp -sdk iphoneos -configuration Release -derivedDataPath build \
-            -destination 'generic/platform=iOS' build CODE_SIGNING_ALLOWED=NO
+            -destination 'generic/platform=iOS' build CODE_SIGNING_ALLOWED=NO CURRENT_PROJECT_VERSION=${{ github.run_number }}
           mkdir -p Payload
           cp -R build/Build/Products/Release-iphoneos/Brivel.app Payload/
           codesign -f -s - --entitlements iosApp/iosApp.entitlements Payload/Brivel.app

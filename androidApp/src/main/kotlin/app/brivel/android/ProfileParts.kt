@@ -80,7 +80,6 @@ fun SportPicker(cardio: List<String>, onChange: (List<String>) -> Unit) {
                 }
             }
         }
-        Secondary("Caminar siempre cuenta: no hace falta marcarlo.")
     }
 }
 

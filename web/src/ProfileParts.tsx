@@ -34,7 +34,6 @@ export function SportPicker({ core, cardio, onChange }: { core: WebApp; cardio: 
           )
         })}
       </div>
-      <p className="muted small-text">Caminar siempre cuenta: no hace falta marcarlo.</p>
     </div>
   )
 }

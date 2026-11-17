@@ -36,7 +36,6 @@ struct SportPicker: View {
                     .accessibilityAddTraits(on ? .isSelected : [])
                 }
             }
-            Secondary("Caminar siempre cuenta: no hace falta marcarlo.")
         }
     }
 }

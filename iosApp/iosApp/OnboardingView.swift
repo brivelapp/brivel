@@ -137,7 +137,7 @@ struct OnboardingView: View {
                 }
             }
         case 2:
-            Question(number: 2, title: "¿Qué haces además de caminar?", subtitle: "Si no marcas nada, el plan es de caminar.",
+            Question(number: 2, title: "¿Qué deportes haces?", subtitle: "Si no marcas nada, el plan es de caminar.",
                      back: { step = 1 }, onNext: { step = 3 }) {
                 SportPicker(cardio: draft.cardio) { draft.cardio = $0 }
             }

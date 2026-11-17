@@ -11,12 +11,24 @@ android {
         applicationId = "app.brivel"
         minSdk = 28  // Health Connect
         targetSdk = 36
-        versionCode = 1
+        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toInt() ?: 1  // cada versión del CI, mayor que la anterior
         versionName = "0.1.0"
     }
 
     buildFeatures {
         compose = true
+    }
+
+    // El CI firma con una clave fija (secreto de GitHub): si no, cada versión de prueba choca con la anterior al instalarla
+    signingConfigs {
+        getByName("debug") {
+            System.getenv("BRIVEL_KEYSTORE")?.let {
+                storeFile = file(it)
+                storePassword = System.getenv("BRIVEL_KEYSTORE_PASSWORD")
+                keyAlias = "brivel"
+                keyPassword = System.getenv("BRIVEL_KEYSTORE_PASSWORD")
+            }
+        }
     }
 
     buildTypes {

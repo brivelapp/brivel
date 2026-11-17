@@ -1,0 +1,31 @@
+{
+  "name": "Brivel",
+  "identifier": "app.brivel.source",
+  "subtitle": "Versiones de prueba de Brivel",
+  "website": "https://brivel.app",
+  "iconURL": "https://raw.githubusercontent.com/brivelapp/brivel/master/web/public/icon-512.png",
+  "apps": [
+    {
+      "name": "Brivel",
+      "bundleIdentifier": "app.brivel",
+      "developerName": "Brivel",
+      "subtitle": "Tu plan de entrenamiento, día a día",
+      "localizedDescription": "Versión de prueba de Brivel. Se firma en el móvil con SideStore, AltStore o un firmador que admita fuentes.",
+      "iconURL": "https://raw.githubusercontent.com/brivelapp/brivel/master/web/public/icon-512.png",
+      "tintColor": "#1F7A5C",
+      "category": "health",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "buildVersion": "1",
+          "date": "2026-11-17T12:21:28Z",
+          "localizedDescription": "prueba-2026-11-17-1",
+          "downloadURL": "https://github.com/brivelapp/brivel/releases/download/prueba-2026-11-17-1/Brivel.ipa",
+          "size": 5163069,
+          "minOSVersion": "17.0"
+        }
+      ]
+    }
+  ],
+  "news": []
+}
