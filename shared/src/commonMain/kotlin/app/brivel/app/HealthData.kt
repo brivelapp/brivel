@@ -45,6 +45,24 @@ data class DailyHealth(
         respiratoryRate ?: other.respiratoryRate, bodyFat ?: other.bodyFat, stress ?: other.stress)
 }
 
+/** Un tramo de sueño, en segundos desde 1970. */
+data class SleepSpan(val start: Long, val end: Long)
+
+/**
+ * Minutos cubiertos por al menos un tramo. El móvil y el reloj (o dos apps) apuntan la misma noche cada uno por su
+ * lado: sumar los tramos contaba la noche dos o tres veces (30 h de sueño en la primera lectura de Health Connect).
+ */
+fun coveredMinutes(spans: List<SleepSpan>): Double {
+    var total = 0L
+    var end = Long.MIN_VALUE
+    for (s in spans.filter { it.end > it.start }.sortedBy { it.start }) {
+        val from = max(s.start, end)
+        if (s.end > from) total += s.end - from
+        end = max(end, s.end)
+    }
+    return total / 60.0
+}
+
 /** Un entrenamiento registrado en el móvil. `zoneSeconds`: tiempo en las 7 zonas de FC, si se pudo calcular. */
 @Serializable
 data class Workout(

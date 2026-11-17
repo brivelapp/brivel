@@ -40,6 +40,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class MainActivity : ComponentActivity() {
     /** Sube cada vez que vuelve de Garmin (brivel://garmin): Root recoge entonces la conexión. */
@@ -160,7 +162,8 @@ fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null
     // Datos frescos sin pulsar nada: intervals.icu, Health Connect y Garmin si están conectados, y después lo que
     // cambiaron los otros dispositivos (también sube lo recién llegado). Sin red, la copia guardada
     var refreshing by remember { mutableStateOf(false) }
-    suspend fun refreshAll() {
+    val refreshLock = remember { Mutex() }  // al volver a la app y al deslizar a la vez: una lectura detrás de otra
+    suspend fun refreshAll() = refreshLock.withLock {
         if (app.linkedAthlete != null) runCatching { app.sync() }
         if (app.data.health != null) runCatching { HealthConnectReader(context).sync(app) }
         // Solo lo que responde el relevo (desconectado desde Garmin Connect); sin conexión, en la próxima vez
@@ -202,7 +205,7 @@ fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null
         },
     ) { padding ->
         PullToRefreshBox(refreshing, onRefresh = {
-            scope.launch { refreshing = true; refreshAll(); refreshing = false }
+            scope.launch { refreshing = true; try { refreshAll() } finally { refreshing = false } }
         }, Modifier.padding(padding)) {
             if (onboarding) {
                 Onboarding(app, act)

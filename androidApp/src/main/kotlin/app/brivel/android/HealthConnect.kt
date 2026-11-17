@@ -19,6 +19,8 @@ import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.request.AggregateGroupByPeriodRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import app.brivel.app.SleepSpan
+import app.brivel.app.coveredMinutes
 import app.brivel.app.DailyHealth
 import app.brivel.app.HealthSnapshot
 import app.brivel.app.BrivelApp
@@ -71,10 +73,17 @@ class HealthConnectReader(private val context: Context) {
             if (HealthPermission.getReadPermission(type) in granted) read(type, from, to) else emptyList()
 
         val nights = maybe(SleepSessionRecord::class).groupBy { date(it.endTime) }
-        val sleep = nights.mapValues { (_, s) -> s.sumOf { Duration.between(it.startTime, it.endTime).toMinutes() }.toDouble() }
+        fun span(from: Instant, to: Instant) = SleepSpan(from.epochSecond, to.epochSecond)
+        // Dormido: las fases de sueño si las hay (sin despierto ni fuera de la cama); si no, la sesión entera
+        val sleep = nights.mapValues { (_, s) ->
+            coveredMinutes(s.flatMap { n ->
+                n.stages.filter { it.stage in ASLEEP }.map { span(it.startTime, it.endTime) }
+                    .ifEmpty { listOf(span(n.startTime, n.endTime)) }
+            })
+        }.filterValues { it > 0 }
         // Minutos de una fase del sueño cada noche, si el reloj las apunta
         fun stage(type: Int) = nights.mapValues { (_, s) ->
-            s.sumOf { n -> n.stages.filter { it.stage == type }.sumOf { Duration.between(it.startTime, it.endTime).toMinutes() } }.toDouble()
+            coveredMinutes(s.flatMap { n -> n.stages.filter { it.stage == type }.map { span(it.startTime, it.endTime) } })
         }.filterValues { it > 0 }
         val deep = stage(SleepSessionRecord.STAGE_TYPE_DEEP)
         val rem = stage(SleepSessionRecord.STAGE_TYPE_REM)
@@ -99,22 +108,31 @@ class HealthConnectReader(private val context: Context) {
             DailyHealth(d, sleep[d], hrv[d], resting[d], weight[d], steps[d], vo2[d], deep[d], rem[d], spo2[d], breathing[d], fat[d])
         }
 
-        val heart = maybe(HeartRateRecord::class).flatMap { r -> r.samples.map { it.time to it.beatsPerMinute.toDouble() } }
-            .sortedBy { it.first }
-        val measuredMax = heart.maxOfOrNull { it.second }
+        // Pulso solo durante cada entrenamiento nuevo: leer el de todo el año (cientos de miles de muestras de un reloj)
+        // tardaba minutos y dejaba la pantalla cargando. Los ya leídos se quedan como estaban
+        val heartAllowed = HealthPermission.getReadPermission(HeartRateRecord::class) in granted
+        // Sin pulso guardado y con permiso ahora (se dio después): se vuelve a leer
+        val known = app.data.health?.workouts.orEmpty().filter { it.avgHr != null || !heartAllowed }.associateBy { it.id }
+        val sessions = maybe(ExerciseSessionRecord::class).filter { it.exerciseType in SPORTS }
+        val heart = sessions.filter { it.metadata.id !in known }.associate { s ->
+            s.metadata.id to (if (!heartAllowed) emptyList() else read(HeartRateRecord::class, s.startTime, s.endTime)
+                .flatMap { r -> r.samples.map { it.time to it.beatsPerMinute.toDouble() } }
+                .filter { it.first >= s.startTime && it.first <= s.endTime }.sortedBy { it.first })
+        }
+        val measuredMax = heart.values.flatten().maxOfOrNull { it.second }
         val bounds = app.zoneBounds(measuredMax)
         val local = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
         val distances = maybe(DistanceRecord::class)
-        val workouts = maybe(ExerciseSessionRecord::class).mapNotNull { s ->
-            val sport = SPORTS[s.exerciseType] ?: return@mapNotNull null
-            val samples = heart.filter { it.first >= s.startTime && it.first <= s.endTime }
+        val workouts = sessions.map { s ->
+            known[s.metadata.id]?.let { return@map it }
+            val samples = heart[s.metadata.id].orEmpty()
             // Tiempo en cada zona: cada pulso cuenta hasta el siguiente (como mucho 10 s, para no inventar huecos)
             val zones = DoubleArray(7)
             samples.zipWithNext { a, b ->
                 val secs = minOf(Duration.between(a.first, b.first).seconds.toDouble(), 10.0)
                 zones[bounds.indexOfFirst { a.second < it }.let { if (it == -1) 6 else it }] += secs
             }
-            Workout(id = s.metadata.id, sport = sport, start = s.startTime.atZone(zone).format(local),
+            Workout(id = s.metadata.id, sport = SPORTS.getValue(s.exerciseType), start = s.startTime.atZone(zone).format(local),
                 minutes = Duration.between(s.startTime, s.endTime).seconds / 60.0,
                 avgHr = samples.map { it.second }.takeIf { it.isNotEmpty() }?.average(),
                 maxHr = samples.maxOfOrNull { it.second },
@@ -126,6 +144,8 @@ class HealthConnectReader(private val context: Context) {
     }
 
     companion object {
+        private val ASLEEP = setOf(SleepSessionRecord.STAGE_TYPE_SLEEPING, SleepSessionRecord.STAGE_TYPE_LIGHT,
+            SleepSessionRecord.STAGE_TYPE_DEEP, SleepSessionRecord.STAGE_TYPE_REM)
         private val SPORTS = mapOf(
             ExerciseSessionRecord.EXERCISE_TYPE_RUNNING to "running",
             ExerciseSessionRecord.EXERCISE_TYPE_RUNNING_TREADMILL to "running",

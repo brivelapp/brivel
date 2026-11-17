@@ -10,6 +10,18 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class HealthDataTest {
+    @Test
+    fun `la misma noche apuntada por el móvil y el reloj cuenta una vez`() {
+        val h = 3600L
+        // Móvil 23–07 y reloj 23:30–07:30 se solapan: 8 h 30 min, no 16 h
+        assertEquals(510.0, coveredMinutes(listOf(SleepSpan(0, 8 * h), SleepSpan(h / 2, 8 * h + h / 2))))
+        // Un tramo dentro de otro no suma; uno separado (siesta) sí
+        assertEquals(500.0, coveredMinutes(listOf(SleepSpan(0, 8 * h), SleepSpan(h, 2 * h), SleepSpan(10 * h, 10 * h + 1200))))
+        // Tramos vacíos o al revés no cuentan
+        assertEquals(0.0, coveredMinutes(listOf(SleepSpan(5, 5), SleepSpan(10, 0))))
+        assertEquals(0.0, coveredMinutes(emptyList()))
+    }
+
     private val today = LocalDate(2026, 10, 22)
     private val profile = UserProfile(birthYear = 1990, level = "intermediate", strength = "gym",
         cardio = listOf("running", "walking"), days = mapOf("MON" to 60, "WED" to 60, "FRI" to 60, "SAT" to 90))

@@ -66,12 +66,18 @@ final class HealthKitReader {
         let sleepSamples: [HKCategorySample] = try await samples(HKCategoryType(.sleepAnalysis), from: from, to: to, as: HKCategorySample.self)
         let asleep: Set<Int> = [HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue, HKCategoryValueSleepAnalysis.asleepCore.rawValue,
                                 HKCategoryValueSleepAnalysis.asleepDeep.rawValue, HKCategoryValueSleepAnalysis.asleepREM.rawValue]
+        // El iPhone y el Watch apuntan la misma noche: los tramos solapados cuentan una vez (HealthDataKt.coveredMinutes)
+        func covered(_ s: [HKCategorySample]) -> Double {
+            HealthDataKt.coveredMinutes(spans: s.map {
+                SleepSpan(start: Int64($0.startDate.timeIntervalSince1970), end: Int64($0.endDate.timeIntervalSince1970))
+            })
+        }
         let sleep = Dictionary(grouping: sleepSamples.filter { asleep.contains($0.value) }) { dayKey($0.endDate) }
-            .mapValues { $0.reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) / 60 } }
+            .mapValues(covered)
         // Minutos de una fase del sueño cada noche, si el reloj las apunta
         func stage(_ value: HKCategoryValueSleepAnalysis) -> [String: Double] {
             Dictionary(grouping: sleepSamples.filter { $0.value == value.rawValue }) { dayKey($0.endDate) }
-                .mapValues { $0.reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) / 60 } }
+                .mapValues(covered)
         }
         let deep = stage(.asleepDeep)
         let rem = stage(.asleepREM)
