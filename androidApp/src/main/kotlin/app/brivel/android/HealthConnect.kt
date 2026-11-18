@@ -96,10 +96,11 @@ class HealthConnectReader(private val context: Context) {
             .mapValues { (_, r) -> r.minOf { it.beatsPerMinute }.toDouble() }
         val weight = maybe(WeightRecord::class).groupBy { date(it.time) }
             .mapValues { (_, r) -> r.maxBy { it.time }.weight.inKilograms }
-        // El total del día que calcula Health Connect: sumar registros contaría dos veces lo del móvil y el reloj
+        // El total del día que calcula Health Connect: sumar registros contaría dos veces lo del móvil y el reloj.
+        // Desde medianoche: empezar a la hora actual cortaba cada «día» de esa hora a la misma del día siguiente
         val steps = if (HealthPermission.getReadPermission(StepsRecord::class) !in granted) emptyMap() else client.aggregateGroupByPeriod(
             AggregateGroupByPeriodRequest(setOf(StepsRecord.COUNT_TOTAL),
-                TimeRangeFilter.between(LocalDateTime.ofInstant(from, zone), LocalDateTime.ofInstant(to, zone)), Period.ofDays(1)),
+                TimeRangeFilter.between(LocalDate.now(zone).minusDays(days).atStartOfDay(), LocalDateTime.ofInstant(to, zone)), Period.ofDays(1)),
         ).mapNotNull { r -> r.result[StepsRecord.COUNT_TOTAL]?.let { r.startTime.toLocalDate().toString() to it.toDouble() } }.toMap()
         val vo2 = maybe(Vo2MaxRecord::class).groupBy { date(it.time) }
             .mapValues { (_, r) -> r.maxBy { it.time }.vo2MillilitersPerMinuteKilogram }

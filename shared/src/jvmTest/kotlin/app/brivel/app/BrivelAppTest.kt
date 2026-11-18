@@ -282,7 +282,12 @@ class BrivelAppTest {
     fun todaysUnfinishedStepsAreNotTheLatest() {
         val days = (0..9).map { n -> buildJsonObject { put("id", today.plusDays(-n).toString()); put("steps", if (n == 0) 800 else 9000) } }
         val p = buildProgress(AppData(cache = IntervalsCache(JsonObject(emptyMap()), days, emptyList(), today.toString())), today)
-        assertEquals(9000.0, p.metrics.first { it.key == "steps" }.latest)
+        val steps = p.metrics.first { it.key == "steps" }
+        assertEquals(9000.0, steps.latest)
+        assertEquals("Pasos de ayer", steps.label)
+        // Sin dato de ayer, el último es más antiguo: no se llama «de ayer»
+        val old = buildProgress(AppData(cache = IntervalsCache(JsonObject(emptyMap()), days.drop(2), emptyList(), today.toString())), today)
+        assertEquals("Pasos", old.metrics.first { it.key == "steps" }.label)
     }
 
     @Test

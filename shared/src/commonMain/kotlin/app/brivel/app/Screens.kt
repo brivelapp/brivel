@@ -332,8 +332,10 @@ fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScre
         series("stress", "Estrés", "/100", "La puntuación de estrés de tu reloj, media del día.", false) { it["brivel_stress"].num() },
         series("weight", "Peso", "kg", "Tu peso, de la báscula o del reloj.", null) { it["weight"].num() },
         series("bodyFat", "Grasa corporal", "%", "Porcentaje de grasa que estima tu báscula.", null) { it["bodyFat"].num() },
-        // Hoy no ha terminado: sus pasos van por debajo de cualquier día completo
-        series("steps", "Pasos", "", "Pasos al día.", true) { w -> w["steps"].num().takeIf { w["id"].str() != today.toString() } },
+        // Hoy no ha terminado: sus pasos van por debajo de cualquier día completo. El nombre dice que son los de ayer,
+        // para que nadie los compare con los de hoy de Health Connect o Apple Salud
+        series("steps", "Pasos", "", "Pasos al día.", true) { w -> w["steps"].num().takeIf { w["id"].str() != today.toString() } }
+            ?.let { m -> if (m.points.last().date == today.plusDays(-1).toString()) m.copy(label = "Pasos de ayer") else m },
         series("ctl", "Forma física", "", GLOSSARY["Forma física"]!!, true) { it["ctl"].num() },
         series("tsb", "Forma", "", GLOSSARY["Forma"]!!, null) { w ->
             val ctl = w["ctl"].num(); val atl = w["atl"].num()
