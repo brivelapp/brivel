@@ -1,5 +1,9 @@
 package app.brivel.android
 
+import androidx.compose.foundation.layout.fillMaxWidth
+import app.brivel.app.PlanWeek
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -96,14 +100,28 @@ private fun WholePlan(app: BrivelApp, version: Int) {
         Secondary(plan.subtitle)
         if (!open) SecondaryButton("Ver semana a semana") { open = true }
         else {
-            plan.weeks.forEach { w ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text((if (w.isCurrent) "Esta semana" else "Semana del ${w.title}") + (w.phase?.let { " · $it" } ?: ""),
-                            fontSize = 15.sp, fontWeight = if (w.isCurrent) FontWeight.Bold else FontWeight.Normal)
-                        Source(w.race?.let { "Carrera: $it" } ?: w.key ?: "Solo fuerza")
+            // Cada semana: título y horas arriba, la fase y el detalle debajo. Con todo en una línea al lado de las horas, la
+            // letra grande lo dejaba en una columna de una palabra. Si un título no cabe con sus horas, en todas las semanas
+            // las horas van debajo del título, para que no queden unas a la derecha y otras debajo
+            val width = rememberTextWidth()
+            val titleStyle = LocalTextStyle.current.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            val hoursStyle = LocalTextStyle.current.copy(fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            fun title(w: PlanWeek) = if (w.isCurrent) "Esta semana" else "Semana del ${w.title}"
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val below = plan.weeks.any { width(title(it), titleStyle) + 10.dp + width(hours(it.minutes), hoursStyle) > maxWidth }
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    plan.weeks.forEach { w ->
+                        Column {
+                            val hoursText = @Composable { Text(hours(w.minutes), fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, softWrap = false) }
+                            Row(verticalAlignment = Alignment.Bottom) {
+                                Text(title(w), Modifier.weight(1f), fontSize = 15.sp, fontWeight = if (w.isCurrent) FontWeight.Bold else FontWeight.SemiBold)
+                                if (!below) hoursText()
+                            }
+                            if (below) hoursText()
+                            w.phase?.let { Secondary(it) }
+                            Source(w.race?.let { "Carrera: $it" } ?: w.key ?: "Solo fuerza")
+                        }
                     }
-                    Text(hours(w.minutes), fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, softWrap = false)
                 }
             }
             Source("Las semanas que vienen se ajustan a lo que vayas haciendo.")

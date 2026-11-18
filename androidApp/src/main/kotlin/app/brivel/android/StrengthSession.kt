@@ -1,5 +1,16 @@
 package app.brivel.android
 
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
 import androidx.compose.ui.platform.LocalContext
@@ -181,7 +192,7 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
                     exercises.forEachIndexed { i, ex ->
                         SessionRows(ex, i == current, setNo, extra = {
                             if (screen.free) {
-                                Row {
+                                ChipRow {
                                     TextButton(onClick = { edit { app.changeWorkoutSets(ex.name, 1) } }) { LinkText("Otra serie") }
                                     if (ex.sets > maxOf(1, ex.done.size)) TextButton(onClick = { edit { app.changeWorkoutSets(ex.name, -1) } }) { LinkText("Una serie menos") }
                                     TextButton(onClick = {
@@ -228,7 +239,7 @@ fun StrengthSession(app: BrivelApp, date: String, version: Int, act: Act, close:
                     }
                 }
             }
-            if (screen.free) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (screen.free) ChipRow {
                 SecondaryButton("Añadir ejercicio") { picking = true }
                 if (mode == "session") TextButton(onClick = { confirmDiscard = true }) { LinkText("Descartar el entreno") }
             }
@@ -275,7 +286,7 @@ private fun SetView(app: BrivelApp, e: StrengthExercise, setNo: Int, next: Stren
                 .background(if (e.done.any { it.set == n }) Palette.ok else Palette.chip))
         }
     }
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(Modifier.size(64.dp).clip(RoundedCornerShape(18.dp)).background(Palette.band), contentAlignment = Alignment.Center) {
             ExerciseFigure(e.pattern, 52.dp)
         }
@@ -287,7 +298,7 @@ private fun SetView(app: BrivelApp, e: StrengthExercise, setNo: Int, next: Stren
             e.superset?.let { Secondary("Superserie $it: alterna sus ejercicios y descansa al acabar la ronda") }
         }
     }
-    Row {
+    ChipRow {
         TextButton(onClick = { sheet = "card" }) { LinkText("Cómo se hace") }
         if (swap != null) TextButton(onClick = { sheet = "swap" }) { LinkText("Cambiar ejercicio") }
     }
@@ -299,13 +310,25 @@ private fun SetView(app: BrivelApp, e: StrengthExercise, setNo: Int, next: Stren
             Text(it, fontSize = 14.sp)
         }
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Stepper("kg", weightText(weight), Modifier.weight(1f), onTap = { typing = true },
+    val width = rememberTextWidth()
+    val labelStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val repsLabel = if (e.timed) "segundos" else "repeticiones"
+        // Con letra grande, «repeti-ciones» se partía y las dos tarjetas quedaban de alto distinto
+        val stacked = width(repsLabel, labelStyle) + 20.dp > (maxWidth - 12.dp) / 2
+        @Composable fun weightStepper(m: Modifier) = Stepper("kg", weightText(weight), m, onTap = { typing = true },
             minus = { weight = weight?.let { w -> (w - 2.5).takeIf { it > 0 } } },
             plus = { weight = (weight ?: 0.0) + 2.5 })
-        Stepper(if (e.timed) "segundos" else "repeticiones", amount(e, reps), Modifier.weight(1f),
+        @Composable fun repsStepper(m: Modifier) = Stepper(repsLabel, amount(e, reps), m,
             minus = { reps = (reps - if (e.timed) 5 else 1).coerceAtLeast(1) },
             plus = { reps = (reps + if (e.timed) 5 else 1).coerceAtMost(600) })
+        if (stacked) Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            weightStepper(Modifier.fillMaxWidth())
+            repsStepper(Modifier.fillMaxWidth())
+        } else Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            weightStepper(Modifier.weight(1f).fillMaxHeight())
+            repsStepper(Modifier.weight(1f).fillMaxHeight())
+        }
     }
     if (e.barbell) weight?.let { w -> app.plates(w)?.let { Secondary(it) } }
     // Tipo de serie: las de calentamiento y las descendentes se suman a las del plan y no cuentan para subir el peso
@@ -316,10 +339,10 @@ private fun SetView(app: BrivelApp, e: StrengthExercise, setNo: Int, next: Stren
     PrimaryButton(if (e.done.any { it.set == setNo }) "Guardar cambio" else "Serie hecha", Modifier.fillMaxWidth()) { done(weight, reps, kind) }
     previous?.takeIf { e.done.none { it.set == setNo } }?.let { Secondary("La última vez: ${setText(it, e.timed)}") }
     next?.let {
-        Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Secondary("Después: ")
-            Text(it.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-        }
+        Text(buildAnnotatedString {
+            withStyle(SpanStyle(color = Palette.muted)) { append("Después: ") }
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(it.name) }
+        }, Modifier.padding(top = 6.dp), fontSize = 14.sp, lineHeight = 20.sp)
     }
     if (typing) WeightDialog(weight, { typing = false }) { weight = it; typing = false }
 }
@@ -330,9 +353,10 @@ private fun Stepper(label: String, value: String, modifier: Modifier, onTap: (()
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Secondary(label)
         // Misma altura con "Sin peso" que con un número, para que las dos tarjetas queden parejas
-        Box(Modifier.height(48.dp).then(if (onTap != null) Modifier.clickable(onClickLabel = "Escribir el peso", onClick = onTap) else Modifier),
+        Box(Modifier.heightIn(min = 48.dp).then(if (onTap != null) Modifier.clickable(onClickLabel = "Escribir el peso", onClick = onTap) else Modifier),
             contentAlignment = Alignment.Center) {
-            Text(value, fontFamily = Mono, fontWeight = FontWeight.SemiBold, fontSize = if (value.length > 5) 26.sp else 38.sp)
+            Text(value, fontFamily = Mono, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
+                autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = if (value.length > 5) 26.sp else 38.sp))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StepButton("−", "Menos $label", minus)
@@ -378,12 +402,15 @@ private fun RestView(left: Int, total: Int, e: StrengthExercise?, setNo: Int, lo
                 drawArc(ok, -90f, 360f * left / total.coerceAtLeast(1), false, style = Stroke(w, cap = StrokeCap.Round))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("%d:%02d".format(left / 60, left % 60), fontFamily = Mono, fontWeight = FontWeight.SemiBold, fontSize = 44.sp)
-                Secondary("descanso de %d:%02d".format(total / 60, total % 60))
+                Text("%d:%02d".format(left / 60, left % 60), fontFamily = Mono, fontWeight = FontWeight.SemiBold, maxLines = 1,
+                    softWrap = false, autoSize = TextAutoSize.StepBased(minFontSize = 20.sp, maxFontSize = 44.sp))
+                Text("descanso de %d:%02d".format(total / 60, total % 60), color = Palette.muted, maxLines = 1, softWrap = false,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 14.sp), modifier = Modifier.padding(horizontal = 24.dp))
             }
         }
     }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)) {
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SecondaryButton("−15 s") { adjust(-15) }
         SecondaryButton("+15 s") { adjust(15) }
         SecondaryButton("Saltar", onClick = skip)
@@ -443,8 +470,10 @@ private fun SessionRows(e: StrengthExercise, isCurrent: Boolean, currentSet: Int
         }
         e.superset?.let { Source("Superserie $it") }
         Row(Modifier.fillMaxWidth()) {
-            listOf("SERIE" to 0.7f, "ANTERIOR" to 1.4f, if (e.timed) "PESO" to 1f else "KG" to 1f, (if (e.timed) "SEG" else "REPS") to 1f).forEach { (h, w) ->
-                Text(h, Modifier.weight(w), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Palette.muted)
+            listOf("SERIE" to 0.7f, "ANTERIOR" to 1.4f, if (e.timed) "PESO" to 1f else "KG" to 1f, (if (e.timed) "SEG" else "REPS") to 1f).forEachIndexed { i, (h, w) ->
+                Text(h, Modifier.weight(w), fontWeight = FontWeight.SemiBold, color = Palette.muted, maxLines = 1, softWrap = false,
+                    textAlign = if (i >= 2) TextAlign.Center else TextAlign.Start,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 7.sp, maxFontSize = 11.sp))
             }
             Spacer(Modifier.width(36.dp))
         }
@@ -457,7 +486,8 @@ private fun SessionRows(e: StrengthExercise, isCurrent: Boolean, currentSet: Int
                 // La letra del tipo de serie (C, D o F) junto al número; TalkBack lee el nombre entero
                 Text("$n" + (today?.kind?.let { " " + SET_KINDS.getValue(it).first() } ?: ""), Modifier.weight(0.7f)
                     .semantics { contentDescription = "Serie $n" + (today?.kind?.let { ", " + SET_KINDS.getValue(it).lowercase() } ?: "") }, fontFamily = Mono)
-                Text(before?.let { setText(it, e.timed) } ?: "—", Modifier.weight(1.4f), fontFamily = Mono, fontSize = 13.sp, color = Palette.muted)
+                Text(before?.let { setText(it, e.timed) } ?: "—", Modifier.weight(1.4f), fontFamily = Mono, fontSize = 13.sp, color = Palette.muted,
+                    style = LocalTextStyle.current.copy(hyphens = Hyphens.None))
                 Cell(today?.let { weightText(it.weightKg) } ?: "—", today != null, now, Modifier.weight(1f))
                 Cell(today?.let { amount(e, it.reps) } ?: "—", today != null, now, Modifier.weight(1f))
                 Box(Modifier.padding(start = 6.dp).size(30.dp).clip(RoundedCornerShape(10.dp))
@@ -476,7 +506,8 @@ private fun Cell(text: String, done: Boolean, now: Boolean, modifier: Modifier) 
         .background(if (done) Palette.okSoft else if (now) Palette.surface else Palette.chip)
         .then(if (now) Modifier.border(2.dp, Palette.ok, RoundedCornerShape(10.dp)) else Modifier)
         .padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
-        Text(text, fontFamily = Mono, fontSize = if (text.length > 5) 11.sp else 13.sp, color = if (done) Palette.text else Palette.muted)
+        Text(text, fontFamily = Mono, color = if (done) Palette.text else Palette.muted, maxLines = 1, softWrap = false,
+            autoSize = TextAutoSize.StepBased(minFontSize = 7.sp, maxFontSize = if (text.length > 5) 11.sp else 13.sp))
     }
 }
 
