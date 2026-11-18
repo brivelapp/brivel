@@ -32,7 +32,7 @@ struct TodayView: View {
                 }
                 if screen.askReadiness { ReadinessCard() }
                 if screen.noPlan && day.items.isEmpty { NoRoutineToday(next: screen.nextRoutine, openTrain: openTrain) }
-                DayContent(day: day, linked: model.core.watchRoute != nil, today: true, openTrain: openTrain)
+                DayContent(day: day, linked: model.core.watchRoute != nil, today: true)
                 Module {
                     TitleRow {
                         Text("Esta semana").font(.section)
@@ -80,7 +80,6 @@ struct DayContent: View {
     let day: DayView
     let linked: Bool
     let today: Bool
-    var openTrain: (() -> Void)? = nil  // solo en Hoy: el test del habla guiado se sigue en Entrenar
 
     var body: some View {
         let core = model.core
@@ -99,7 +98,7 @@ struct DayContent: View {
                 }
             }
             ForEach(Array(day.items.enumerated()), id: \.offset) { _, item in
-                SessionItem(day: day, item: item, linked: linked, today: today, openTrain: openTrain)
+                SessionItem(day: day, item: item, linked: linked, today: today)
             }
             ForEach(Array(day.matches.enumerated()), id: \.offset) { _, m in
                 ReasonRow(reason: Reason(text: m.text, evidence: nil), color: m.counts ? Palette.ok : Palette.caution)
@@ -122,7 +121,6 @@ private struct SessionItem: View {
     let item: PlanItem
     let linked: Bool
     let today: Bool
-    var openTrain: (() -> Void)? = nil
     @State private var open = false
     @State private var moving = false
     @State private var choosingWatch = false
@@ -182,7 +180,7 @@ private struct SessionItem: View {
                     Button("Cancelar", role: .cancel) {}
                 }
             }
-            if let kind = item.testKind, today || day.isPast { TestResultButton(date: day.date, kind: kind, guided: today ? openTrain : nil) }
+            if let kind = item.testKind, today || day.isPast { TestResultButton(date: day.date, kind: kind) }
             if item.chosen { Button("Volver a la planificada") { model.run { core.clearChoice(date: day.date) } }.font(.ui(14, .bold)).buttonStyle(TextActionStyle()) }
             if let from = item.movedFrom { Secondary("La has movido aquí desde el \(ScreensKt.dateLabel(date: from).lowercased()).") }
             let targets = done || day.isPast ? [] : core.moveTargets(date: day.date, slot: item.slot)
@@ -260,7 +258,6 @@ private struct TestResultButton: View {
     @EnvironmentObject var model: AppModel
     let date: String
     let kind: String
-    var guided: (() -> Void)? = nil
     @State private var open = false
     @State private var main = ""
     @State private var hr = ""
@@ -269,25 +266,8 @@ private struct TestResultButton: View {
         let fields = TextsKt.TEST_FIELDS[kind]
         let mainLabel = (fields?.first as? String) ?? "Resultado"
         let hrLabel = fields?.second as? String
-        // El del habla, guiado con el GPS: avisa cada 3′ y guarda el ritmo solo (en cinta o sin GPS, a mano)
-        if kind == "talk", let guided {
-            Button {
-                model.run {
-                    try model.core.startTalkTest(time: Int64(Date().timeIntervalSince1970))
-                    Recorder.shared.start(model.core)
-                    Task { _ = try? await Reminders.requestAccess() }  // el aviso de fin de tramo con la pantalla apagada
-                    guided()
-                }
-            } label: { Text("Empezar el test").frame(maxWidth: .infinity) }.buttonStyle(PrimaryStyle())
-        }
-        Group {
-            if kind == "talk" && guided != nil {
-                Button("Apuntar el resultado a mano") { main = ""; hr = ""; open = true }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
-            } else {
-                Button { main = ""; hr = ""; open = true } label: { Text("Apuntar el resultado").frame(maxWidth: .infinity) }
-                    .buttonStyle(PrimaryStyle())
-            }
-        }
+        Button { main = ""; hr = ""; open = true } label: { Text("Apuntar el resultado").frame(maxWidth: .infinity) }
+            .buttonStyle(PrimaryStyle())
             .alert("Resultado del test", isPresented: $open) {
                 TextField(mainLabel, text: $main).keyboardType(kind == "talk" ? .numbersAndPunctuation : .decimalPad)
                 if let hrLabel { TextField(hrLabel, text: $hr).keyboardType(.numberPad) }
