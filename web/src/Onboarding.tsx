@@ -6,8 +6,8 @@ import { ChoiceCards, LEVEL_CHOICES, Segmented, SportPicker, STRENGTH_CHOICES, W
 const QUESTIONS = 7  // objetivo, deportes, semana, fuerza, nivel, año y aviso de salud; sin plan, solo 3
 const GOALS: [string, string, string][] = [
   ["RACE", "Preparar una carrera", "Con fecha: carrera, bici, natación, triatlón…"],
-  ["FITNESS", "Más resistencia", "Sobre todo cardio (unas 5 h a la semana) y 2 o 3 días de fuerza."],
-  ["STRENGTH", "Más músculo", "Sobre todo pesas (3 o 4 días) y el cardio mínimo para la salud."],
+  ["FITNESS", "Cardio y salud", "Sobre todo cardio (unas 5 h a la semana) y 2 o 3 días de fuerza."],
+  ["STRENGTH", "Fuerza y músculo", "Sobre todo pesas (3 o 4 días) y el cardio mínimo para la salud."],
 ]
 const OWN: [string, string, string][] = [["OWN", "Ya tengo mi rutina", "Apuntas tus rutinas y tus series; Brivel guarda tu progreso."]]
 const RACE_SPORTS: [string, string][] = [["running", "Carrera a pie"], ["cycling", "Bici"], ["swimming_pool", "Natación"],

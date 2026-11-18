@@ -38,7 +38,7 @@ class WorkoutTest {
 
     @Test
     fun oldHealthGoalBecomesFitness() {
-        // «Mejorar mi salud» ya no se ofrece: quien lo tenía sigue con el mismo plan, ahora como «Más resistencia»
+        // «Mejorar mi salud» ya no se ofrece: quien lo tenía sigue con el mismo plan, ahora como «Cardio y salud»
         val goal = UserGoal(GoalKind.HEALTH, since = "2026-01-05")
         assertEquals(UserGoal(GoalKind.FITNESS, since = "2026-01-05"), migrate(AppData(schema = SCHEMA, goal = goal)).goal)
         assertNull(migrate(AppData(schema = SCHEMA)).goal)

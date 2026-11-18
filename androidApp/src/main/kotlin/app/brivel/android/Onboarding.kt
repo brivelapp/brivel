@@ -59,8 +59,8 @@ import kotlinx.datetime.LocalDate
 
 private val GOALS = listOf(
     GoalKind.RACE to ("Preparar una carrera" to "Con fecha: carrera, bici, natación, triatlón…"),
-    GoalKind.FITNESS to ("Más resistencia" to "Sobre todo cardio (unas 5 h a la semana) y 2 o 3 días de fuerza."),
-    GoalKind.STRENGTH to ("Más músculo" to "Sobre todo pesas (3 o 4 días) y el cardio mínimo para la salud."),
+    GoalKind.FITNESS to ("Cardio y salud" to "Sobre todo cardio (unas 5 h a la semana) y 2 o 3 días de fuerza."),
+    GoalKind.STRENGTH to ("Fuerza y músculo" to "Sobre todo pesas (3 o 4 días) y el cardio mínimo para la salud."),
 )
 private val OWN = GoalKind.OWN to ("Ya tengo mi rutina" to "Apuntas tus rutinas y tus series; Brivel guarda tu progreso.")
 private val RACE_SPORTS = listOf("running" to "Carrera a pie", "cycling" to "Bici", "swimming_pool" to "Natación",

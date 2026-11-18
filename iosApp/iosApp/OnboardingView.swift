@@ -3,8 +3,8 @@ import Shared
 
 private let goals: [(GoalKind, String, String)] = [
     (.race, "Preparar una carrera", "Con fecha: carrera, bici, natación, triatlón…"),
-    (.fitness, "Más resistencia", "Sobre todo cardio (unas 5 h a la semana) y 2 o 3 días de fuerza."),
-    (.strength, "Más músculo", "Sobre todo pesas (3 o 4 días) y el cardio mínimo para la salud."),
+    (.fitness, "Cardio y salud", "Sobre todo cardio (unas 5 h a la semana) y 2 o 3 días de fuerza."),
+    (.strength, "Fuerza y músculo", "Sobre todo pesas (3 o 4 días) y el cardio mínimo para la salud."),
 ]
 private let ownGoal: (GoalKind, String, String) = (.own, "Ya tengo mi rutina", "Apuntas tus rutinas y tus series; Brivel guarda tu progreso.")
 private let raceSports = [("running", "Carrera a pie"), ("cycling", "Bici"), ("swimming_pool", "Natación"),

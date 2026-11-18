@@ -11,7 +11,7 @@ async function signUp(page: Page) {
   await page.clock.install({ time: new Date("2026-11-16T10:00:00") })  // un lunes fijo: el plan no depende de cuándo corra la prueba
   await page.goto("/")
   await page.getByRole("button", { name: "Empezar" }).click()
-  await page.getByRole("radio", { name: /Más músculo/ }).click()
+  await page.getByRole("radio", { name: /Fuerza y músculo/ }).click()
   await page.getByRole("button", { name: "Siguiente" }).click()
   await page.getByRole("button", { name: "Correr" }).click()
   await page.getByRole("button", { name: "Siguiente" }).click()
@@ -51,7 +51,7 @@ test("la portada explica qué es y enlaza lo legal", async ({ page }) => {
 
 test("el alta lleva a Hoy con el objetivo, el plan de la semana y las cinco secciones", async ({ page }) => {
   await signUp(page)
-  await expect(page.getByText(/Más músculo · bloque 1, semana 1 de 4/)).toBeVisible()
+  await expect(page.getByText(/Fuerza y músculo · bloque 1, semana 1 de 4/)).toBeVisible()
   await expect(page.getByText("Esta semana")).toBeVisible()
   await expect(page.getByText(/Fuerza de la semana por zona: /)).toBeVisible()
   for (const section of ["Hoy", "Calendario", "Entrenar", "Progreso", "Perfil"]) {
@@ -83,7 +83,7 @@ test("sin plan: «Ya tengo mi rutina» pide solo el año y el aviso, y Hoy invit
   // Pedir un plan después pregunta todo lo que faltaba
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Hoy" }).click()
   await page.getByRole("button", { name: "Quiero un plan de Brivel" }).click()
-  await page.getByRole("radio", { name: /Más resistencia/ }).click()
+  await page.getByRole("radio", { name: /Cardio y salud/ }).click()
   await page.getByRole("button", { name: "Siguiente" }).click()
   await expect(page.getByRole("heading", { name: "¿Qué deportes haces?" })).toBeVisible()
 })
@@ -91,7 +91,7 @@ test("sin plan: «Ya tengo mi rutina» pide solo el año y el aviso, y Hoy invit
 test("los datos siguen ahí al recargar la página", async ({ page }) => {
   await signUp(page)
   await page.reload()
-  await expect(page.getByText(/Más músculo/)).toBeVisible()
+  await expect(page.getByText(/Fuerza y músculo/)).toBeVisible()
   await expect(page.getByRole("navigation", { name: "Secciones" })).toBeVisible()  // sigue dentro, no en la portada
   await expect(page.getByRole("heading", { name: "El sistema operativo de tu cuerpo" })).toHaveCount(0)
 })
