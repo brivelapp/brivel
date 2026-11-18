@@ -1,5 +1,6 @@
 package app.brivel.android
 
+import androidx.compose.foundation.layout.FlowRow
 import android.Manifest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -214,7 +215,7 @@ internal fun OtherRaces(app: BrivelApp, act: Act) {
     }
     if (adding) {
         RaceForm(extra) { extra = it }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ChipRow {
             Button(onClick = { act.run("Carrera añadida") { app.addRace(extra); adding = false; extra = RaceInfo("", main.sport, "", "C") } }) { Text("Añadir") }
             TextButton(onClick = { adding = false }) { LinkText("Cancelar") }
         }
@@ -234,9 +235,8 @@ private fun ReminderCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER")
     }
     val hour = app.data.reminderHour
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {  // fila dentro del grupo «Avisos»
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            SectionTitle("Recordatorio diario")
-            Spacer(Modifier.weight(1f))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(Modifier.weight(1f)) { SectionTitle("Recordatorio diario") }
             Switch(checked = hour != null, onCheckedChange = { on ->
                 when {
                     !on -> set(null)
@@ -273,7 +273,7 @@ private fun HealthCard(app: BrivelApp, act: Act, version: Int) {  // version: re
             StateLine("Leído", "${health.days.size} días · ${health.workouts.size} entrenos")
             StateLine("Al día", health.syncedAt)
             MoreInfo("¿Qué lee exactamente?", HEALTH_READS)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChipRow {
                 Button(onClick = { act.suspend("Datos actualizados") { reader.sync(app) } }) { Text("Actualizar ahora") }
                 OutlinedButton(onClick = { act.run { app.clearHealth() } }) { Text("Desconectar") }
             }
@@ -301,7 +301,7 @@ private fun IntervalsCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER"
             StateLine("Estado", "Conectado", ok = true)
             StateLine("Cuenta", linked)
             app.data.cache?.let { StateLine("Al día", it.syncedAt) }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChipRow {
                 Button(onClick = { act.suspend("Datos actualizados") { app.sync() } }) { Text("Actualizar ahora") }
                 OutlinedButton(onClick = { act.suspend("intervals.icu desvinculado") { app.disconnectIntervals() } }) { Text("Desconectar") }
             }
@@ -335,9 +335,13 @@ private fun SettingsRow(name: String, state: String? = null, on: Boolean = false
     Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable(onClick = onClick).padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         if (state != null) Box(Modifier.size(8.dp).clip(CircleShape).background(if (on) Palette.ok else Palette.chip))
-        Text(name, color = color, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, modifier = Modifier.weight(1f))
-        if (state != null) Text(state, color = if (on) Palette.ok else Palette.muted, fontSize = 13.sp,
-            fontWeight = if (on) FontWeight.Bold else FontWeight.Normal)
+        // En flujo: con letra grande, «Conectado» aplastaba el nombre («Health / Con- / nect»); ahora baja debajo
+        FlowRow(Modifier.weight(1f).padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween,
+            itemVerticalAlignment = Alignment.CenterVertically) {
+            Text(name, color = color, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, modifier = Modifier.padding(end = 10.dp))
+            if (state != null) Text(state, color = if (on) Palette.ok else Palette.muted, fontSize = 13.sp,
+                fontWeight = if (on) FontWeight.Bold else FontWeight.Normal)
+        }
         Glyph(R.drawable.ic_chevron_right, 18.dp, Palette.muted)
     }
 }
@@ -345,8 +349,8 @@ private fun SettingsRow(name: String, state: String? = null, on: Boolean = false
 /** «Estado · Conectado»: etiqueta a la izquierda, dato a la derecha. */
 @Composable
 private fun StateLine(label: String, value: String, ok: Boolean = false) {
-    Row(Modifier.fillMaxWidth()) {
-        Text(label, color = Palette.muted, fontSize = 14.sp, modifier = Modifier.weight(1f))
+    TitleRow {
+        Text(label, color = Palette.muted, fontSize = 14.sp, modifier = Modifier.padding(end = 10.dp))
         Text(value, color = if (ok) Palette.ok else Palette.text, fontSize = 14.sp,
             fontWeight = if (ok) FontWeight.Bold else FontWeight.Normal, fontFamily = if (ok) null else Mono)
     }

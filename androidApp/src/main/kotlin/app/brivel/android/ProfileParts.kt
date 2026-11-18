@@ -6,6 +6,7 @@ package app.brivel.android
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -97,61 +99,85 @@ fun SportPicker(cardio: List<String>, onChange: (List<String>) -> Unit) {
 fun WeekBars(days: Map<String, Int>, onCommit: (Map<String, Int>) -> Unit) {
     var live by remember(days) { mutableStateOf(days) }
     fun put(d: String, m: Int) = (live + (d to m.coerceIn(0, MAX_DAY_MINUTES))).also { live = it }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-            Secondary(if (live.values.count { it > 0 } == 1) "1 día" else "${live.values.count { it > 0 }} días")
-            Text(weekTimeText(live), fontFamily = Mono, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Palette.ok)
-        }
-        DAYS.forEach { d ->
-            val m = live[d] ?: 0
-            val name = WEEKDAY_LABEL[d]!!
-            var text by remember(m) { mutableStateOf(if (m == 0) "" else "$m") }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(name, Modifier.width(84.dp), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = if (m == 0) Palette.muted else Palette.text)
-                Slider(m.toFloat(), { put(d, (it / 15).roundToInt() * 15) }, Modifier.weight(1f).semantics {
-                    contentDescription = name
-                    stateDescription = if (m == 0) "libre" else "$m minutos"
-                }, valueRange = 0f..MAX_DAY_MINUTES.toFloat(), steps = MAX_DAY_MINUTES / 15 - 1,
-                    onValueChangeFinished = { onCommit(live) },
-                    // Pista fina y punto pequeño con aro (muestra A, 2026-11-17), igual en web e iOS
-                    thumb = { Box(Modifier.size(20.dp).background(Palette.surface, CircleShape).border(3.dp, Palette.ok, CircleShape)) },
-                    track = { state -> SliderDefaults.Track(state, Modifier.height(6.dp), drawStopIndicator = null, thumbTrackGapSize = 0.dp,
-                        colors = SliderDefaults.colors(activeTrackColor = Palette.ok, inactiveTrackColor = Palette.chip,
-                            activeTickColor = Color.Transparent, inactiveTickColor = Color.Transparent)) })
-                OutlinedTextField(text, { t ->
-                    text = t.filter { it.isDigit() }.take(3)
-                    onCommit(put(d, text.toIntOrNull() ?: 0))
-                }, Modifier.width(72.dp).semantics { contentDescription = "Minutos el ${name.lowercase()}" },
-                    placeholder = { Text("—") }, singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(fontFamily = Mono, textAlign = TextAlign.End),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                Secondary("min")
+    val width = rememberTextWidth()
+    val nameStyle = LocalTextStyle.current.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold)
+    val fieldStyle = LocalTextStyle.current.copy(fontFamily = Mono, textAlign = TextAlign.End)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        // Las medidas salen del texto con la letra de la persona: con 84 dp fijos, «Miércoles» se partía en dos
+        val nameWidth = DAYS.maxOf { width(WEEKDAY_LABEL[it]!!, nameStyle) }
+        val fieldWidth = maxOf(72.dp, width("300", fieldStyle) + 32.dp)  // el campo deja 16 dp a cada lado de la cifra
+        val unitWidth = width("min", LocalTextStyle.current.copy(fontSize = 14.sp))
+        // El deslizador necesita sitio para el dedo; si no queda, el nombre del día va encima de su fila
+        val stacked = maxWidth - nameWidth - fieldWidth - unitWidth - 24.dp < 96.dp
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                Secondary(if (live.values.count { it > 0 } == 1) "1 día" else "${live.values.count { it > 0 }} días")
+                Text(weekTimeText(live), fontFamily = Mono, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Palette.ok)
             }
+            DAYS.forEach { d ->
+                val m = live[d] ?: 0
+                val name = WEEKDAY_LABEL[d]!!
+                var text by remember(m) { mutableStateOf(if (m == 0) "" else "$m") }
+                if (stacked) Text(name, Modifier.padding(top = 8.dp), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = if (m == 0) Palette.muted else Palette.text)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (!stacked) Text(name, Modifier.width(nameWidth), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = if (m == 0) Palette.muted else Palette.text)
+                    Slider(m.toFloat(), { put(d, (it / 15).roundToInt() * 15) }, Modifier.weight(1f).semantics {
+                        contentDescription = name
+                        stateDescription = if (m == 0) "libre" else "$m minutos"
+                    }, valueRange = 0f..MAX_DAY_MINUTES.toFloat(), steps = MAX_DAY_MINUTES / 15 - 1,
+                        onValueChangeFinished = { onCommit(live) },
+                        // Pista fina y punto pequeño con aro (muestra A, 2026-11-17), igual en web e iOS
+                        thumb = { Box(Modifier.size(20.dp).background(Palette.surface, CircleShape).border(3.dp, Palette.ok, CircleShape)) },
+                        track = { state -> SliderDefaults.Track(state, Modifier.height(6.dp), drawStopIndicator = null, thumbTrackGapSize = 0.dp,
+                            colors = SliderDefaults.colors(activeTrackColor = Palette.ok, inactiveTrackColor = Palette.chip,
+                                activeTickColor = Color.Transparent, inactiveTickColor = Color.Transparent)) })
+                    OutlinedTextField(text, { t ->
+                        text = t.filter { it.isDigit() }.take(3)
+                        onCommit(put(d, text.toIntOrNull() ?: 0))
+                    }, Modifier.width(fieldWidth).semantics { contentDescription = "Minutos el ${name.lowercase()}" },
+                        placeholder = { Text("—") }, singleLine = true,
+                        textStyle = fieldStyle,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                    Secondary("min")
+                }
+            }
+            Secondary("Desliza o escribe los minutos de cada día, hasta 5 h. Sin minutos, ese día queda libre.")
         }
-        Secondary("Desliza o escribe los minutos de cada día, hasta 5 h. Sin minutos, ese día queda libre.")
     }
 }
 
-/** Opciones cortas en una sola fila (fuerza y nivel en el Perfil). */
+/**
+ * Opciones cortas en una sola fila (fuerza y nivel en el Perfil). Si con la letra grande del sistema una palabra no cabe
+ * entera en su hueco («Gimna-sio»), van una debajo de otra.
+ */
 @Composable
 fun Segmented(options: List<Pair<String, String>>, selected: String, onSelect: (String) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Palette.chip).padding(4.dp).selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        options.forEach { (key, label) ->
-            val on = key == selected
-            Box(
-                Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
-                    .background(if (on) Palette.ok else Color.Transparent)
-                    .selectable(on, role = Role.RadioButton) { onSelect(key) },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(label, color = if (on) Palette.onOk else Palette.text, fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold, fontSize = 14.sp)
-            }
+    val width = rememberTextWidth()
+    val style = LocalTextStyle.current.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val cell = (maxWidth - 8.dp - 4.dp * (options.size - 1)) / options.size
+        // Partir en dos líneas por un espacio («Sin / fuerza») se lee bien; por media palabra, no
+        val stacked = options.any { (_, label) -> label.split(' ').any { width(it, style) + 16.dp > cell } }
+        val group = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Palette.chip).padding(4.dp).selectableGroup()
+        if (stacked) Column(group, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            options.forEach { (key, label) -> SegmentOption(label, key == selected, Modifier.fillMaxWidth()) { onSelect(key) } }
+        } else Row(group, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            options.forEach { (key, label) -> SegmentOption(label, key == selected, Modifier.weight(1f)) { onSelect(key) } }
         }
     }
 }
+
+@Composable
+private fun SegmentOption(label: String, on: Boolean, modifier: Modifier, onClick: () -> Unit) =
+    Box(
+        modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
+            .background(if (on) Palette.ok else Color.Transparent)
+            .selectable(on, role = Role.RadioButton, onClick = onClick).padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(label, color = if (on) Palette.onOk else Palette.text, fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold,
+            fontSize = 14.sp, textAlign = TextAlign.Center, style = LocalTextStyle.current.copy(hyphens = Hyphens.None))
+    }
 
 /** Opciones con explicación, una por tarjeta (fuerza y nivel en la bienvenida). */
 @Composable

@@ -65,7 +65,7 @@ fun GarminCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: 
                 Secondary(GARMIN_HOW)
                 Consent(GARMIN_CONSENT, consent) { consent = it }
                 Consent(SYNC_AGE, adult) { adult = it }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ChipRow {
                     Button(enabled = consent && adult, onClick = {
                         act.suspend(null) {
                             val url = app.startGarmin()

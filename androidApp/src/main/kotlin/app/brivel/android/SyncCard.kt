@@ -84,7 +84,7 @@ fun SyncCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: In
                     SelectionContainer { Text(grouped(code), fontFamily = Mono, fontSize = 20.sp, fontWeight = FontWeight.SemiBold) }
                     Secondary("Escríbelo en el otro dispositivo, en «Usar en otros dispositivos» → «Tengo un código».")
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ChipRow {
                     Button(onClick = { act.syncNow() }) { Text("Sincronizar ahora") }
                     OutlinedButton(onClick = { showCode = !showCode }) { Text(if (showCode) "Ocultar código" else "Ver código") }
                 }
@@ -96,7 +96,7 @@ fun SyncCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: In
             view == SyncView.IDLE -> {
                 SectionTitle(if (allowCreate) "Usar en otros dispositivos" else "¿Ya usas Brivel en otro dispositivo?")
                 Secondary(if (allowCreate) SYNC_INTRO else "Únete con su código y tendrás aquí los mismos datos.")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ChipRow {
                     if (allowCreate) Button(onClick = { view = SyncView.CREATE }) { Text("Activar") }
                     OutlinedButton(onClick = { view = SyncView.JOIN }) { Text("Tengo un código") }
                 }
@@ -114,7 +114,7 @@ fun SyncCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: In
                 Consent(SYNC_CONSENT, consent) { consent = it }
                 Consent(SYNC_AGE, adult) { adult = it }
                 if (!joining) Secondary(SYNC_NO_RECOVERY)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ChipRow {
                     Button(enabled = consent && adult && (!joining || typed.isNotBlank()), onClick = {
                         if (joining) act.suspend("Sincronizado: se han juntado los datos de este móvil con los de la copia") {
                             app.joinSync(typed)

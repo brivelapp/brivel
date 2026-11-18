@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.Hyphens
 
 // Pulso (docs/DISENO_PULSO.md): tonos de bosque y piel, formas suaves; el color dice cómo estás. Mismos valores en iOS.
 data class Colors(
@@ -67,16 +68,17 @@ val Mono = FontFamily(
     Font(R.font.plex_mono_semi_bold, FontWeight.SemiBold),
 )
 
+// Guion al partir palabras largas («Calenta-miento»): con letra grande, una palabra no siempre cabe en su línea
 private val typography = Typography().run {
     copy(
-        displayLarge = displayLarge.copy(fontFamily = Figtree), displayMedium = displayMedium.copy(fontFamily = Figtree),
-        displaySmall = displaySmall.copy(fontFamily = Figtree), headlineLarge = headlineLarge.copy(fontFamily = Figtree),
-        headlineMedium = headlineMedium.copy(fontFamily = Figtree), headlineSmall = headlineSmall.copy(fontFamily = Figtree),
-        titleLarge = titleLarge.copy(fontFamily = Figtree), titleMedium = titleMedium.copy(fontFamily = Figtree),
-        titleSmall = titleSmall.copy(fontFamily = Figtree), bodyLarge = bodyLarge.copy(fontFamily = Figtree),
-        bodyMedium = bodyMedium.copy(fontFamily = Figtree), bodySmall = bodySmall.copy(fontFamily = Figtree),
-        labelLarge = labelLarge.copy(fontFamily = Figtree, fontWeight = FontWeight.Bold),
-        labelMedium = labelMedium.copy(fontFamily = Figtree), labelSmall = labelSmall.copy(fontFamily = Figtree),
+        displayLarge = displayLarge.copy(fontFamily = Figtree, hyphens = Hyphens.Auto), displayMedium = displayMedium.copy(fontFamily = Figtree, hyphens = Hyphens.Auto),
+        displaySmall = displaySmall.copy(fontFamily = Figtree, hyphens = Hyphens.Auto), headlineLarge = headlineLarge.copy(fontFamily = Figtree, hyphens = Hyphens.Auto),
+        headlineMedium = headlineMedium.copy(fontFamily = Figtree, hyphens = Hyphens.Auto), headlineSmall = headlineSmall.copy(fontFamily = Figtree, hyphens = Hyphens.Auto),
+        titleLarge = titleLarge.copy(fontFamily = Figtree, hyphens = Hyphens.Auto), titleMedium = titleMedium.copy(fontFamily = Figtree, hyphens = Hyphens.Auto),
+        titleSmall = titleSmall.copy(fontFamily = Figtree, hyphens = Hyphens.Auto), bodyLarge = bodyLarge.copy(fontFamily = Figtree, hyphens = Hyphens.Auto),
+        bodyMedium = bodyMedium.copy(fontFamily = Figtree, hyphens = Hyphens.Auto), bodySmall = bodySmall.copy(fontFamily = Figtree, hyphens = Hyphens.Auto),
+        labelLarge = labelLarge.copy(fontFamily = Figtree, hyphens = Hyphens.Auto, fontWeight = FontWeight.Bold),
+        labelMedium = labelMedium.copy(fontFamily = Figtree, hyphens = Hyphens.Auto), labelSmall = labelSmall.copy(fontFamily = Figtree, hyphens = Hyphens.Auto),
     )
 }
 

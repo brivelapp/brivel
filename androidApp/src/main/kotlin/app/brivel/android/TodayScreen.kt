@@ -1,6 +1,7 @@
 package app.brivel.android
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -72,9 +73,8 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openGoal: () -> Unit) {
         if (screen.askReadiness) ReadinessCard(act)
         DayContent(app, day, app.watchRoute != null, act, today = true)
         Module {
-            Row {
+            TitleRow {
                 SectionTitle("Esta semana")
-                Spacer(Modifier.weight(1f))
                 Text("${screen.weekMinutes} de 150 min", fontFamily = Mono, fontSize = 14.sp, color = Palette.muted)
             }
             WeekDots(screen.weekDots)
@@ -110,7 +110,8 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
         SessionCard(item, done) {
             var open by remember { mutableStateOf(false) }
             val canChange = !done && !day.isPast && item.alternatives.isNotEmpty()
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // En flujo: con letra grande, «Empezar» se partía letra a letra al lado de «La he hecho»
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (item.isStrength && (day.isPast || today)) {
                     // Apuntar las series ya la cuenta como hecha
                     PrimaryButton(if (done) "Ver las series" else "Empezar", Modifier.weight(1f)) { act.openStrength(day.date) }

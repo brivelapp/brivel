@@ -27,9 +27,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import app.brivel.app.BrivelApp
@@ -193,11 +200,17 @@ fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null
         containerColor = Palette.bg,
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
+            // Cinco pestañas: con letra grande, «Calendario» se cortaba. Todas encogen a la vez hasta que quepa la más larga
+            val width = rememberTextWidth()
+            val tabStyle = LocalTextStyle.current.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            val room = LocalConfiguration.current.screenWidthDp.dp / TABS.size - 8.dp
+            val widest = TABS.maxOf { width(it.first, tabStyle) }
+            val tabSize = if (widest > room) 11.sp * (room / widest) else 11.sp
             if (!onboarding && strengthDate == null) NavigationBar(containerColor = Palette.surface) {
                 TABS.forEachIndexed { i, (label, icon) ->
                     NavigationBarItem(selected = tab == i, onClick = { tab = i; settings = false },
                         icon = { Icon(painterResource(icon), contentDescription = null) },
-                        label = { Text(label, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1, softWrap = false) },  // cinco pestañas: que quepa «Calendario»
+                        label = { Text(label, fontWeight = FontWeight.Bold, fontSize = tabSize, maxLines = 1, softWrap = false) },
                         colors = NavigationBarItemDefaults.colors(indicatorColor = Palette.chip,
                             selectedTextColor = Palette.ok, selectedIconColor = Palette.ok,
                             unselectedTextColor = Palette.muted, unselectedIconColor = Palette.muted))
@@ -208,17 +221,20 @@ fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null
         PullToRefreshBox(refreshing, onRefresh = {
             scope.launch { refreshing = true; try { refreshAll() } finally { refreshing = false } }
         }, Modifier.padding(padding)) {
-            if (onboarding) {
-                Onboarding(app, act)
-            } else if (strengthDate != null) {
-                StrengthSession(app, strengthDate!!, version, act) { strengthDate = null }
-            } else when (tab) {
-                0 -> TodayTab(app, version, act) { act.run { app.abandonGoal() } }
-                1 -> CalendarTab(app, version, act)
-                2 -> TrainTab(app, version, act)
-                3 -> ProgressTab(app, version, act) { tab = 4; settings = true }
-                else -> ProfileTab(app, version, act, settings) { settings = it }
-            }
+            // En tableta o en horizontal, una columna centrada de 640 dp: a todo lo ancho, botones y barras medían un palmo
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) { Box(Modifier.widthIn(max = 640.dp).fillMaxSize()) {
+                if (onboarding) {
+                    Onboarding(app, act)
+                } else if (strengthDate != null) {
+                    StrengthSession(app, strengthDate!!, version, act) { strengthDate = null }
+                } else when (tab) {
+                    0 -> TodayTab(app, version, act) { act.run { app.abandonGoal() } }
+                    1 -> CalendarTab(app, version, act)
+                    2 -> TrainTab(app, version, act)
+                    3 -> ProgressTab(app, version, act) { tab = 4; settings = true }
+                    else -> ProfileTab(app, version, act, settings) { settings = it }
+                }
+            } }
         }
     }
 }

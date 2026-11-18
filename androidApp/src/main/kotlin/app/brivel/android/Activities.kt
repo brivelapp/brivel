@@ -331,9 +331,8 @@ private fun BadgeRow(b: BadgeView) = Row(verticalAlignment = Alignment.Top) {
 fun BadgesCard(badges: BadgesScreen) {
     var all by remember { mutableStateOf(false) }
     Module {
-        Row(verticalAlignment = Alignment.Bottom) {
+        TitleRow {
             SectionTitle("Medallas")
-            Spacer(Modifier.weight(1f))
             Text("Nivel ${badges.level} · ${badges.points} ${if (badges.points == 1) "punto" else "puntos"}", fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
         badges.garminNote?.let { Source(it) }

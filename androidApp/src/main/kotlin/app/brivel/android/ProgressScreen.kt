@@ -76,9 +76,8 @@ fun ProgressTab(app: BrivelApp, version: Int, act: Act, openProfile: () -> Unit)
         }
         val body = screen.metrics.filter { it.key in BODY }
         if (body.isNotEmpty()) Module {
-            Row(verticalAlignment = Alignment.Bottom) {
+            TitleRow {
                 SectionTitle("Tu cuerpo")
-                Spacer(Modifier.weight(1f))
                 Text("último dato · banda = tu rango", fontSize = 12.sp, color = Palette.muted)
             }
             body.forEachIndexed { i, m -> MetricRow(m, first = i == 0) }
@@ -96,9 +95,8 @@ fun ProgressTab(app: BrivelApp, version: Int, act: Act, openProfile: () -> Unit)
         }
         Module {
             val last = screen.weeklyMinutes.lastOrNull()?.value ?: 0.0
-            Row(verticalAlignment = Alignment.Bottom) {
+            TitleRow {
                 SectionTitle("Actividad semanal")
-                Spacer(Modifier.weight(1f))
                 Text("${last.roundToInt()} / 150 min", fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             }
             ProgressLine((last / 150).toFloat())

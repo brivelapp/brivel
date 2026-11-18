@@ -5,6 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -128,8 +132,9 @@ fun SportBadge(sport: String, size: Dp = 36.dp) {
 
 @Composable
 fun ZoneChip(zone: String) {
-    Box(Modifier.width(40.dp).height(24.dp).clip(RoundedCornerShape(999.dp)).background(Palette.zones[zone] ?: Palette.chip),
-        contentAlignment = Alignment.Center) {
+    // Mínimos y no medidas fijas: con la letra grande del sistema, «Z2» no cabía en 24 dp de alto
+    Box(Modifier.widthIn(min = 40.dp).heightIn(min = 24.dp).clip(RoundedCornerShape(999.dp)).background(Palette.zones[zone] ?: Palette.chip)
+        .padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
         Text(zone, fontFamily = Mono, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Palette.onZone)
     }
 }
@@ -283,6 +288,22 @@ fun minutesText(m: Double): String = when {
     m % 1.0 == 0.0 -> "${m.toInt()}′"
     else -> "${m.toInt()}′${((m % 1) * 60).toInt().toString().padStart(2, '0')}″"
 }
+
+/**
+ * Ancho de un texto en una línea con la letra que tenga puesta la persona. Los sp crecen con el tamaño de letra del
+ * sistema y las cajas en dp no: con esto se decide si algo cabe en fila o pasa a otra línea.
+ */
+@Composable
+fun rememberTextWidth(): (String, TextStyle) -> Dp {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    return { text, style -> with(density) { measurer.measure(text, style, maxLines = 1, softWrap = false).size.width.toDp() } }
+}
+
+/** Un título con su dato a la derecha; si con letra grande no caben juntos, el dato baja a la línea siguiente. */
+@Composable
+fun TitleRow(content: @Composable () -> Unit) =
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, itemVerticalAlignment = Alignment.Bottom) { content() }
 
 @Composable
 fun ChipRow(content: @Composable () -> Unit) =
