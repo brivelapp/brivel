@@ -1035,6 +1035,42 @@ class BrivelApp(
         if (r.points.size % 20 == 0) keep(r)
     }
 
+    /** El test del habla guiado: una carrera grabada con tramos de 3′ (Recorder.kt). */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun startTalkTest(time: Long) {
+        startRecording("running", time)
+        keep(recording!!.also { it.talk = TalkTest() })
+    }
+
+    /**
+     * Contesta «¿has podido decirlo cómodo?» al final de un tramo. Si el test acaba, guarda el ritmo suave y devuelve
+     * qué hacer ahora; si sigue, null.
+     */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun answerTalk(comfortable: Boolean, time: Long): String? {
+        val r = recording ?: return null
+        r.answerTalk(comfortable, time)
+        keep(r)
+        return if (r.talk?.over == true) talkResult(r) else null
+    }
+
+    /** Para el test antes de tiempo: vale el último tramo cómodo. La grabación sigue para caminar y acabar. */
+    fun stopTalkTest(): String? {
+        val r = recording ?: return null
+        val t = r.talk ?: return null
+        if (t.over) return null
+        t.over = true
+        keep(r)
+        return talkResult(r)
+    }
+
+    private fun talkResult(r: Recording): String {
+        val pace = r.talk?.result
+        val saved = pace != null && runCatching { saveFieldTest(FieldTest(today().toString(), "running", "talk", paceSecKm = pace)) }.isSuccess
+        return if (saved) "Hecho: tu ritmo suave es ${app.brivel.engine.paceText(pace!!)} /km. Camina 5′ y pulsa Terminar"
+        else "El GPS no ha dado un ritmo fiable: cuando acabes, apunta el resultado a mano"
+    }
+
     fun pauseRecording(time: Long) { recording?.let { it.pause(time); keep(it) } }
     fun resumeRecording(time: Long) { recording?.let { it.resume(time); keep(it) } }
     fun discardRecording() = keep(null)
@@ -1045,6 +1081,7 @@ class BrivelApp(
         val r = recording
         require(r != null) { "No hay ninguna actividad grabándose" }
         require(r.points.size >= 2) { "El GPS no ha dado ningún recorrido: no hay nada que guardar" }
+        if (r.talk?.over == false) stopTalkTest()  // terminar a mitad del test: vale lo hecho
         val id = addActivity(r.file(), "gps")
         keep(null)
         return id
