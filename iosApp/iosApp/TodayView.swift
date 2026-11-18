@@ -4,6 +4,7 @@ import Shared
 struct TodayView: View {
     @EnvironmentObject var model: AppModel
     let openGoal: () -> Void
+    var openTrain: () -> Void = {}
     @State private var goalOpen = false
 
     var body: some View {
@@ -17,6 +18,7 @@ struct TodayView: View {
                     Secondary(goal)
                     Button("Tu objetivo") { goalOpen = true }.buttonStyle(TextActionStyle())
                 }
+                if screen.noPlan { Button("Quiero un plan de Brivel", action: openGoal).buttonStyle(TextActionStyle()) }
                 if screen.goalFinished {
                     Module {
                         Text("Tu carrera ya pasó").font(.section)
@@ -25,17 +27,27 @@ struct TodayView: View {
                     }
                 }
                 // Tu cuerpo hoy en una frase: sale de la misma decisión que la sesión
-                StateCard(tone: screen.tone, title: screen.stateTitle, detail: screen.stateDetail, source: screen.garminNote)
+                if !screen.stateTitle.isEmpty {
+                    StateCard(tone: screen.tone, title: screen.stateTitle, detail: screen.stateDetail, source: screen.garminNote)
+                }
                 if screen.askReadiness { ReadinessCard() }
+                if screen.noPlan && day.items.isEmpty { NoRoutineToday(next: screen.nextRoutine, openTrain: openTrain) }
                 DayContent(day: day, linked: model.core.watchRoute != nil, today: true)
                 Module {
                     TitleRow {
                         Text("Esta semana").font(.section)
                     } trailing: {
-                        Text("\(screen.weekMinutes) de 150 min").font(.mono(14, relativeTo: .subheadline)).foregroundStyle(Palette.muted)
+                        // Sin plan, la fuerza hecha frente a los 2 días de la OMS; con plan, los minutos de actividad
+                        Text(screen.noPlan ? "\(screen.strengthDone) de 2 días de fuerza" : "\(screen.weekMinutes) de 150 min")
+                            .font(.mono(14, relativeTo: .subheadline)).foregroundStyle(Palette.muted)
                     }
                     WeekDots(days: screen.weekDots)
-                    if screen.meetsWho {
+                    if screen.noPlan {
+                        if screen.strengthDone >= 2 {
+                            Text("Cumples los 2 días de fuerza que recomienda la OMS").font(.ui(14, .semibold, relativeTo: .subheadline))
+                                .foregroundStyle(Palette.ok)
+                        }
+                    } else if screen.meetsWho {
                         HStack(spacing: 6) {
                             Glyph(name: "check", size: 18, color: Palette.ok)
                             Text("Cumples la recomendación de la OMS para tu salud").font(.ui(14, .semibold, relativeTo: .subheadline))
@@ -206,6 +218,36 @@ private struct ReadinessCard: View {
             Button("Ajustar hoy") {
                 model.run { try model.core.answerReadiness(sleep: Int32(sleep), energy: Int32(energy), soreness: Int32(soreness)) }
             }.buttonStyle(PrimaryStyle())
+        }
+    }
+}
+
+/// Sin plan y sin rutina hoy: la próxima, tus rutinas para hacer una hoy o un entreno libre; sin rutinas, crear la primera.
+private struct NoRoutineToday: View {
+    @EnvironmentObject var model: AppModel
+    let next: String?
+    let openTrain: () -> Void
+
+    private func start(_ routineId: String?) {
+        model.run { model.strengthDate = try model.core.startWorkout(routineId: routineId).date }
+    }
+
+    var body: some View {
+        let routines = model.core.routines
+        Module {
+            if routines.isEmpty {
+                Text("Empieza por tu rutina").font(.cardTitle)
+                Secondary("Apunta sus ejercicios y los días que la haces. Esos días te saldrá aquí, lista para empezar, y Brivel guardará cada serie.")
+                Button(action: openTrain) { Text("Crear mi rutina").frame(maxWidth: .infinity) }.buttonStyle(PrimaryStyle())
+                Button { start(nil) } label: { Text("Entrenar sin rutina").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
+            } else {
+                Text("Hoy no te toca rutina").font(.cardTitle)
+                if let next { Secondary("\(next). Si te apetece entrenar hoy, elige una o empieza en blanco.") }
+                ForEach(routines, id: \.id) { r in
+                    Button { start(r.id) } label: { Text("Hacer «\(r.name)» hoy").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
+                }
+                Button { start(nil) } label: { Text("Entreno libre").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
+            }
         }
     }
 }

@@ -124,7 +124,9 @@ struct ProfileView: View {
                         }
                         .buttonStyle(.plain).accessibilityLabel("Ajustes")
                     }
-                    // Se guarda solo: cada cambio rehace el plan al momento (lienzo de Pulso, opción B)
+                    // Se guarda solo: cada cambio rehace el plan al momento (lienzo de Pulso, opción B). Sin plan, deportes,
+                    // semana, fuerza y nivel no cambian nada: se preguntan si un día pide un plan
+                    if model.core.data.goal?.kind != .own {
                     Module {
                         Text("Tus deportes").font(.section)
                         SportPicker(cardio: draft.cardio) { draft.cardio = $0; save() }
@@ -140,6 +142,7 @@ struct ProfileView: View {
                     Module {
                         Text("Tu nivel").font(.section)
                         Segmented(options: levelChoices.map { ($0.0, $0.1) }, selected: draft.level) { draft.level = $0; save() }
+                    }
                     }
                     Module {
                         Text("Año de nacimiento").font(.section)

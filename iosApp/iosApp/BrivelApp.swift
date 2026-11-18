@@ -140,7 +140,7 @@ struct RootView: View {
                 OnboardingView().readableWidth()
             } else {
                 TabView(selection: $tab) {
-                    TodayView(openGoal: { model.run { model.core.abandonGoal() } }).readableWidth()
+                    TodayView(openGoal: { model.run { model.core.abandonGoal() } }, openTrain: { tab = 2 }).readableWidth()
                         .tabItem { Label { Text("Hoy") } icon: { Image("tab_today").renderingMode(.template) } }.tag(0)
                     CalendarTabView().readableWidth()
                         .tabItem { Label { Text("Calendario") } icon: { Image("tab_calendar").renderingMode(.template) } }.tag(1)

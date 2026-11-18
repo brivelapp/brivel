@@ -2,14 +2,15 @@ import SwiftUI
 import Shared
 
 private let goals: [(GoalKind, String, String)] = [
-    (.race, "Preparar una carrera", "Un plan con fecha hacia tu prueba: carrera, bici, natación, triatlón…"),
-    (.fitness, "Ponerme en forma", "Más resistencia y fuerza para el día a día, sin fecha."),
-    (.strength, "Ganar fuerza y músculo", "Fuerza primero, con algo de cardio para la salud."),
+    (.race, "Preparar una carrera", "Con fecha: carrera, bici, natación, triatlón…"),
+    (.fitness, "Más resistencia", "Sobre todo cardio (unas 5 h a la semana) y 2 o 3 días de fuerza."),
+    (.strength, "Más músculo", "Sobre todo pesas (3 o 4 días) y el cardio mínimo para la salud."),
 ]
+private let ownGoal: (GoalKind, String, String) = (.own, "Ya tengo mi rutina", "Apuntas tus rutinas y tus series; Brivel guarda tu progreso.")
 private let raceSports = [("running", "Carrera a pie"), ("cycling", "Bici"), ("swimming_pool", "Natación"),
                           ("triathlon", "Triatlón"), ("duathlon", "Duatlón")]
 
-private let questions = 7  // objetivo, deportes, semana, fuerza, nivel, año y aviso de salud
+private let questions = 7  // objetivo, deportes, semana, fuerza, nivel, año y aviso de salud; sin plan, solo 3
 
 /// Una pregunta por pantalla (lienzo de Pulso, 2026-11-03): atrás, progreso, la pregunta y «Siguiente» abajo. Sin atajos.
 private struct Question<Content: View>: View {
@@ -19,6 +20,7 @@ private struct Question<Content: View>: View {
     let back: (() -> Void)?
     var next = "Siguiente"
     var nextEnabled = true
+    var total = questions
     let onNext: () -> Void
     @ViewBuilder var content: Content
 
@@ -35,10 +37,10 @@ private struct Question<Content: View>: View {
                 }
                 if number > 0 {
                     HStack(spacing: 4) {
-                        ForEach(0..<questions, id: \.self) { i in Capsule().fill(i < number ? Palette.ok : Palette.chip).frame(height: 6) }
+                        ForEach(0..<total, id: \.self) { i in Capsule().fill(i < number ? Palette.ok : Palette.chip).frame(height: 6) }
                     }
                     .accessibilityElement()
-                    .accessibilityLabel("Paso \(number) de \(questions)")
+                    .accessibilityLabel("Paso \(number) de \(total)")
                 }
             }
             ScrollView {
@@ -71,7 +73,9 @@ struct OnboardingView: View {
     @State private var draft = ProfileDraft(nil)
     @State private var accepted = false
 
-    private var hasProfile: Bool { model.core.data.profile != nil }
+    private var hasProfile: Bool { model.core.hasPlanProfile }  // sin días (venía sin plan): se pregunta todo
+    private var own: Bool { goal == .own }  // sin plan: solo el año y el aviso de salud
+    private var total: Int { own ? 3 : questions }
 
     private var race: RaceInfo? {
         guard goal == .race else { return nil }
@@ -88,7 +92,9 @@ struct OnboardingView: View {
         let profile = draft.core
         let race = self.race
         let firstTime = !hasProfile
+        let year = draft.birthYear.map { KotlinInt(int: Int32($0)) }
         model.run {
+            if goal == .own && firstTime { try model.core.startWithoutPlan(birthYear: year); return }
             if firstTime { model.core.saveProfile(profile: profile) }
             try model.core.setGoal(kind: goal, race: race)
         }
@@ -112,9 +118,11 @@ struct OnboardingView: View {
             .background(Palette.bg)
         case 1:
             let raceOk = goal != .race || !raceName.trimmingCharacters(in: .whitespaces).isEmpty
-            Question(number: hasProfile ? 0 : 1, title: "¿Qué quieres conseguir?", subtitle: "Podrás cambiarlo o abandonarlo cuando quieras.",
+            Question(number: hasProfile ? 0 : 1, title: "¿Cómo quieres usar Brivel?", subtitle: "Podrás cambiarlo cuando quieras.",
                      back: hasProfile ? nil : ({ step = 0 } as () -> Void), next: hasProfile ? "Guardar objetivo" : "Siguiente",
-                     nextEnabled: goal != nil && raceOk, onNext: { if hasProfile { save() } else { step = 2 } }) {
+                     nextEnabled: goal != nil && raceOk, total: total, onNext: { if hasProfile { save() } else { step = own ? 6 : 2 } }) {
+                // Muestra B (2026-11-18): los objetivos con plan juntos y «sin plan» aparte, para que no parezca otro objetivo
+                groupTitle("Con un plan que Brivel ajusta cada día")
                 ForEach(goals, id: \.1) { kind, title, text in
                     Button { goal = kind } label: {
                         Module(accent: goal == kind ? Palette.ok : nil, background: goal == kind ? Palette.okSoft : Palette.surface) {
@@ -135,6 +143,15 @@ struct OnboardingView: View {
                         FlowChips(options: [("A", "Principal"), ("B", "Importante"), ("C", "Preparatoria")], isSelected: { priority == $0 }) { priority = $0 }
                     }
                 }
+                groupTitle("Sin plan")
+                Button { goal = ownGoal.0 } label: {
+                    Module(accent: own ? Palette.ok : nil, background: own ? Palette.okSoft : Palette.surface) {
+                        Text(ownGoal.1).font(.section).foregroundStyle(Palette.text)
+                        Secondary(ownGoal.2)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(own ? .isSelected : [])
             }
         case 2:
             Question(number: 2, title: "¿Qué deportes haces?", subtitle: "Si no marcas nada, el plan es de caminar.",
@@ -157,8 +174,8 @@ struct OnboardingView: View {
                 ChoiceCards(options: levelChoices, selected: draft.level) { draft.level = $0 }
             }
         case 6:
-            Question(number: 6, title: "¿En qué año naciste?", subtitle: "Para calcular tus zonas de pulso.",
-                     back: { step = 5 }, nextEnabled: ageOk(draft.birthYear), onNext: { step = 7 }) {
+            Question(number: own ? 2 : 6, title: "¿En qué año naciste?", subtitle: own ? "Hace falta para usar Brivel." : "Para calcular tus zonas de pulso.",
+                     back: { step = own ? 1 : 5 }, nextEnabled: ageOk(draft.birthYear), total: total, onNext: { step = 7 }) {
                 TextField("1990", text: Binding(get: { draft.birthYear.map(String.init) ?? "" },
                                                 set: { draft.birthYear = Int($0.filter(\.isNumber).prefix(4)) }))
                     .keyboardType(.numberPad).textFieldStyle(.roundedBorder).font(.mono(20))
@@ -167,10 +184,15 @@ struct OnboardingView: View {
                 }
             }
         default:
-            Question(number: 7, title: "Antes de empezar", back: { step = 6 }, next: "Ver mi plan", nextEnabled: accepted, onNext: save) {
+            Question(number: own ? 3 : 7, title: "Antes de empezar", back: { step = 6 }, next: own ? "Empezar" : "Ver mi plan",
+                     nextEnabled: accepted, total: total, onNext: save) {
                 Module(background: Palette.cautionSoft) { Secondary(TextsKt.HEALTH_NOTICE, color: Palette.text) }
                 Toggle("Lo he leído y entreno bajo mi responsabilidad", isOn: $accepted).font(.small)
             }
         }
+    }
+
+    private func groupTitle(_ text: String) -> some View {
+        Text(text.uppercased()).font(.ui(12, .bold, relativeTo: .caption)).foregroundStyle(Palette.muted).padding(.leading, 4).padding(.top, 4)
     }
 }
