@@ -48,41 +48,60 @@ struct WeekBars: View {
     var onCommit: ([String: Int]) -> Void = { _ in }
     @State private var live: [String: Int]?
     private let top = Int(TextsKt.MAX_DAY_MINUTES)
+    // Crecen con el texto del sistema: con 84 puntos fijos, «Miércoles» se partía con el texto grande
+    @ScaledMetric(relativeTo: .body) private var nameWidth: CGFloat = 84
+    @ScaledMetric(relativeTo: .body) private var fieldWidth: CGFloat = 64
+    @ScaledMetric(relativeTo: .body) private var fieldHeight: CGFloat = 44
 
     var body: some View {
         let shown = live ?? days
         let count = shown.values.filter { $0 > 0 }.count
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .lastTextBaseline) {
+            TitleRow {
                 Secondary(count == 1 ? "1 día" : "\(count) días")
-                Spacer()
+            } trailing: {
                 Text(TextsKt.weekTimeText(days: shown.mapValues { KotlinInt(int: Int32($0)) }))
                     .font(.mono(17, .semibold)).foregroundStyle(Palette.ok)
             }
+            // Cada día en una fila si al deslizador le quedan 96 puntos; si no, el nombre va encima (todos a la vez)
+            ViewThatFits(in: .horizontal) {
+                rows(shown, stacked: false)
+                rows(shown, stacked: true)
+            }
+            Secondary("Desliza o escribe los minutos de cada día, hasta 5 h. Sin minutos, ese día queda libre.")
+        }
+    }
+
+    private func rows(_ shown: [String: Int], stacked: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
             ForEach(weekDays, id: \.self) { d in
                 let m = shown[d] ?? 0
                 let name = TextsKt.WEEKDAY_LABEL[d] ?? d
-                HStack(spacing: 8) {
-                    Text(name).font(.ui(14, .bold)).foregroundStyle(m == 0 ? Palette.muted : Palette.text).frame(width: 84, alignment: .leading)
-                    // El del sistema: en iOS 26 lleva el cristal, como la barra inferior
-                    Slider(value: Binding(get: { Double(m) }, set: { set(d, Int(($0 / 15).rounded()) * 15) }),
-                           in: 0...Double(top), step: 15, onEditingChanged: { editing in if !editing { commit() } })
-                        .tint(Palette.ok)
-                        .accessibilityLabel(name)
-                        .accessibilityValue(m == 0 ? "libre" : "\(m) minutos")
-                    TextField("—", text: Binding(get: { m == 0 ? "" : "\(m)" }, set: { t in
-                        set(d, Int(String(t.filter(\.isNumber).prefix(3))) ?? 0)
-                        commit()
-                    }))
-                    .keyboardType(.numberPad).multilineTextAlignment(.trailing).font(.mono(16, .semibold))
-                    .padding(.horizontal, 8).frame(width: 64, height: 44)
-                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Palette.muted, lineWidth: 1))
-                    .accessibilityLabel("Minutos el \(name.lowercased())")
-                    Secondary("min")
+                let label = Text(name).font(.ui(14, .bold)).foregroundStyle(m == 0 ? Palette.muted : Palette.text)
+                VStack(alignment: .leading, spacing: 2) {
+                    if stacked { label }
+                    HStack(spacing: 8) {
+                        if !stacked { label.lineLimit(1).frame(width: nameWidth, alignment: .leading) }
+                        // El del sistema: en iOS 26 lleva el cristal, como la barra inferior
+                        Slider(value: Binding(get: { Double(m) }, set: { set(d, Int(($0 / 15).rounded()) * 15) }),
+                               in: 0...Double(top), step: 15, onEditingChanged: { editing in if !editing { commit() } })
+                            .tint(Palette.ok)
+                            .frame(minWidth: 96, idealWidth: 96, maxWidth: .infinity)
+                            .accessibilityLabel(name)
+                            .accessibilityValue(m == 0 ? "libre" : "\(m) minutos")
+                        TextField("—", text: Binding(get: { m == 0 ? "" : "\(m)" }, set: { t in
+                            set(d, Int(String(t.filter(\.isNumber).prefix(3))) ?? 0)
+                            commit()
+                        }))
+                        .keyboardType(.numberPad).multilineTextAlignment(.trailing).font(.mono(16, .semibold))
+                        .padding(.horizontal, 8).frame(width: fieldWidth, height: fieldHeight)
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Palette.muted, lineWidth: 1))
+                        .accessibilityLabel("Minutos el \(name.lowercased())")
+                        Secondary("min").fixedSize()
+                    }
                 }
                 .sensoryFeedback(.selection, trigger: m)  // un toque suave en cada paso de 15 minutos
             }
-            Secondary("Desliza o escribe los minutos de cada día, hasta 5 h. Sin minutos, ese día queda libre.")
         }
     }
 
@@ -98,26 +117,34 @@ struct WeekBars: View {
     }
 }
 
-/// Opciones cortas en una sola fila (fuerza y nivel en el Perfil).
+/// Opciones cortas en una sola fila (fuerza y nivel en el Perfil). Si con el texto grande del sistema no caben enteras,
+/// van una debajo de otra.
 struct Segmented: View {
     let options: [(String, String)]
     let selected: String
     let onSelect: (String) -> Void
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(options, id: \.0) { key, label in
-                let on = key == selected
-                Button { onSelect(key) } label: {
-                    Text(label).font(.ui(14, on ? .bold : .semibold)).frame(maxWidth: .infinity, minHeight: 48)
-                        .foregroundStyle(on ? Palette.onOk : Palette.text)
-                        .glass(on ? Palette.ok : Color.clear, tint: Palette.ok, in: RoundedRectangle(cornerRadius: 12, style: .continuous), enabled: on)
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(on ? .isSelected : [])
-            }
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 4) { buttons(oneLine: true) }
+                .padding(4).glass(Palette.chip, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            VStack(spacing: 4) { buttons(oneLine: false) }
+                .padding(4).glass(Palette.chip, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-        .padding(4).glass(Palette.chip, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func buttons(oneLine: Bool) -> some View {
+        ForEach(options, id: \.0) { key, label in
+            let on = key == selected
+            Button { onSelect(key) } label: {
+                Text(label).font(.ui(14, on ? .bold : .semibold)).fixedSize(horizontal: oneLine, vertical: false)
+                    .padding(.horizontal, 8).frame(maxWidth: .infinity, minHeight: 48)
+                    .foregroundStyle(on ? Palette.onOk : Palette.text)
+                    .glass(on ? Palette.ok : Color.clear, tint: Palette.ok, in: RoundedRectangle(cornerRadius: 12, style: .continuous), enabled: on)
+            }
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(on ? .isSelected : [])
+        }
     }
 }
 

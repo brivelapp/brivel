@@ -62,9 +62,7 @@ private struct SettingsRow: View {
     var body: some View {
         HStack(spacing: 10) {
             Circle().fill(on ? Palette.ok : Palette.chip).frame(width: 8, height: 8).accessibilityHidden(true)
-            Text(name).font(.ui(15, .semibold))
-            Spacer()
-            Text(state).font(.small).foregroundStyle(on ? Palette.ok : Palette.muted)
+            TitleRow { Text(name).font(.ui(15, .semibold)) } trailing: { Text(state).font(.small).foregroundStyle(on ? Palette.ok : Palette.muted) }
         }
     }
 }
@@ -227,9 +225,9 @@ private struct StateLine: View {
     let value: String
     var ok = false
     var body: some View {
-        HStack {
+        TitleRow {
             Text(label).foregroundStyle(Palette.muted)
-            Spacer()
+        } trailing: {
             Text(value).font(ok ? .ui(15, .bold) : .mono(14)).foregroundStyle(ok ? Palette.ok : Palette.text)
         }.font(.body15)
     }

@@ -33,7 +33,7 @@ struct GarminSection: View {
                 Secondary(TextsKt.GARMIN_HOW)
                 Toggle(TextsKt.GARMIN_CONSENT, isOn: $consent).font(.small)
                 Toggle(TextsKt.SYNC_AGE, isOn: $adult).font(.small)
-                HStack {
+                FitRow {
                     Button("Ir a Garmin") { connect() }.buttonStyle(PrimaryStyle()).disabled(!consent || !adult)
                     Button("Cancelar") { asking = false }.buttonStyle(SecondaryStyle())
                 }

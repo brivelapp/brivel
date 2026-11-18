@@ -29,9 +29,9 @@ struct TodayView: View {
                 if screen.askReadiness { ReadinessCard() }
                 DayContent(day: day, linked: model.core.watchRoute != nil, today: true)
                 Module {
-                    HStack {
+                    TitleRow {
                         Text("Esta semana").font(.section)
-                        Spacer()
+                    } trailing: {
                         Text("\(screen.weekMinutes) de 150 min").font(.mono(14, relativeTo: .subheadline)).foregroundStyle(Palette.muted)
                     }
                     WeekDots(days: screen.weekDots)
@@ -127,7 +127,7 @@ private struct SessionItem: View {
         let core = model.core
         let done = day.doneSports.contains(item.slot) || day.doneSports.contains(item.sport)
         SessionCard(item: item, done: done) {
-            HStack(spacing: 10) {
+            FitRow(spacing: 10) {
                 if item.isStrength && (day.isPast || today) {
                     // Apuntar las series ya la cuenta como hecha
                     Button { model.strengthDate = day.date } label: {

@@ -420,9 +420,9 @@ struct BadgesSection: View {
 
     var body: some View {
         Module {
-            HStack(alignment: .bottom) {
+            TitleRow {
                 Text("Medallas").font(.section)
-                Spacer()
+            } trailing: {
                 Text("Nivel \(badges.level) · \(badges.points) \(badges.points == 1 ? "punto" : "puntos")").font(.mono(15, .semibold))
             }
             if let note = badges.garminNote { Source(text: note) }

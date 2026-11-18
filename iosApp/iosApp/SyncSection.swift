@@ -41,7 +41,7 @@ struct SyncSection: View {
                     Text(grouped(code)).font(.mono(20, .semibold)).textSelection(.enabled)
                     Secondary("Escríbelo en el otro dispositivo, en «Usar en otros dispositivos» → «Tengo un código».")
                 }
-                HStack {
+                FitRow {
                     Button("Sincronizar ahora") { model.syncNow() }.buttonStyle(PrimaryStyle())
                     Button(showCode ? "Ocultar código" : "Ver código") { showCode.toggle() }.buttonStyle(SecondaryStyle())
                 }
@@ -52,7 +52,7 @@ struct SyncSection: View {
             } else if step == .idle {
                 Text(allowCreate ? "Usar en otros dispositivos" : "¿Ya usas Brivel en otro dispositivo?").font(.section)
                 Secondary(allowCreate ? TextsKt.SYNC_INTRO : "Únete con su código y tendrás aquí los mismos datos.")
-                HStack {
+                FitRow {
                     if allowCreate { Button("Activar") { step = .create }.buttonStyle(PrimaryStyle()) }
                     Button("Tengo un código") { step = .join }.buttonStyle(SecondaryStyle())
                 }
@@ -67,7 +67,7 @@ struct SyncSection: View {
                 Toggle(TextsKt.SYNC_CONSENT, isOn: $consent).font(.small)
                 Toggle(TextsKt.SYNC_AGE, isOn: $adult).font(.small)
                 if !joining { Secondary(TextsKt.SYNC_NO_RECOVERY) }
-                HStack {
+                FitRow {
                     Button(joining ? "Unirse" : "Activar") {
                         let text = typed
                         if joining {

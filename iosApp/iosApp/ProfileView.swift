@@ -112,6 +112,7 @@ struct ProfileView: View {
     var body: some View {
         let _ = model.version
         NavigationStack {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                     HStack {
@@ -135,7 +136,7 @@ struct ProfileView: View {
                     Module {
                         Text("Fuerza").font(.section)
                         Segmented(options: strengthChoices.map { ($0.0, $0.1) }, selected: draft.strength) { draft.strength = $0; save() }
-                    }
+                    }.id("fuerza")
                     Module {
                         Text("Tu nivel").font(.section)
                         Segmented(options: levelChoices.map { ($0.0, $0.1) }, selected: draft.level) { draft.level = $0; save() }
@@ -152,6 +153,9 @@ struct ProfileView: View {
                     }
                     GearSection()
             }.padding(16)
+        }
+        // `-scrollTo fuerza` al lanzar: las capturas del CI ven la fuerza y el nivel sin poder desplazar
+        .onAppear { if let id = UserDefaults.standard.string(forKey: "scrollTo") { proxy.scrollTo(id, anchor: .top) } }
         }
         .background(Palette.bg)
         .keyboardDone()

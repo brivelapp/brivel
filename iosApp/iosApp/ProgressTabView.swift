@@ -24,9 +24,9 @@ struct ProgressTabView: View {
                     let training = screen.metrics.filter { !bodyKeys.contains($0.key) }
                     if !bodyMetrics.isEmpty {
                         Module {
-                            HStack(alignment: .bottom) {
+                            TitleRow {
                                 Text("Tu cuerpo").font(.section)
-                                Spacer()
+                            } trailing: {
                                 Text("último dato · banda = tu rango").font(.caption12).foregroundStyle(Palette.muted)
                             }
                             ForEach(Array(bodyMetrics.enumerated()), id: \.offset) { i, m in MetricRow(metric: m, first: i == 0) }
@@ -51,9 +51,9 @@ struct ProgressTabView: View {
                     }
                     Module {
                         let last = screen.weeklyMinutes.last?.value ?? 0
-                        HStack(alignment: .bottom) {
+                        TitleRow {
                             Text("Actividad semanal").font(.section)
-                            Spacer()
+                        } trailing: {
                             Text("\(Int(last.rounded())) / 150 min").font(.mono(15, .semibold))
                         }
                         ProgressLine(fraction: last / 150)

@@ -130,25 +130,25 @@ struct BrivelMain: App {
 struct RootView: View {
     @EnvironmentObject var model: AppModel
     @State private var tab = UserDefaults.standard.integer(forKey: "tab")  // `-tab N` al lanzar: capturas del CI
-    @State private var settings = false  // la rueda del Perfil abre Ajustes
+    @State private var settings = UserDefaults.standard.bool(forKey: "settings")  // la rueda del Perfil abre Ajustes (`-settings YES`: capturas del CI)
     @Environment(\.scenePhase) private var phase
 
     var body: some View {
         let _ = model.version
         Group {
             if model.core.needsOnboarding {
-                OnboardingView()
+                OnboardingView().readableWidth()
             } else {
                 TabView(selection: $tab) {
-                    TodayView(openGoal: { model.run { model.core.abandonGoal() } })
+                    TodayView(openGoal: { model.run { model.core.abandonGoal() } }).readableWidth()
                         .tabItem { Label { Text("Hoy") } icon: { Image("tab_today").renderingMode(.template) } }.tag(0)
-                    CalendarTabView()
+                    CalendarTabView().readableWidth()
                         .tabItem { Label { Text("Calendario") } icon: { Image("tab_calendar").renderingMode(.template) } }.tag(1)
-                    TrainView()
+                    TrainView().readableWidth()
                         .tabItem { Label { Text("Entrenar") } icon: { Image("sport_strength").renderingMode(.template) } }.tag(2)
-                    ProgressTabView(openProfile: { tab = 4; settings = true })
+                    ProgressTabView(openProfile: { tab = 4; settings = true }).readableWidth()
                         .tabItem { Label { Text("Progreso") } icon: { Image("tab_progress").renderingMode(.template) } }.tag(3)
-                    ProfileView(settings: $settings)
+                    ProfileView(settings: $settings).readableWidth()
                         .tabItem { Label { Text("Perfil") } icon: { Image("tab_profile").renderingMode(.template) } }.tag(4)
                 }
             }
@@ -160,7 +160,7 @@ struct RootView: View {
         .refreshable { await model.refreshAll() }
         .fullScreenCover(isPresented: Binding(get: { model.strengthDate != nil }, set: { if !$0 { model.strengthDate = nil } })) {
             if let date = model.strengthDate {
-                StrengthSessionView(date: date) { model.strengthDate = nil }.environmentObject(model)
+                StrengthSessionView(date: date) { model.strengthDate = nil }.readableWidth().environmentObject(model)
             }
         }
         .onAppear {

@@ -127,9 +127,39 @@ struct SportBadge: View {
 struct ZoneChip: View {
     let zone: String
     var body: some View {
-        Text(zone).font(.mono(12, .semibold, relativeTo: .caption)).foregroundStyle(Palette.onZone)
-            .frame(width: 40, height: 24).background(Palette.zones[zone] ?? Palette.chip).clipShape(Capsule())
+        // Mínimos y no medidas fijas: con el texto grande del sistema, «Z2» no cabía en 24 puntos de alto
+        Text(zone).font(.mono(12, .semibold, relativeTo: .caption)).foregroundStyle(Palette.onZone).padding(.horizontal, 6)
+            .frame(minWidth: 40, minHeight: 24).background(Palette.zones[zone] ?? Palette.chip).clipShape(Capsule())
     }
+}
+
+/// En fila si cabe; si no (texto grande del sistema, pantalla estrecha), uno debajo de otro. Para botones y opciones.
+struct FitRow<Content: View>: View {
+    var spacing: CGFloat = 8
+    @ViewBuilder var content: Content
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: spacing) { content }
+            VStack(alignment: .leading, spacing: spacing) { content }
+        }
+    }
+}
+
+/// Un título con su dato a la derecha; si con el texto grande no caben juntos, el dato baja a la línea siguiente.
+struct TitleRow<Title: View, Trailing: View>: View {
+    @ViewBuilder var title: Title
+    @ViewBuilder var trailing: Trailing
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .lastTextBaseline) { title; Spacer(minLength: 10); trailing }
+            VStack(alignment: .leading, spacing: 4) { title; trailing }
+        }
+    }
+}
+
+extension View {
+    /// En iPad o en horizontal, una columna centrada de 640 puntos: a todo lo ancho, botones y barras medían un palmo.
+    func readableWidth() -> some View { frame(maxWidth: 640).frame(maxWidth: .infinity).background(Palette.bg.ignoresSafeArea()) }
 }
 
 extension View {
