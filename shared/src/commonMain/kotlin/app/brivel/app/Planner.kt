@@ -290,11 +290,26 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             rp.warnings, emptyList(), null, null, data.weekChanges.containsKey(monday.toString()))
     }
 
+    // ------------------------------------------------------------ sin plan («Ya tengo mi rutina»)
+
+    /** Sin plan: ninguna sesión de Brivel; los días se llenan con las rutinas, las sesiones propias y los entrenos libres. */
+    private fun emptyWeek(monday: LocalDate): WeekView {
+        val days = WEEKDAYS.mapIndexed { i, w ->
+            dayView(monday.plusDays(i).toString(), w, emptyList(), null, null, emptyList(), emptyList(), null)
+        }
+        return WeekView(monday.toString(), days, 0, 0, emptyList(), emptyList(), null, null, false)
+    }
+
     // ------------------------------------------------------------ común
 
     fun week(monday: LocalDate): WeekView {
         val race = raceGoal()
-        val week = applyWorkouts(moveSessions(applyOwnSessions(applyRoutines(if (race != null && race.date >= today) raceWeek(monday, race) else healthWeek(monday)))))
+        val base = when {
+            goal?.kind == GoalKind.OWN -> emptyWeek(monday)
+            race != null && race.date >= today -> raceWeek(monday, race)
+            else -> healthWeek(monday)
+        }
+        val week = applyWorkouts(moveSessions(applyOwnSessions(applyRoutines(base))))
             .let { w -> zoneLine(w)?.let { w.copy(info = w.info + it) } ?: w }
         val s = screening ?: return week
         return when (s.clearance) {

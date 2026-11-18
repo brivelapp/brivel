@@ -215,9 +215,32 @@ export function Footer({ core, act }: { core: WebApp; act: Act }) {
   )
 }
 
+/** Sin plan y sin rutina hoy: la próxima, tus rutinas para hacer una hoy o un entreno libre; sin rutinas, crear la primera. */
+function NoRoutineToday({ core, next, act, openStrength, openTrain }:
+  { core: WebApp; next: string | null; act: Act; openStrength: (date: string) => void; openTrain: () => void }) {
+  const routines: { id: string; name: string }[] = JSON.parse(core.routinesJson())
+  const start = (id: string | null) => act(() => openStrength(core.startWorkout(id)))
+  if (routines.length === 0) return (
+    <section className="module">
+      <h3>Empieza por tu rutina</h3>
+      <p className="muted">Apunta sus ejercicios y los días que la haces. Esos días te saldrá aquí, lista para empezar, y Brivel guardará cada serie.</p>
+      <button className="primary" onClick={openTrain}>Crear mi rutina</button>
+      <button className="secondary" onClick={() => start(null)}>Entrenar sin rutina</button>
+    </section>
+  )
+  return (
+    <section className="module">
+      <h3>Hoy no te toca rutina</h3>
+      {next && <p className="muted">{next}. Si te apetece entrenar hoy, elige una o empieza en blanco.</p>}
+      {routines.map((r) => <button key={r.id} className="secondary" onClick={() => start(r.id)}>Hacer «{r.name}» hoy</button>)}
+      <button className="secondary" onClick={() => start(null)}>Entreno libre</button>
+    </section>
+  )
+}
+
 /** Hoy: el estado, la sesión y la semana. La portada, la bienvenida y el pie van en App.tsx. */
-export function Today({ core, act, synced, openStrength }:
-  { core: WebApp; act: Act; synced: (m: string | null) => void; openStrength: (date: string) => void }) {
+export function Today({ core, act, synced, openStrength, openTrain }:
+  { core: WebApp; act: Act; synced: (m: string | null) => void; openStrength: (date: string) => void; openTrain: () => void }) {
   const wide = useWide()
   const screen: TodayScreen = JSON.parse(core.todayJson())
   const changeGoal = () => { if (confirm("¿Cambiar de objetivo? El plan se rehará al momento.")) act(() => core.abandonGoal()) }
@@ -230,6 +253,7 @@ export function Today({ core, act, synced, openStrength }:
           <p className="muted">{screen.dateLabel}</p>
         </div>
         {screen.goalLine && <p className="muted goal">{screen.goalLine} · <button className="link" onClick={changeGoal}>Cambiar objetivo</button></p>}
+        {screen.noPlan && <p className="goal"><button className="link" onClick={() => act(() => core.abandonGoal())}>Quiero un plan de Brivel</button></p>}
       </header>
       <div className="layout">
       <div className="col">
@@ -240,15 +264,16 @@ export function Today({ core, act, synced, openStrength }:
           <button className="primary" onClick={() => act(() => core.abandonGoal())}>Elegir objetivo</button>
         </section>
       )}
-      <section className={`state ${tone}`}>
+      {screen.stateTitle && <section className={`state ${tone}`}>
         <span className="state-icon"><Icon src={stateIcon} size={22} /></span>
         <div>
           <p className="state-title">{screen.stateTitle}</p>
           {screen.garminNote && <p className="muted small source">{screen.garminNote}</p>}
           {screen.stateDetail.map((r, i) => <ReasonRow key={i} core={core} reason={r} tone={tone} />)}
         </div>
-      </section>
+      </section>}
       {screen.askReadiness && !wide && <ReadinessCard core={core} act={act} />}
+      {screen.noPlan && screen.day.items.length === 0 && <NoRoutineToday core={core} next={screen.nextRoutine} act={act} openStrength={openStrength} openTrain={openTrain} />}
       <DayContent core={core} day={screen.day} act={act} openStrength={openStrength} synced={synced} />
       </div>
       {/* En ordenador la semana va al lado, fija al desplazar; en el móvil, debajo como en las apps */}
@@ -257,7 +282,8 @@ export function Today({ core, act, synced, openStrength }:
       <section className="module">
         <div className="row">
           <h3>Esta semana</h3>
-          <span className="mono muted">{screen.weekMinutes} de 150 min</span>
+          {/* Sin plan, la fuerza hecha frente a los 2 días de la OMS; con plan, los minutos de actividad */}
+          <span className="mono muted">{screen.noPlan ? `${screen.strengthDone} de 2 días de fuerza` : `${screen.weekMinutes} de 150 min`}</span>
         </div>
         <ol className="week">
           {screen.weekDots.map((d) => (
@@ -267,7 +293,9 @@ export function Today({ core, act, synced, openStrength }:
             </li>
           ))}
         </ol>
-        {screen.meetsWho
+        {screen.noPlan
+          ? (screen.strengthDone >= 2 ? <p className="ok-text"><Icon src={check} size={18} />Cumples los 2 días de fuerza que recomienda la OMS</p> : null)
+          : screen.meetsWho
           ? <p className="ok-text"><Icon src={check} size={18} />Cumples la recomendación de la OMS para tu salud</p>
           : <p className="muted">{screen.strengthDays >= 2 ? `Fuerza: ${screen.strengthDays} días, mínimo cumplido` : `Fuerza: ${screen.strengthDays} de 2 días`}</p>}
         {screen.warnings.map((w) => <ReasonRow key={w} core={core} reason={{ text: w, evidence: null }} />)}

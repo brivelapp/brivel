@@ -42,7 +42,7 @@ class PlanOverviewTest {
         val a = app()
         a.setGoal(GoalKind.FITNESS)
         val o = a.planOverview()!!
-        assertEquals("Ponerme en forma", o.title)
+        assertEquals("Más resistencia", o.title)
         assertEquals(listOf("Semana 1 de 4", "Semana 2 de 4", "Semana 3 de 4", "Semana 4 de 4 (más suave)"), o.weeks.map { it.phase })
         assertEquals(1, o.weeks.count { it.isCurrent })
         assertTrue(o.weeks.all { it.race == null && it.strengthDays > 0 })

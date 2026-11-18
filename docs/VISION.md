@@ -81,8 +81,12 @@ objetivo. Todo lo de hoy (Salud, Plan, Hoy) se reparte aquí; nada queda fuera.
 
 ### Objetivo (flujo propio, fuera del perfil)
 
-- **Primera vez:** la app empieza preguntando qué quieres (como Garmin): preparar una carrera, ponerte en forma, ganar
-  fuerza y músculo o mejorar tu salud a largo plazo. Después, días y minutos disponibles, y si quieres conectar tu reloj.
+- **Primera vez:** la app empieza preguntando cómo quieres usarla (como Garmin). **Con un plan que Brivel ajusta cada
+  día:** preparar una carrera, más resistencia (sobre todo cardio) o más músculo (sobre todo pesas); después, días y
+  minutos disponibles, fuerza y nivel. **Sin plan:** «Ya tengo mi rutina», para quien solo quiere apuntar lo suyo (un
+  gimnasio con su rutina): basta el año y el aviso de salud; Hoy y el calendario enseñan sus rutinas y el entreno
+  libre, sin sesiones de Brivel, y desde Hoy puede pedir un plan cuando quiera (decidido por Gabriel el 2026-11-18,
+  muestra B; «Mejorar mi salud» se quitó el 2026-11-17).
 - **Al terminar una carrera:** la app lo detecta y vuelve a preguntar (¿otra carrera, mantener la forma, descansar?).
 - **Siempre se puede abandonar o reajustar** desde Hoy o Calendario, sin pasar por el perfil.
 - Un objetivo de carrera no sustituye a la salud: el suelo de la OMS (150 min y fuerza 2 días) se cumple siempre.

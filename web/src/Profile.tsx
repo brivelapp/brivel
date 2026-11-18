@@ -74,6 +74,8 @@ export function Profile({ core, act, synced, settings, setSettings }:
         </button>
       </div>
       <div className="profile-grid">
+        {/* Sin plan, deportes, semana, fuerza y nivel no cambian nada: se preguntan si un día pide un plan */}
+        {!core.noPlan && <>
         <section className="module">
           <h3>Tus deportes</h3>
           <SportPicker core={core} cardio={profile.cardio} onChange={(cardio) => save({ ...profile, cardio })} />
@@ -90,6 +92,7 @@ export function Profile({ core, act, synced, settings, setSettings }:
           <Segmented options={LEVEL_CHOICES.map(([k, l]) => [k, l])} selected={profile.level} label="Nivel"
             onSelect={(level) => save({ ...profile, level })} />
         </section>
+        </>}
         <section className="module">
           <h3>Año de nacimiento</h3>
           <label className="field">Para calcular tus zonas de pulso

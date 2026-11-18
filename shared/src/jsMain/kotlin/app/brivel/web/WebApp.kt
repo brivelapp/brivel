@@ -169,7 +169,9 @@ class WebApp {
 
     private val read = Json { ignoreUnknownKeys = true }
 
-    val hasProfile: Boolean get() = app.data.profile != null
+    val hasProfile: Boolean get() = app.hasPlanProfile
+    val noPlan: Boolean get() = app.data.goal?.kind == GoalKind.OWN
+    fun startWithoutPlan(birthYear: Int?) = app.startWithoutPlan(birthYear)
 
     /** El perfil guardado o, en la bienvenida, el de partida. */
     fun profileJson(): String = json.encodeToString(app.data.profile ?: UserProfile())

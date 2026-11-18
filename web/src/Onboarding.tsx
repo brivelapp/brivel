@@ -3,20 +3,21 @@ import { useState, type ReactNode } from "react"
 import type { WebApp } from "brivel-shared"
 import { ChoiceCards, LEVEL_CHOICES, Segmented, SportPicker, STRENGTH_CHOICES, WeekBars, type Profile } from "./ProfileParts"
 
-const QUESTIONS = 7  // objetivo, deportes, semana, fuerza, nivel, año y aviso de salud
+const QUESTIONS = 7  // objetivo, deportes, semana, fuerza, nivel, año y aviso de salud; sin plan, solo 3
 const GOALS: [string, string, string][] = [
-  ["RACE", "Preparar una carrera", "Un plan con fecha hacia tu prueba: carrera, bici, natación, triatlón…"],
-  ["FITNESS", "Ponerme en forma", "Más resistencia y fuerza para el día a día, sin fecha."],
-  ["STRENGTH", "Ganar fuerza y músculo", "Fuerza primero, con algo de cardio para la salud."],
+  ["RACE", "Preparar una carrera", "Con fecha: carrera, bici, natación, triatlón…"],
+  ["FITNESS", "Más resistencia", "Sobre todo cardio (unas 5 h a la semana) y 2 o 3 días de fuerza."],
+  ["STRENGTH", "Más músculo", "Sobre todo pesas (3 o 4 días) y el cardio mínimo para la salud."],
 ]
+const OWN: [string, string, string][] = [["OWN", "Ya tengo mi rutina", "Apuntas tus rutinas y tus series; Brivel guarda tu progreso."]]
 const RACE_SPORTS: [string, string][] = [["running", "Carrera a pie"], ["cycling", "Bici"], ["swimming_pool", "Natación"],
   ["triathlon", "Triatlón"], ["duathlon", "Duatlón"]]
 const PRIORITIES: [string, string][] = [["A", "Principal"], ["B", "Importante"], ["C", "Preparatoria"]]
 
 interface Race { name: string; sport: string; date: string; priority: string; distanceKm: number | null; trail: boolean }
 
-function Question({ number, title, subtitle, onBack, next = "Siguiente", nextEnabled = true, onNext, children }: {
-  number: number; title: string; subtitle?: string; onBack?: () => void; next?: string; nextEnabled?: boolean
+function Question({ number, total = QUESTIONS, title, subtitle, onBack, next = "Siguiente", nextEnabled = true, onNext, children }: {
+  number: number; total?: number; title: string; subtitle?: string; onBack?: () => void; next?: string; nextEnabled?: boolean
   onNext: () => void; children: ReactNode
 }) {
   return (
@@ -24,8 +25,8 @@ function Question({ number, title, subtitle, onBack, next = "Siguiente", nextEna
       <div className="row">
         {onBack && <button className="back" aria-label="Atrás" onClick={onBack}>‹</button>}
         {number > 0 && (
-          <div className="progress" role="img" aria-label={`Paso ${number} de ${QUESTIONS}`}>
-            {Array.from({ length: QUESTIONS }, (_, i) => <span key={i} className={i < number ? "on" : ""} />)}
+          <div className="progress" role="img" aria-label={`Paso ${number} de ${total}`}>
+            {Array.from({ length: total }, (_, i) => <span key={i} className={i < number ? "on" : ""} />)}
           </div>
         )}
       </div>
@@ -50,10 +51,15 @@ export function Onboarding({ core, onExit, onDone }: { core: WebApp; onExit: () 
   const year = profile.birthYear
   const ageOk = year != null && core.ageOk(year)
 
+  const own = goal === "OWN"  // sin plan: solo el año y el aviso de salud
+  const total = own ? 3 : QUESTIONS
   const finish = () => {
     try {
-      if (!goalOnly) core.saveProfileJson(JSON.stringify(profile))
-      core.setGoal(goal!, goal === "RACE" ? JSON.stringify({ ...race, name: race.name.trim() }) : null)
+      if (own && !goalOnly) core.startWithoutPlan(year ?? null)
+      else {
+        if (!goalOnly) core.saveProfileJson(JSON.stringify(profile))
+        core.setGoal(goal!, goal === "RACE" ? JSON.stringify({ ...race, name: race.name.trim() }) : null)
+      }
       onDone()
     } catch (e) {
       onDone(e instanceof Error && e.message ? e.message : "No se pudo guardar")
@@ -63,10 +69,14 @@ export function Onboarding({ core, onExit, onDone }: { core: WebApp; onExit: () 
   switch (step) {
     case 1:
       return (
-        <Question number={goalOnly ? 0 : 1} title="¿Qué quieres conseguir?" subtitle="Podrás cambiarlo o abandonarlo cuando quieras."
+        <Question number={goalOnly ? 0 : 1} total={total} title="¿Cómo quieres usar Brivel?" subtitle="Podrás cambiarlo cuando quieras."
           onBack={goalOnly ? undefined : onExit} next={goalOnly ? "Guardar objetivo" : "Siguiente"} nextEnabled={goal != null && raceOk}
-          onNext={() => (goalOnly ? finish() : setStep(2))}>
-          <ChoiceCards options={GOALS} selected={goal} onSelect={setGoal} label="Objetivo" />
+          onNext={() => (goalOnly ? finish() : setStep(own ? 6 : 2))}>
+          {/* Muestra B (2026-11-18): los objetivos con plan juntos y «sin plan» aparte, para que no parezca otro objetivo */}
+          <p className="settings-title">Con un plan que Brivel ajusta cada día</p>
+          <ChoiceCards options={GOALS} selected={goal} onSelect={setGoal} label="Objetivo con plan" />
+          <p className="settings-title">Sin plan</p>
+          <ChoiceCards options={OWN} selected={goal} onSelect={setGoal} label="Sin plan" />
           {goal === "RACE" && (
             <section className="module">
               <label className="field">Nombre de la carrera
@@ -120,7 +130,8 @@ export function Onboarding({ core, onExit, onDone }: { core: WebApp; onExit: () 
       )
     case 6:
       return (
-        <Question number={6} title="¿En qué año naciste?" subtitle="Para calcular tus zonas de pulso." onBack={() => setStep(5)}
+        <Question number={own ? 2 : 6} total={total} title="¿En qué año naciste?" subtitle={own ? "Hace falta para usar Brivel." : "Para calcular tus zonas de pulso."}
+          onBack={() => setStep(own ? 1 : 5)}
           nextEnabled={ageOk} onNext={() => setStep(7)}>
           <label className="field">Año de nacimiento
             <input inputMode="numeric" autoComplete="bday-year" value={year ?? ""}
@@ -131,7 +142,8 @@ export function Onboarding({ core, onExit, onDone }: { core: WebApp; onExit: () 
       )
     default:
       return (
-        <Question number={7} title="Antes de empezar" onBack={() => setStep(6)} next="Ver mi plan" nextEnabled={accepted} onNext={finish}>
+        <Question number={own ? 3 : 7} total={total} title="Antes de empezar" onBack={() => setStep(6)} next={own ? "Empezar" : "Ver mi plan"}
+          nextEnabled={accepted} onNext={finish}>
           <section className="state caution"><p>{core.healthNotice}</p></section>
           <label className="check"><input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
             <span>Lo he leído y entreno bajo mi responsabilidad</span></label>

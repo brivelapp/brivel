@@ -23,7 +23,7 @@ private const val MAX_WEEKS = 52
 
 /** null sin objetivo. Las semanas pasadas no salen: el Calendario ya enseña lo que se hizo. */
 fun buildPlanOverview(data: AppData, today: LocalDate): PlanOverview? {
-    val goal = data.goal ?: return null
+    val goal = data.goal?.takeIf { it.kind != GoalKind.OWN } ?: return null  // sin plan no hay plan entero
     val planner = Planner(data, today)
     val race = planner.raceGoal()?.takeIf { it.date >= today }
     val first = mondayOf(today)

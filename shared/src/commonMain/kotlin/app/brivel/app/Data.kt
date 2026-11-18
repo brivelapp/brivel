@@ -14,7 +14,8 @@ interface KeyValueStore {
 
 /** Qué quiere conseguir el usuario. El objetivo vive fuera del perfil y siempre se puede cambiar (VISION §5). */
 // HEALTH ya no se ofrece (2026-11-17): se queda para leer datos antiguos y `migrate` lo pasa a FITNESS, que hacía el mismo plan
-enum class GoalKind { RACE, FITNESS, STRENGTH, HEALTH }
+// OWN (formato 12): sin plan, «Ya tengo mi rutina»: Brivel no genera sesiones; Hoy y el calendario enseñan tus rutinas
+enum class GoalKind { RACE, FITNESS, STRENGTH, HEALTH, OWN }
 
 @Serializable
 data class RaceInfo(
@@ -109,7 +110,7 @@ data class IntervalsCache(
 data class GarminLink(val privateKey: String, val publicKey: String, val token: String, val since: String)
 
 /** Versión del formato guardado: al cambiarlo, `migrate` adapta los datos antiguos (sin servidor no hay migraciones). */
-const val SCHEMA = 11
+const val SCHEMA = 12
 
 /** Campo nuevo: añádelo también a `merge` (sync/Merge.kt), o un cambio de otro dispositivo pisará el de este. */
 @Serializable

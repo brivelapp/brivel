@@ -91,6 +91,23 @@ class BrivelApp(
 
     fun saveProfile(profile: UserProfile) = save(data.copy(profile = profile))
 
+    /**
+     * El perfil tiene lo que pide un plan (algún día con minutos). Sin él, al elegir un objetivo con plan la bienvenida
+     * pregunta deportes, semana, fuerza y nivel; con él, solo el objetivo.
+     */
+    val hasPlanProfile: Boolean get() = data.profile?.days?.values?.any { it > 0 } == true
+
+    /**
+     * «Ya tengo mi rutina»: sin plan. Sin perfil de antes, solo el año y los días vacíos, para que si un día pide un plan
+     * la bienvenida le pregunte lo demás.
+     */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun startWithoutPlan(birthYear: Int?) {
+        val profile = data.profile ?: UserProfile(days = emptyMap())
+        save(data.copy(profile = profile.copy(birthYear = birthYear ?: profile.birthYear)))
+        setGoal(GoalKind.OWN)
+    }
+
     /** Nuevo objetivo: los planes sin fecha empiezan un bloque nuevo este lunes. */
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
     fun setGoal(kind: GoalKind, race: RaceInfo? = null) {
@@ -367,6 +384,7 @@ class BrivelApp(
 
     /** Se puede cambiar lo propuesto (entrenar o no) en los días que quedan de esta semana. */
     fun canChangeDay(date: String): Boolean {
+        if (data.goal?.kind == GoalKind.OWN) return false  // sin plan: no hay sesión de Brivel que quitar ni poner
         val now = today()
         val target = LocalDate.parse(date)
         return target >= now && target < mondayOf(now).plusDays(7)

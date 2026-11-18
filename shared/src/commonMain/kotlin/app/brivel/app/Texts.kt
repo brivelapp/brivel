@@ -57,9 +57,10 @@ val EVIDENCE_MEANING = mapOf(
 
 fun goalLabel(goal: UserGoal): String = when (goal.kind) {
     GoalKind.RACE -> goal.race?.name ?: "Carrera"
-    GoalKind.FITNESS -> "Ponerme en forma"
-    GoalKind.STRENGTH -> "Ganar fuerza y músculo"
+    GoalKind.FITNESS -> "Más resistencia"
+    GoalKind.STRENGTH -> "Más músculo"
     GoalKind.HEALTH -> "Mejorar mi salud a largo plazo"
+    GoalKind.OWN -> "Ya tengo mi rutina"
 }
 
 /**

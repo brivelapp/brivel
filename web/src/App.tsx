@@ -134,7 +134,7 @@ export function App() {
           ))}
         </div>
       </nav>
-      {tab === "today" && <Today core={core} act={act} synced={synced} openStrength={setStrengthDate} />}
+      {tab === "today" && <Today core={core} act={act} synced={synced} openStrength={setStrengthDate} openTrain={() => setTab("train")} />}
       {tab === "calendar" && <Calendar core={core} act={act} openStrength={setStrengthDate} />}
       {tab === "train" && <Train core={core} act={act} openStrength={setStrengthDate} />}
       {tab === "progress" && <Progress core={core} act={act} openProfile={() => { setTab("profile"); setSettings(true) }} />}

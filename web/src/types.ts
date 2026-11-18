@@ -10,6 +10,7 @@ export interface TodayScreen {
   dateLabel: string; goalLine: string | null; stateTitle: string; stateDetail: Reason[]; tone: Tone; day: DayView
   meetsWho: boolean; weekMinutes: number; strengthDays: number; weekDots: WeekDot[]; warnings: string[]; info: string[]
   askReadiness: boolean; goalFinished: boolean; garminNote: string | null
+  noPlan: boolean; strengthDone: number; nextRoutine: string | null
 }
 // Sesión de fuerza serie a serie (Workout.kt) y figura de su movimiento (Figures.kt); reps son segundos si timed
 export interface LoggedSet { set: number; weightKg: number | null; reps: number; rir: number | null; kind: string | null }

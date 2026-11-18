@@ -61,6 +61,9 @@ data class TodayScreen(
     val linked: Boolean,
     val goalFinished: Boolean,  // la carrera ya pasó: toca elegir objetivo otra vez
     val garminNote: String? = null,  // el plan se adapta en parte con datos de Garmin (atribución obligatoria)
+    val noPlan: Boolean = false,  // «Ya tengo mi rutina»: sin sesiones de Brivel, solo las tuyas
+    val strengthDone: Int = 0,  // días de esta semana con fuerza hecha (sin plan, frente a los 2 de la OMS)
+    val nextRoutine: String? = null,  // sin plan y sin rutina hoy: «Mañana, Torso» o «El viernes, Torso»
 )
 
 fun buildToday(data: AppData, today: LocalDate): TodayScreen {
@@ -69,8 +72,9 @@ fun buildToday(data: AppData, today: LocalDate): TodayScreen {
     val day = week.days.first { it.isToday }
     val race = data.goal?.race?.takeIf { data.goal.kind == GoalKind.RACE }
     val goalFinished = race != null && LocalDate.parse(race.date) < today
+    val noPlan = data.goal?.kind == GoalKind.OWN
     val goalLine = when {
-        data.goal == null -> null
+        data.goal == null || noPlan -> null
         race != null && !goalFinished -> {
             val days = today.daysUntil(LocalDate.parse(race.date))
             val left = when {
@@ -84,7 +88,7 @@ fun buildToday(data: AppData, today: LocalDate): TodayScreen {
             if (week.weekInBlock == 3) " (más suave)" else ""
         else -> goalLabel(data.goal)
     }
-    val (headline, detail) = headline(day, planner)
+    val (headline, detail) = if (noPlan) ownHeadline(day, planner) else headline(day, planner)
     val form = detail.firstOrNull()?.takeIf { it.evidence == null && day.adjustments.isEmpty() && day.items.isNotEmpty() }
     val tone = when {
         day.adjustments.isNotEmpty() || form?.text == HEAVY_FATIGUE -> Tone.CAUTION
@@ -104,10 +108,36 @@ fun buildToday(data: AppData, today: LocalDate): TodayScreen {
         meetsWho = week.activeMinutes >= 150 && strength >= 2,
         warnings = week.warnings,
         info = week.info + BADGES.filter { data.badges[it.id] == today.toString() }.map { "Medalla nueva: «${it.title}». Está en Progreso." },
-        askReadiness = !planner.hasRecoverySignals && data.readiness[today.toString()] == null && day.items.isNotEmpty(),
+        // Sin plan, las respuestas no ajustarían nada: no se pregunta
+        askReadiness = !noPlan && !planner.hasRecoverySignals && data.readiness[today.toString()] == null && day.items.isNotEmpty(),
         linked = data.cache != null, goalFinished = goalFinished,
         garminNote = GARMIN_DERIVED.takeIf { data.usesGarmin() },
+        noPlan = noPlan, strengthDone = week.days.count { "strength" in it.doneSports },
+        nextRoutine = if (noPlan && day.items.isEmpty()) nextRoutine(planner, today) else null,
     )
+}
+
+/** Sin plan: lo de hoy es tu rutina (o nada) y arriba, cómo estás si el reloj lo dice; vacío si no hay nada. */
+private fun ownHeadline(day: DayView, planner: Planner): Pair<String, List<Reason>> {
+    val form = planner.state?.let { s -> if (s.tsb >= -10) "Estás en tu punto normal." else "Llevas carga acumulada." }
+    val item = day.items.firstOrNull()
+    val text = when {
+        item != null -> "Hoy: ${item.title}, ${item.durationMin} min"
+        form != null -> form
+        else -> ""  // sin reloj ni rutina hoy no hay nada que decir arriba: la tarjeta de estado no sale
+    }
+    return text to listOfNotNull(form?.takeIf { item != null }?.let { Reason(it, null) })
+}
+
+/** La próxima rutina de los 7 días siguientes: «Mañana, Torso» o «El viernes, Torso». */
+private fun nextRoutine(planner: Planner, today: LocalDate): String? {
+    for (n in 1..7) {
+        val date = today.plusDays(n)
+        val item = planner.day(date).items.firstOrNull { it.kind == "routine" } ?: continue
+        val name = WEEKDAY_LABEL[date.weekday()]!!.lowercase()
+        return (if (n == 1) "Mañana" else "El $name") + ", ${item.title}"
+    }
+    return null
 }
 
 private const val HEAVY_FATIGUE = "Llevas mucha fatiga acumulada."
