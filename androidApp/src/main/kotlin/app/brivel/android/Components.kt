@@ -300,6 +300,11 @@ fun rememberTextWidth(): (String, TextStyle) -> Dp {
     return { text, style -> with(density) { measurer.measure(text, style, maxLines = 1, softWrap = false).size.width.toDp() } }
 }
 
+/** El título pequeño de un grupo (Ajustes, la bienvenida): en mayúsculas y gris. */
+@Composable
+fun GroupTitle(title: String) = Text(title.uppercase(), color = Palette.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+    letterSpacing = 0.6.sp, modifier = Modifier.padding(start = 4.dp, top = 4.dp))
+
 /** Un título con su dato a la derecha; si con letra grande no caben juntos, el dato baja a la línea siguiente. */
 @Composable
 fun TitleRow(content: @Composable () -> Unit) =

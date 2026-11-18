@@ -228,7 +228,7 @@ fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null
                 } else if (strengthDate != null) {
                     StrengthSession(app, strengthDate!!, version, act) { strengthDate = null }
                 } else when (tab) {
-                    0 -> TodayTab(app, version, act) { act.run { app.abandonGoal() } }
+                    0 -> TodayTab(app, version, act, openTrain = { tab = 2 }) { act.run { app.abandonGoal() } }
                     1 -> CalendarTab(app, version, act)
                     2 -> TrainTab(app, version, act)
                     3 -> ProgressTab(app, version, act) { tab = 4; settings = true }

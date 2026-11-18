@@ -95,21 +95,24 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openSe
                 IconButton(onClick = { openSettings(true) }, modifier = Modifier.size(48.dp).clip(CircleShape).background(Palette.chip)
                     .semantics { contentDescription = "Ajustes" }) { Glyph(R.drawable.ic_settings, 22.dp) }
             }
-            Module {
-                SectionTitle("Tus deportes")
-                SportPicker(draft.cardio) { save(draft.copy(cardio = it)) }
-            }
-            Module {
-                SectionTitle("Tu semana")
-                WeekBars(draft.days) { save(draft.copy(days = it)) }
-            }
-            Module {
-                SectionTitle("Fuerza")
-                Segmented(STRENGTH_CHOICES.map { it.first to it.second }, draft.strength) { save(draft.copy(strength = it)) }
-            }
-            Module {
-                SectionTitle("Tu nivel")
-                Segmented(LEVEL_CHOICES.map { it.first to it.second }, draft.level) { save(draft.copy(level = it)) }
+            // Sin plan, deportes, semana, fuerza y nivel no cambian nada: se preguntan si un día pide un plan
+            if (app.data.goal?.kind != GoalKind.OWN) {
+                Module {
+                    SectionTitle("Tus deportes")
+                    SportPicker(draft.cardio) { save(draft.copy(cardio = it)) }
+                }
+                Module {
+                    SectionTitle("Tu semana")
+                    WeekBars(draft.days) { save(draft.copy(days = it)) }
+                }
+                Module {
+                    SectionTitle("Fuerza")
+                    Segmented(STRENGTH_CHOICES.map { it.first to it.second }, draft.strength) { save(draft.copy(strength = it)) }
+                }
+                Module {
+                    SectionTitle("Tu nivel")
+                    Segmented(LEVEL_CHOICES.map { it.first to it.second }, draft.level) { save(draft.copy(level = it)) }
+                }
             }
             Module {
                 var year by remember(version) { mutableStateOf(draft.birthYear) }
@@ -324,8 +327,7 @@ private const val HEALTH_READS = "Tu sueño y sus fases, tu VFC, tu pulso en rep
 /** Un grupo de Ajustes: título pequeño y una tarjeta con sus filas. */
 @Composable
 private fun SettingsGroup(title: String, rows: @Composable ColumnScope.() -> Unit) {
-    Text(title.uppercase(), color = Palette.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp,
-        modifier = Modifier.padding(start = 4.dp, top = 4.dp))
+    GroupTitle(title)
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Palette.surface), content = rows)
 }
 

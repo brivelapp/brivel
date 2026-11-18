@@ -1,5 +1,6 @@
 package app.brivel.android
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
@@ -39,7 +40,7 @@ import androidx.compose.ui.Alignment
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TodayTab(app: BrivelApp, version: Int, act: Act, openGoal: () -> Unit) {
+fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {}, openGoal: () -> Unit) {
     val screen = remember(version) { app.todayScreen() }
     val day = screen.day
     var goalOpen by remember { mutableStateOf(false) }
@@ -61,6 +62,7 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openGoal: () -> Unit) {
             Secondary(it)
             TextButton(onClick = { goalOpen = true }) { LinkText("Tu objetivo") }
         }
+        if (screen.noPlan) TextButton(onClick = openGoal) { LinkText("Quiero un plan de Brivel") }
         if (screen.goalFinished) {
             Module {
                 SectionTitle("Tu carrera ya pasó")
@@ -69,16 +71,22 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openGoal: () -> Unit) {
             }
         }
         // Tu cuerpo hoy en una frase: sale de la misma decisión que la sesión
-        StateCard(screen.tone, screen.stateTitle, screen.stateDetail, screen.garminNote)
+        if (screen.stateTitle.isNotEmpty()) StateCard(screen.tone, screen.stateTitle, screen.stateDetail, screen.garminNote)
         if (screen.askReadiness) ReadinessCard(act)
+        if (screen.noPlan && day.items.isEmpty()) NoRoutineToday(app, screen.nextRoutine, version, act, openTrain)
         DayContent(app, day, app.watchRoute != null, act, today = true)
         Module {
             TitleRow {
                 SectionTitle("Esta semana")
-                Text("${screen.weekMinutes} de 150 min", fontFamily = Mono, fontSize = 14.sp, color = Palette.muted)
+                // Sin plan, la fuerza hecha frente a los 2 días de la OMS; con plan, los minutos de actividad
+                Text(if (screen.noPlan) "${screen.strengthDone} de 2 días de fuerza" else "${screen.weekMinutes} de 150 min",
+                    fontFamily = Mono, fontSize = 14.sp, color = Palette.muted)
             }
             WeekDots(screen.weekDots)
-            if (screen.meetsWho) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (screen.noPlan) {
+                if (screen.strengthDone >= 2) Text("Cumples los 2 días de fuerza que recomienda la OMS", color = Palette.ok,
+                    fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            } else if (screen.meetsWho) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Glyph(R.drawable.ic_check, 18.dp, Palette.ok)
                 Text("Cumples la recomendación de la OMS para tu salud", color = Palette.ok, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             } else Secondary(if (screen.strengthDays >= 2) "Fuerza: ${screen.strengthDays} días, mínimo cumplido" else "Fuerza: ${screen.strengthDays} de 2 días")
@@ -86,6 +94,26 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openGoal: () -> Unit) {
             screen.info.forEach { Secondary(it) }
         }
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** Sin plan y sin rutina hoy: la próxima, tus rutinas para hacer una hoy o un entreno libre; sin rutinas, crear la primera. */
+@Composable
+private fun NoRoutineToday(app: BrivelApp, next: String?, version: Int, act: Act, openTrain: () -> Unit) {
+    val routines = remember(version) { app.routines }
+    fun start(id: String?) = act.run { act.openStrength(app.startWorkout(id).date) }
+    Module {
+        if (routines.isEmpty()) {
+            Text("Empieza por tu rutina", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+            Secondary("Apunta sus ejercicios y los días que la haces. Esos días te saldrá aquí, lista para empezar, y Brivel guardará cada serie.")
+            PrimaryButton("Crear mi rutina", Modifier.fillMaxWidth(), onClick = openTrain)  // en Entrenar, «Tus rutinas»
+            SecondaryButton("Entrenar sin rutina", Modifier.fillMaxWidth()) { start(null) }
+        } else {
+            Text("Hoy no te toca rutina", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+            next?.let { Secondary("$it. Si te apetece entrenar hoy, elige una o empieza en blanco.") }
+            routines.forEach { r -> OutlinedButton(onClick = { start(r.id) }, modifier = Modifier.fillMaxWidth()) { Text("Hacer «${r.name}» hoy") } }
+            SecondaryButton("Entreno libre", Modifier.fillMaxWidth()) { start(null) }
+        }
     }
 }
 

@@ -58,20 +58,21 @@ import app.brivel.app.systemToday
 import kotlinx.datetime.LocalDate
 
 private val GOALS = listOf(
-    GoalKind.RACE to ("Preparar una carrera" to "Un plan con fecha hacia tu prueba: carrera, bici, natación, triatlón…"),
-    GoalKind.FITNESS to ("Ponerme en forma" to "Más resistencia y fuerza para el día a día, sin fecha."),
-    GoalKind.STRENGTH to ("Ganar fuerza y músculo" to "Fuerza primero, con algo de cardio para la salud."),
+    GoalKind.RACE to ("Preparar una carrera" to "Con fecha: carrera, bici, natación, triatlón…"),
+    GoalKind.FITNESS to ("Más resistencia" to "Sobre todo cardio (unas 5 h a la semana) y 2 o 3 días de fuerza."),
+    GoalKind.STRENGTH to ("Más músculo" to "Sobre todo pesas (3 o 4 días) y el cardio mínimo para la salud."),
 )
+private val OWN = GoalKind.OWN to ("Ya tengo mi rutina" to "Apuntas tus rutinas y tus series; Brivel guarda tu progreso.")
 private val RACE_SPORTS = listOf("running" to "Carrera a pie", "cycling" to "Bici", "swimming_pool" to "Natación",
     "triathlon" to "Triatlón", "duathlon" to "Duatlón")
 
-private const val QUESTIONS = 7  // objetivo, deportes, semana, fuerza, nivel, año y aviso de salud
+private const val QUESTIONS = 7  // objetivo, deportes, semana, fuerza, nivel, año y aviso de salud; sin plan, solo 3
 
 /** Una pregunta por pantalla (lienzo de Pulso, 2026-11-03): atrás, progreso, la pregunta y «Siguiente» abajo. Sin atajos. */
 @Composable
 private fun Question(
     number: Int, title: String, subtitle: String?, onBack: (() -> Unit)?, next: String, nextEnabled: Boolean,
-    onNext: () -> Unit, content: @Composable ColumnScope.() -> Unit,
+    onNext: () -> Unit, total: Int = QUESTIONS, content: @Composable ColumnScope.() -> Unit,
 ) {
     // imePadding: con el teclado abierto, «Siguiente» sube por encima
     Column(Modifier.fillMaxSize().imePadding().padding(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -79,9 +80,9 @@ private fun Question(
             if (onBack != null) IconButton(onClick = onBack, modifier = Modifier.size(44.dp).clip(CircleShape).background(Palette.surface)) {
                 Glyph(R.drawable.ic_chevron_left, label = "Atrás")
             }
-            if (number > 0) Row(Modifier.weight(1f).semantics { contentDescription = "Paso $number de $QUESTIONS" },
+            if (number > 0) Row(Modifier.weight(1f).semantics { contentDescription = "Paso $number de $total" },
                 horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                repeat(QUESTIONS) { i ->
+                repeat(total) { i ->
                     Box(Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(if (i < number) Palette.ok else Palette.chip))
                 }
             }
@@ -100,7 +101,7 @@ private fun Question(
 /** Primera vez: bienvenida y una pregunta por pantalla hasta el aviso de salud. Con perfil, solo el objetivo. */
 @Composable
 fun Onboarding(app: BrivelApp, act: Act) {
-    val hasProfile = app.data.profile != null
+    val hasProfile = app.hasPlanProfile  // sin días (venía sin plan): se pregunta todo
     var step by remember { mutableIntStateOf(if (hasProfile) 1 else 0) }
     var goal by remember { mutableStateOf<GoalKind?>(null) }
     var race by remember { mutableStateOf(RaceInfo("", "running", "")) }
@@ -111,6 +112,14 @@ fun Onboarding(app: BrivelApp, act: Act) {
         .getOrNull()?.let { it > systemToday() } == true)
     val year = profile.birthYear
     val ageOk = year != null && ageAllowed(year, systemToday().year)
+    val own = goal == GoalKind.OWN  // sin plan: solo el año y el aviso de salud
+    val total = if (own) 3 else QUESTIONS
+    @Composable fun choice(kind: GoalKind, texts: Pair<String, String>) =
+        Module(Modifier.selectable(goal == kind, role = Role.RadioButton) { goal = kind },
+            accent = if (goal == kind) Palette.ok else null, background = if (goal == kind) Palette.okSoft else Palette.surface) {
+            Text(texts.first, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            Secondary(texts.second)
+        }
 
     when (step) {
         0 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -123,17 +132,16 @@ fun Onboarding(app: BrivelApp, act: Act) {
             Button(onClick = { step = 1 }, modifier = Modifier.fillMaxWidth()) { Text("Empezar") }
             SyncCard(app, act, 0, allowCreate = false)
         }
-        1 -> Question(if (hasProfile) 0 else 1, "¿Qué quieres conseguir?", "Podrás cambiarlo o abandonarlo cuando quieras.",
+        1 -> Question(if (hasProfile) 0 else 1, "¿Cómo quieres usar Brivel?", "Podrás cambiarlo cuando quieras.",
             if (hasProfile) null else ({ step = 0 }), if (hasProfile) "Guardar objetivo" else "Siguiente", goal != null && raceOk,
-            { if (hasProfile) act.run { app.setGoal(goal!!, race.takeIf { goal == GoalKind.RACE }) } else step = 2 }) {
-            GOALS.forEach { (kind, texts) ->
-                Module(Modifier.selectable(goal == kind, role = Role.RadioButton) { goal = kind },
-                    accent = if (goal == kind) Palette.ok else null, background = if (goal == kind) Palette.okSoft else Palette.surface) {
-                    Text(texts.first, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                    Secondary(texts.second)
-                }
-            }
+            { if (hasProfile) act.run { app.setGoal(goal!!, race.takeIf { goal == GoalKind.RACE }) } else step = if (own) 6 else 2 },
+            total) {
+            // Muestra B (2026-11-18): los objetivos con plan juntos y «sin plan» aparte, para que no parezca otro objetivo
+            GroupTitle("Con un plan que Brivel ajusta cada día")
+            GOALS.forEach { (kind, texts) -> choice(kind, texts) }
             if (goal == GoalKind.RACE) RaceForm(race) { race = it }
+            GroupTitle("Sin plan")
+            choice(OWN.first, OWN.second)
         }
         2 -> Question(2, "¿Qué deportes haces?", "Si no marcas nada, el plan es de caminar.", { step = 1 }, "Siguiente", true,
             { step = 3 }) {
@@ -150,16 +158,20 @@ fun Onboarding(app: BrivelApp, act: Act) {
         5 -> Question(5, "¿Cuánto entrenas ahora?", "Para empezar a tu medida.", { step = 4 }, "Siguiente", true, { step = 6 }) {
             ChoiceCards(LEVEL_CHOICES, profile.level) { profile = profile.copy(level = it) }
         }
-        6 -> Question(6, "¿En qué año naciste?", "Para calcular tus zonas de pulso.", { step = 5 }, "Siguiente", ageOk, { step = 7 }) {
+        6 -> Question(if (own) 2 else 6, "¿En qué año naciste?", if (own) "Hace falta para usar Brivel." else "Para calcular tus zonas de pulso.",
+            { step = if (own) 1 else 5 }, "Siguiente", ageOk, { step = 7 }, total) {
             BirthYearField(year) { profile = profile.copy(birthYear = it) }
             if (year != null && year >= 1000 && !ageOk) Secondary("Hace falta tener al menos $MIN_AGE años.", Palette.caution)
         }
-        else -> Question(7, "Antes de empezar", null, { step = 6 }, "Ver mi plan", accepted, {
+        else -> Question(if (own) 3 else 7, "Antes de empezar", null, { step = 6 }, if (own) "Empezar" else "Ver mi plan", accepted, {
             act.run {
-                app.saveProfile(profile)
-                app.setGoal(goal!!, race.takeIf { goal == GoalKind.RACE })
+                if (own) app.startWithoutPlan(profile.birthYear)
+                else {
+                    app.saveProfile(profile)
+                    app.setGoal(goal!!, race.takeIf { goal == GoalKind.RACE })
+                }
             }
-        }) {
+        }, total) {
             Module(background = Palette.cautionSoft) { Secondary(HEALTH_NOTICE, Palette.text) }
             Row(Modifier.toggleable(accepted, role = Role.Checkbox) { accepted = it }, verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(accepted, null)
