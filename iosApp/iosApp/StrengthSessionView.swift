@@ -188,7 +188,7 @@ struct StrengthSessionView: View {
             Finished(other: other, close: close)
         }
         if free {
-            HStack(spacing: 16) {
+            FitRow(spacing: 16) {
                 Button("Añadir ejercicio") { picking = true }.buttonStyle(SecondaryStyle())
                 if mode == "session" {
                     Button("Descartar el entreno") { confirmDiscard = true }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
@@ -281,7 +281,7 @@ private struct SetView: View {
                 Capsule().fill(e.done.contains { Int($0.set) == n } ? Palette.ok : Palette.chip).frame(height: 5)
             }
         }
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             ExerciseFigure(pattern: e.pattern).frame(width: 64, height: 64)
                 .background(Palette.band).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
@@ -292,7 +292,7 @@ private struct SetView: View {
                 if let superset = e.superset { Secondary("Superserie \(superset): alterna sus ejercicios y descansa al acabar la ronda") }
             }
         }
-        HStack(spacing: 16) {
+        FitRow(spacing: 16) {
             Button("Cómo se hace") { sheet = "card" }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
             if swap != nil { Button("Cambiar ejercicio") { sheet = "swap" }.font(.ui(14, .bold)).buttonStyle(TextActionStyle()) }
         }
@@ -303,11 +303,13 @@ private struct SetView: View {
             Text(s).font(.small).frame(maxWidth: .infinity, alignment: .leading).padding(12)
                 .background(Palette.okSoft).clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-        HStack(spacing: 12) {
-            Stepper(label: "kg", value: kgText(weight), onTap: { typed = weight.map { kgText($0) } ?? ""; typing = true },
-                    minus: { weight = weight.flatMap { $0 - 2.5 > 0 ? $0 - 2.5 : nil } }, plus: { weight = (weight ?? 0) + 2.5 })
-            Stepper(label: e.timed ? "segundos" : "repeticiones", value: amount(reps, timed: e.timed),
-                    minus: { reps = max(1, reps - (e.timed ? 5 : 1)) }, plus: { reps = min(600, reps + (e.timed ? 5 : 1)) })
+        let kgStepper = Stepper(label: "kg", value: kgText(weight), onTap: { typed = weight.map { kgText($0) } ?? ""; typing = true },
+                                minus: { weight = weight.flatMap { $0 - 2.5 > 0 ? $0 - 2.5 : nil } }, plus: { weight = (weight ?? 0) + 2.5 })
+        let repsStepper = Stepper(label: e.timed ? "segundos" : "repeticiones", value: amount(reps, timed: e.timed),
+                                  minus: { reps = max(1, reps - (e.timed ? 5 : 1)) }, plus: { reps = min(600, reps + (e.timed ? 5 : 1)) })
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) { kgStepper; repsStepper }.fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: 12) { kgStepper; repsStepper }
         }
         .alert("Peso", isPresented: $typing) {
             TextField("kg", text: $typed).keyboardType(.decimalPad)
@@ -319,9 +321,9 @@ private struct SetView: View {
         } message: { Text("Vacío: con tu peso corporal.") }
         if e.barbell, let w = weight, let plates = model.core.plates(weightKg: w) { Secondary(plates) }
         // Tipo de serie: las de calentamiento y las descendentes se suman a las del plan y no cuentan para subir el peso
-        HStack {
+        TitleRow {
             Secondary("Tipo de serie")
-            Spacer()
+        } trailing: {
             Picker("Tipo de serie", selection: $kind) {
                 Text("Normal").tag(String?.none)
                 ForEach(DataKt.SET_KIND_KEYS, id: \.self) { k in Text(DataKt.SET_KINDS[k] ?? k).tag(String?.some(k)) }
@@ -345,9 +347,10 @@ private struct Stepper: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            Secondary(label)
+            Secondary(label).lineLimit(1)
             // Misma altura con "Sin peso" que con un número, para que las dos tarjetas queden parejas
-            Text(value).font(.mono(value.count > 5 ? 26 : 38, .semibold, relativeTo: .largeTitle)).frame(height: 48)
+            Text(value).font(.mono(value.count > 5 ? 26 : 38, .semibold, relativeTo: .largeTitle)).lineLimit(1).minimumScaleFactor(0.4)
+                .frame(minHeight: 48)
                 .onTapGesture { onTap?() }
                 .accessibilityAddTraits(onTap != nil ? .isButton : [])
                 .accessibilityHint(onTap != nil ? "Escribir el peso" : "")
@@ -356,7 +359,7 @@ private struct Stepper: View {
                 StepButton(text: "+", label: "Más \(label)", action: plus)
             }
         }
-        .frame(maxWidth: .infinity).padding(.vertical, 14).padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity).padding(.vertical, 14).padding(.horizontal, 10)
         .background(Palette.surface).clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
@@ -388,13 +391,14 @@ private struct RestView: View {
             Circle().trim(from: 0, to: CGFloat(left) / CGFloat(max(total, 1)))
                 .stroke(Palette.ok, style: StrokeStyle(lineWidth: 14, lineCap: .round)).rotationEffect(.degrees(-90))
             VStack(spacing: 2) {
-                Text(clock(left)).font(.mono(44, .semibold, relativeTo: .largeTitle))
-                Secondary("descanso de \(clock(total))")
+                Text(clock(left)).font(.mono(44, .semibold, relativeTo: .largeTitle)).lineLimit(1).minimumScaleFactor(0.4)
+                Secondary("descanso de \(clock(total))").lineLimit(1).minimumScaleFactor(0.5)
             }
+            .padding(.horizontal, 28)
         }
         .frame(width: 220, height: 220).frame(maxWidth: .infinity).padding(.top, 8)
         .accessibilityElement(children: .combine)
-        HStack(spacing: 10) {
+        FitRow(spacing: 10) {
             Button("−15 s") { adjust(-15) }.buttonStyle(SecondaryStyle())
             Button("+15 s") { adjust(15) }.buttonStyle(SecondaryStyle())
             Button("Saltar", action: skip).buttonStyle(SecondaryStyle())
@@ -471,7 +475,7 @@ private struct SessionRows: View {
             Grid(horizontalSpacing: 6, verticalSpacing: 8) {
                 GridRow {
                     ForEach(["SERIE", "ANTERIOR", e.timed ? "PESO" : "KG", e.timed ? "SEG" : "REPS", ""], id: \.self) {
-                        Text($0).font(.ui(11, .semibold)).foregroundStyle(Palette.muted).gridColumnAlignment(.leading)
+                        Text($0).font(.ui(11, .semibold)).foregroundStyle(Palette.muted).lineLimit(1).minimumScaleFactor(0.6).gridColumnAlignment(.leading)
                     }
                 }
                 ForEach(1...max(Int(e.sets), e.done.count), id: \.self) { n in
@@ -481,7 +485,7 @@ private struct SessionRows: View {
                     GridRow {
                         // La letra del tipo de serie (C, D o F) junto al número; VoiceOver lee el nombre entero
                         Text(setMark(n, today?.kind)).font(.mono(15)).accessibilityLabel(setSpoken(n, today?.kind))
-                        Text(before.map { setText($0, timed: e.timed) } ?? "—").font(.mono(13)).foregroundStyle(Palette.muted)
+                        Text(before.map { setText($0, timed: e.timed) } ?? "—").font(.mono(13)).foregroundStyle(Palette.muted).lineLimit(1).minimumScaleFactor(0.6)
                         Cell(text: today.map { kgText($0.weightKg?.doubleValue) } ?? "—", done: today != nil, now: now)
                         Cell(text: today.map { amount(Int($0.reps), timed: e.timed) } ?? "—", done: today != nil, now: now)
                         Glyph(name: "check", size: 16, color: today != nil ? Palette.onOk : Palette.muted)
@@ -496,7 +500,7 @@ private struct SessionRows: View {
                 }
             }
             if let c = controls {
-                HStack(spacing: 16) {
+                FitRow(spacing: 16) {
                     Button("Otra serie", action: c.addSet).font(.ui(14, .bold)).buttonStyle(TextActionStyle())
                     if c.canRemoveSet { Button("Una serie menos", action: c.removeSet).font(.ui(14, .bold)).buttonStyle(TextActionStyle()) }
                     Button("Quitar", action: c.remove).font(.ui(14, .bold)).buttonStyle(TextActionStyle()).accessibilityLabel("Quitar \(e.name)")
@@ -514,7 +518,7 @@ private struct Cell: View {
     let done: Bool
     let now: Bool
     var body: some View {
-        Text(text).font(.mono(text.count > 5 ? 11 : 13)).foregroundStyle(done ? Palette.text : Palette.muted)
+        Text(text).font(.mono(text.count > 5 ? 11 : 13)).foregroundStyle(done ? Palette.text : Palette.muted).lineLimit(1).minimumScaleFactor(0.6)
             .frame(maxWidth: .infinity).padding(.vertical, 6)
             .background(done ? Palette.okSoft : now ? Palette.surface : Palette.chip)
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))

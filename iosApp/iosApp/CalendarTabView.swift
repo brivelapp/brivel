@@ -18,6 +18,7 @@ struct CalendarTabView: View {
     var body: some View {
         let _ = model.version
         let screen = model.core.month(year: Int32(year), month: Int32(month))
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(spacing: 10) {
                 HStack {
@@ -49,8 +50,11 @@ struct CalendarTabView: View {
                 }
                 DayDetail(date: selected, cell: screen.weeks.flatMap { $0 }.first { $0.date == selected })
                     .id(selected)  // sin arrastrar lo abierto de otro día
-                WholePlanSection()
+                WholePlanSection().id("plan")
             }.padding(16)
+        }
+        // `-plan YES` al lanzar: el plan abierto y a la vista, para las capturas del CI
+        .onAppear { if UserDefaults.standard.bool(forKey: "plan") { proxy.scrollTo("plan", anchor: .top) } }
         }
         .background(Palette.bg)
     }
@@ -61,11 +65,7 @@ private func hoursText(_ min: Int) -> String {
     return min % 60 > 0 ? "\(min / 60) h \(min % 60) min" : "\(min / 60) h"
 }
 
-private func weekTitle(_ w: PlanWeek) -> String {
-    let name = w.isCurrent ? "Esta semana" : "Semana del \(w.title)"
-    guard let phase = w.phase else { return name }
-    return "\(name) · \(phase)"
-}
+private func weekTitle(_ w: PlanWeek) -> String { w.isCurrent ? "Esta semana" : "Semana del \(w.title)" }
 
 private func weekDetail(_ w: PlanWeek) -> String {
     if let race = w.race { return "Carrera: \(race)" }
@@ -75,7 +75,7 @@ private func weekDetail(_ w: PlanWeek) -> String {
 /// El plan entero de un vistazo: cada semana hasta la carrera (o lo que queda del bloque) con su fase y su carga.
 private struct WholePlanSection: View {
     @EnvironmentObject var model: AppModel
-    @State private var open = false
+    @State private var open = UserDefaults.standard.bool(forKey: "plan")
 
     var body: some View {
         let _ = model.version
@@ -86,17 +86,30 @@ private struct WholePlanSection: View {
                 if !open {
                     Button("Ver semana a semana") { open = true }.buttonStyle(SecondaryStyle())
                 } else {
-                    ForEach(plan.weeks, id: \.monday) { w in
-                        HStack(spacing: 10) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(weekTitle(w)).font(.ui(15, w.isCurrent ? .bold : .regular))
-                                Source(text: weekDetail(w))
-                            }
-                            Spacer()
-                            Text(hoursText(Int(w.minutes))).font(.mono(15, .semibold)).fixedSize()
-                        }
+                    // Con todo en una línea al lado de las horas, el texto grande lo dejaba en una columna de una palabra.
+                    // Si un título no cabe con sus horas, en todas las semanas van debajo (no unas a la derecha y otras no)
+                    ViewThatFits(in: .horizontal) {
+                        weeks(plan.weeks, hoursBelow: false)
+                        weeks(plan.weeks, hoursBelow: true)
                     }
                     Source(text: "Las semanas que vienen se ajustan a lo que vayas haciendo.")
+                }
+            }
+        }
+    }
+
+    private func weeks(_ weeks: [PlanWeek], hoursBelow: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(weeks, id: \.monday) { w in
+                let hours = Text(hoursText(Int(w.minutes))).font(.mono(15, .semibold)).fixedSize()
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .lastTextBaseline, spacing: 10) {
+                        Text(weekTitle(w)).font(.ui(15, w.isCurrent ? .bold : .semibold)).fixedSize(horizontal: !hoursBelow, vertical: false)
+                        if !hoursBelow { Spacer(minLength: 0); hours }
+                    }
+                    if hoursBelow { hours }
+                    if let phase = w.phase { Secondary(phase) }
+                    Source(text: weekDetail(w))
                 }
             }
         }
