@@ -17,6 +17,15 @@
       "versions": [
         {
           "version": "0.1.0",
+          "buildVersion": "184",
+          "date": "2026-11-18",
+          "localizedDescription": "Sin plan («Ya tengo mi rutina»), objetivos «Cardio y salud» y «Fuerza y músculo», ritmos en min/km, vatios o pulso, tests de campo y, para quien empieza, el ritmo aprendido de sus carreras fáciles. Formato de datos 12.",
+          "downloadURL": "https://github.com/brivelapp/brivel/releases/download/prueba-2026-11-18-2/Brivel.ipa",
+          "size": 5338594,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "0.1.0",
           "buildVersion": "174",
           "date": "2026-11-18T16:11:24Z",
           "localizedDescription": "prueba-2026-11-18-1: letra grande y todos los tamaños de pantalla, pasos de ayer, icono de Entrenar",
