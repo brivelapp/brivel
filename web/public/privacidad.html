@@ -14,7 +14,7 @@
 <main>
   <nav><a href="./">Brivel</a><a href="terminos">Términos de uso</a></nav>
   <h1>Política de privacidad</h1>
-  <p class="muted">Última actualización: 15 de noviembre de 2026 (versión 6: actividades importadas o grabadas con el GPS, más datos del reloj y la báscula, material y medallas) · <a href="#english">Summary in English</a></p>
+  <p class="muted">Última actualización: 19 de noviembre de 2026 (versión 7: resultados de los tests de campo y cómo te fue cada carrera) · <a href="#english">Summary in English</a></p>
 
   <div class="box">
     <p><strong>En resumen:</strong> la web y las apps de Brivel guardan tus datos en tu dispositivo. Si activas
@@ -35,8 +35,9 @@
     los recibe, salvo cifrados si activas la sincronización (apartado 4) o si conectas Garmin Connect (apartado 5).</p>
   <ul>
     <li><strong>Lo que introduces:</strong> año de nacimiento, nivel, deportes, días y minutos disponibles, objetivo,
-      sesiones hechas, pesos levantados, rutinas y sesiones que montas, medidas corporales, tus zapatillas y bicis, y
-      tus respuestas sobre sueño, energía y agujetas.</li>
+      sesiones hechas, pesos levantados, rutinas y sesiones que montas, medidas corporales, tus zapatillas y bicis,
+      tus respuestas sobre sueño, energía y agujetas, los resultados de tus tests de campo (ritmo, pulso o vatios) y
+      cómo te resultó cada carrera (fácil, normal o dura).</li>
     <li><strong>Actividades que importas o grabas:</strong> si importas un archivo de actividad (FIT, GPX o TCX) de tu reloj, tu
       ciclocomputador u otra app, Brivel lee de él la fecha, la duración, la distancia, el pulso, la potencia, la altitud y el recorrido. Si grabas
       una actividad con el GPS del móvil, Brivel usa tu <strong>ubicación solo mientras grabas</strong> (el sistema lo
@@ -52,14 +53,15 @@
       reloj» con Health Connect o con un Apple Watch, Brivel escribe allí la sesión planificada de hoy, y nada más.
       Puedes quitar cada permiso cuando quieras en los ajustes del sistema.</li>
     <li><strong>intervals.icu, solo si lo vinculas:</strong> la app habla directamente con intervals.icu usando tu
-      clave, que se guarda cifrada en el almacén seguro del sistema. Brivel no la recibe. intervals.icu trata tus datos
+      clave o el acceso que autorizas en intervals.icu, que se guarda cifrado en el almacén seguro del sistema. Brivel no
+      lo recibe. intervals.icu trata tus datos
       según su propia política de privacidad.</li>
     <li><strong>En la web:</strong> los datos se guardan en el almacenamiento local de tu navegador
       (<code>localStorage</code>).</li>
   </ul>
   <p>Muchos de estos datos son de salud. Como no salen de tu dispositivo, tú los controlas: puedes verlos, cambiarlos,
-    exportarlos (en las apps, <em>Perfil → Exportar todos mis datos</em>) y borrarlos (en las apps, <em>Perfil → Borrar
-    todo de este móvil</em>; en la web, el enlace <em>Borrar mis datos</em> del pie de página). Desinstalar la app o
+    exportarlos (en las apps, <em>Perfil → Ajustes → Exportar mis datos</em>) y borrarlos (en las apps, <em>Perfil →
+    Ajustes → Borrar todo</em>; en la web, el enlace <em>Borrar mis datos</em> del pie de página). Desinstalar la app o
     borrar los datos del sitio en tu navegador también los elimina.</p>
 
   <h2>3. Datos que trata Cloudflare al servir la web</h2>
@@ -81,8 +83,9 @@
   <p>Solo si la activas en «Usar en otros dispositivos». Sin activarla, nada de esto ocurre.</p>
   <ul>
     <li><strong>Qué se guarda:</strong> una copia de los datos del apartado 2 (perfil, objetivo, sesiones hechas, pesos,
-      tus respuestas sobre cómo estás, tu material, tus medallas y, si los conectaste, los datos de Apple Salud o Health
-      Connect), salvo la clave y la copia de intervals.icu, que no se suben. De las actividades que importas o grabas
+      tus respuestas sobre cómo estás, tus tests de campo y cómo te fue cada carrera, tu material, tus medallas y, si los
+      conectaste, los datos de Apple Salud o Health Connect), salvo la clave o el acceso y la copia de intervals.icu, que
+      no se suben. De las actividades que importas o grabas
       solo va el resumen (fecha y hora, duración, distancia, pulso, desnivel, vueltas y mejores marcas): el recorrido y
       las gráficas no se suben. Va <strong>cifrada en tu dispositivo</strong> (AES-256-GCM) con una
       clave que sale de tu código de sincronización y que nunca sale de tus dispositivos: Brivel no puede leerla. Se
@@ -109,7 +112,7 @@
   </ul>
 
   <h2 id="garmin">5. Garmin Connect (opcional)</h2>
-  <p>Solo si la conectas en Perfil → «Conectar Garmin» y das permiso en la pantalla de Garmin. Sin conectarla, nada de
+  <p>Solo si la conectas en Perfil → Ajustes → «Conectar Garmin Connect™» y das permiso en la pantalla de Garmin. Sin conectarla, nada de
     esto ocurre. Está en pruebas y todavía no está abierta a todo el mundo.</p>
   <ul>
     <li><strong>Qué datos llegan:</strong> los que permitas en la pantalla de Garmin, que puedes cambiar cuando quieras
@@ -141,7 +144,7 @@
       Brivel sin desconectar), el servidor desconecta Garmin, se lo comunica y borra todo lo tuyo, como al desconectar.
       Lo descargado queda en tu dispositivo como el resto del apartado 2 y, si sincronizas,
       en tu copia cifrada del apartado 4.</li>
-    <li><strong>Desconectar y borrar:</strong> en Perfil → «Desconectar Garmin» desde cualquiera de tus dispositivos (se
+    <li><strong>Desconectar y borrar:</strong> en Perfil → Ajustes → «Desconectar Garmin» desde cualquiera de tus dispositivos (se
       desconectan todos), o en Garmin Connect quitando el permiso a Brivel. En los dos casos el servidor borra al momento las claves de acceso y los envíos pendientes y deja de
       recibir datos. Lo que ya está en tu dispositivo lo ves, lo exportas y lo borras como en el apartado 2.</li>
     <li><strong>Base legal:</strong> tu consentimiento explícito, que das al conectar y que es aparte de estas condiciones
@@ -218,8 +221,8 @@
       <li><strong>Third parties:</strong> only Cloudflare, Inc. (hosting and database, EU jurisdiction) as data processor.
         Garmin data is never sold or shared. No advertising, analytics, cookies or AI: Garmin data is not used to train,
         evaluate or improve AI models.</li>
-      <li><strong>Your rights:</strong> view, export and delete your data in the app (Profile → Export / Delete); disconnect
-        Garmin in Profile or in Garmin Connect, which immediately deletes the tokens and pending data on our server and
+      <li><strong>Your rights:</strong> view, export and delete your data in the app (Profile → Settings → Export / Delete); disconnect
+        Garmin in Profile → Settings or in Garmin Connect, which immediately deletes the tokens and pending data on our server and
         withdraws your consent. You can also write to us or complain to the Spanish Data Protection Agency
         (<a href="https://www.aepd.es">www.aepd.es</a>).</li>
     </ul>

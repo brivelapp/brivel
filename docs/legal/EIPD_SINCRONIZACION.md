@@ -11,6 +11,14 @@ por día (fases del sueño, saturación de oxígeno, respiración, grasa corpora
 plazos no cambian; el riesgo tampoco: son datos de la misma categoría y el servidor sigue sin poder leerlos. Como máximo
 se suben las 400 actividades más recientes (`SYNCED_ACTIVITIES`), por el tope de 1 MB.
 
+**Revisión del 2026-11-19 (pendiente de que Gabriel la apruebe, junto con la del 2026-11-15):** la copia lleva además
+los resultados de los tests de campo (fecha, deporte, ritmo, pulso o vatios), cómo le resultó cada carrera al usuario
+(fácil, normal o dura, por el identificador de la actividad) y el objetivo sin plan. Son datos de salud de la misma
+categoría que los que ya se subían; el cifrado, el proveedor, el plazo y el riesgo no cambian. La política pasa a la
+versión 7 (`2026-11-19.7`) y la sincronización pide aceptarla de nuevo (§13 de la política). Desde el 2026-11-18, con el
+formato 12 publicado, esos datos se subían ya con la política 6 en vigor, que no los nombraba: se corrige con la 7.
+El acceso de intervals.icu por OAuth (desde el 2026-11) se guarda, como la clave, en el almacén seguro y no se sube.
+
 **Revisar** cada vez que cambie lo que se sube, el cifrado o el proveedor (por ejemplo: OAuth de intervals.icu, QR o
 cambio de código).
 
@@ -36,7 +44,7 @@ Fuente: AEPD, «Listas de tipos de tratamientos de datos que requieren EIPD (art
 | **Finalidad** | Que el usuario tenga los mismos datos en sus dispositivos (web, Android, iOS) |
 | **Base legal** | Consentimiento explícito, aparte de las condiciones (arts. 6.1.a y 9.2.a). El límite de peticiones por IP, por interés legítimo (art. 6.1.f) |
 | **Interesados** | Usuarios de Brivel de 14 años o más que activan la sincronización. Es opcional |
-| **Datos** | Perfil (año de nacimiento, nivel, deportes, días), objetivo, sesiones hechas, pesos levantados, respuestas sobre sueño, energía y agujetas, datos de Apple Salud o Health Connect si están conectados, ID de atleta de intervals.icu, resumen de las actividades propias (sin recorrido), material y medallas. **No** se suben la clave de intervals.icu ni su copia de actividades |
+| **Datos** | Perfil (año de nacimiento, nivel, deportes, días), objetivo, sesiones hechas, pesos levantados, respuestas sobre sueño, energía y agujetas, resultados de los tests de campo y cómo fue cada carrera, datos de Apple Salud o Health Connect si están conectados, ID de atleta de intervals.icu, resumen de las actividades propias (sin recorrido), material y medallas. **No** se suben la clave de intervals.icu ni su copia de actividades |
 | **Metadatos en el servidor** | Identificador de la copia (SHA-256 del token, sin nombre ni email), versión, fecha del último uso, tamaño relleno a múltiplos de 4 KB. La IP se usa para el límite de peticiones (contadores de 60 s de Cloudflare) y no se guarda en la base de datos |
 | **Dónde** | D1 con jurisdicción UE (`jurisdiction: eu`, región EEUR), creada el 2026-11-02. Los Workers pueden ejecutarse fuera de la UE |
 | **Transferencias** | A EE. UU. (Cloudflare, Inc.): Marco de Privacidad de Datos UE-EE. UU. y, si cae, cláusulas contractuales tipo (módulos 2 y 3; DPA §6.2 y §6.4) |
@@ -57,7 +65,7 @@ Fuente: AEPD, «Listas de tipos de tratamientos de datos que requieren EIPD (art
 - **Minimización:** sin email, sin contraseña y sin nombre; identificador seudónimo; la copia de intervals.icu no se
   sube porque cada dispositivo la vuelve a descargar.
 - **Cifrado de extremo a extremo:** el responsable y el encargado no pueden leer los datos.
-- **Información:** política de privacidad, versión 2026-11-02.2 (`web/public/privacidad.html`), enlazada desde la
+- **Información:** política de privacidad, versión 2026-11-19.7 (antes 2026-11-02.2 y 2026-11-15.6; `web/public/privacidad.html`), enlazada desde la
   casilla del consentimiento.
 - **Consentimiento:** casillas sin marcar, separadas de las condiciones, con la edad mínima. Se guarda la fecha y la
   versión de la política en el dispositivo (CUMPLIMIENTO #6).
