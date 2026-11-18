@@ -95,7 +95,7 @@ object Core {
 /** Ejecuta una acción, refresca las pantallas y enseña el error si lo hay. */
 class Act(val app: BrivelApp, private val scope: CoroutineScope, private val snackbar: SnackbarHostState,
           private val refresh: () -> Unit, val openStrength: (date: String) -> Unit = {}) {
-    fun show(text: String?) = scope.launch { snackbar.showSnackbar(text ?: "No se pudo completar") }
+    private fun show(text: String?) = scope.launch { snackbar.showSnackbar(text ?: "No se pudo completar") }
 
     fun run(success: String? = null, block: () -> Unit) {
         try {

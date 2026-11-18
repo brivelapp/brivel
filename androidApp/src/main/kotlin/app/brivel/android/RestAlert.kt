@@ -33,24 +33,20 @@ fun scheduleRestAlert(context: Context, at: Long?) {
 }
 
 class RestReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) =
-        showAlert(context, CHANNEL, "Fin del descanso", ID, "Se acabó el descanso", "Toca la siguiente serie.")
-}
-
-/** Un aviso que suena y vibra (también lo usa el test del habla al final de cada tramo, Recording.kt). */
-fun showAlert(context: Context, channel: String, channelName: String, id: Int, title: String, text: String) {
-    if (!canNotify(context)) return
-    val manager = context.getSystemService(NotificationManager::class.java)
-    manager.createNotificationChannel(NotificationChannel(channel, channelName, NotificationManager.IMPORTANCE_HIGH))
-    val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java),
-        PendingIntent.FLAG_IMMUTABLE)
-    manager.notify(id, Notification.Builder(context, channel)
-        .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-        .setContentTitle(title)
-        .setContentText(text)
-        .setCategory(Notification.CATEGORY_ALARM)
-        .setContentIntent(open)
-        .setAutoCancel(true)
-        .setTimeoutAfter(10 * 60 * 1000L)
-        .build())
+    override fun onReceive(context: Context, intent: Intent) {
+        if (!canNotify(context)) return
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Fin del descanso", NotificationManager.IMPORTANCE_HIGH))
+        val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE)
+        manager.notify(ID, Notification.Builder(context, CHANNEL)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setContentTitle("Se acabó el descanso")
+            .setContentText("Toca la siguiente serie.")
+            .setCategory(Notification.CATEGORY_ALARM)
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .setTimeoutAfter(10 * 60 * 1000L)
+            .build())
+    }
 }

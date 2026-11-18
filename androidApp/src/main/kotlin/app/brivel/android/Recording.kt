@@ -36,11 +36,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.Alignment
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.background
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,8 +43,6 @@ import androidx.compose.ui.unit.sp
 import app.brivel.app.BrivelApp
 import app.brivel.app.RECORD_SPORTS
 import app.brivel.app.SPORT_LABEL
-import app.brivel.app.TALK_PHRASE
-import app.brivel.app.TalkView
 import kotlinx.coroutines.delay
 
 /**
@@ -80,19 +73,8 @@ class RecordService : Service(), LocationListener {
         return START_NOT_STICKY  // si el sistema lo cierra, no puede volver solo con la app en segundo plano
     }
 
-    private var asking = false
-
-    override fun onLocationChanged(l: Location) {
-        val core = Core.get(this)
-        core.recordPoint(l.time / 1000, l.latitude, l.longitude, if (l.hasAltitude()) l.altitude else null,
-            if (l.hasAccuracy()) l.accuracy.toDouble() else 999.0)
-        // Test del habla: al acabar el tramo suena y vibra, aunque el móvil vaya en el bolsillo; al contestar se quita.
-        // shortcut: llega con el GPS (cada segundo con señal); sin señal no avisa, pero tampoco habría ritmo que medir
-        val now = core.recordingView(System.currentTimeMillis() / 1000)?.talk?.asking == true
-        if (now && !asking) showAlert(this, TALK_CHANNEL, "Test del habla", TALK_ID, "Fin del tramo: dilo en voz alta", "¿Has podido decirlo cómodo? Contesta en Brivel.")
-        if (!now && asking) getSystemService(NotificationManager::class.java).cancel(TALK_ID)
-        asking = now
-    }
+    override fun onLocationChanged(l: Location) = Core.get(this).recordPoint(l.time / 1000, l.latitude, l.longitude,
+        if (l.hasAltitude()) l.altitude else null, if (l.hasAccuracy()) l.accuracy.toDouble() else 999.0)
 
     // Sin cuerpo por defecto antes de Android 11
     override fun onProviderEnabled(provider: String) {}
@@ -107,8 +89,6 @@ class RecordService : Service(), LocationListener {
     companion object {
         private const val CHANNEL = "grabacion"
         private const val ID = 41
-        private const val TALK_CHANNEL = "talk"
-        private const val TALK_ID = 42
 
         fun allowed(context: Context) = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
@@ -132,7 +112,14 @@ fun RecordCard(app: BrivelApp, act: Act, version: Int) {
     var sport by remember { mutableStateOf(RECORD_SPORTS.first()) }
     var confirmDiscard by remember { mutableStateOf(false) }
     var opened by remember { mutableStateOf<String?>(null) }
-    val start = rememberRecordStart(app, act)
+    fun begin() = act.run {
+        app.startRecording(sport, now())
+        RecordService.start(context)
+    }
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
+        if (granted[Manifest.permission.ACCESS_FINE_LOCATION] == true) begin()
+        else act.run { throw IllegalArgumentException("Sin el permiso de ubicación precisa no se puede grabar el recorrido") }
+    }
     // Mientras se graba: el tiempo corre cada segundo y el servicio sigue en marcha aunque la app se hubiera cerrado
     LaunchedEffect(view != null) {
         if (view != null) RecordService.start(context)
@@ -147,9 +134,11 @@ fun RecordCard(app: BrivelApp, act: Act, version: Int) {
             ChipRow {
                 RECORD_SPORTS.forEach { s -> FilterChip(selected = sport == s, label = { Text(SPORT_LABEL[s] ?: s) }, onClick = { sport = s }) }
             }
-            PrimaryButton("Empezar a grabar", Modifier.fillMaxWidth()) { start(sport, false) }
+            PrimaryButton("Empezar a grabar", Modifier.fillMaxWidth()) {
+                if (RecordService.allowed(context)) begin()
+                else permission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            }
         } else {
-            view.talk?.let { TalkPanel(app, act, it) }
             Text("${SPORT_LABEL[view.sport] ?: view.sport}${if (view.paused) " · en pausa" else ""}", fontWeight = FontWeight.Bold)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 listOf("Tiempo" to view.time, "Distancia" to view.distance, (if (view.sport == "cycling") "Velocidad" else "Ritmo") to view.pace).forEach { (label, value) ->
@@ -182,58 +171,4 @@ fun RecordCard(app: BrivelApp, act: Act, version: Int) {
             act.run("Grabación descartada") { app.discardRecording(); RecordService.stop(context) }
         }) { Text("Descartar") } },
         dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text("Cancelar") } })
-}
-
-/**
- * Empieza a grabar (`talk`: el test del habla guiado) tras pedir la ubicación y, para el test, los avisos de cada tramo.
- * `onStarted` corre solo si ha empezado.
- */
-@Composable
-fun rememberRecordStart(app: BrivelApp, act: Act, onStarted: () -> Unit = {}): (sport: String, talk: Boolean) -> Unit {
-    val context = LocalContext.current
-    var pending by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
-    fun begin(sport: String, talk: Boolean) = act.run {
-        if (talk) app.startTalkTest(now()) else app.startRecording(sport, now())
-        RecordService.start(context)
-        onStarted()
-    }
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        val (sport, talk) = pending ?: return@rememberLauncherForActivityResult
-        pending = null
-        // Sin avisos el test sigue: las preguntas salen igual en la pantalla
-        if (RecordService.allowed(context)) begin(sport, talk)
-        else act.run { throw IllegalArgumentException("Sin el permiso de ubicación precisa no se puede grabar el recorrido") }
-    }
-    return { sport, talk ->
-        val ask = buildList {
-            if (!RecordService.allowed(context)) { add(Manifest.permission.ACCESS_FINE_LOCATION); add(Manifest.permission.ACCESS_COARSE_LOCATION) }
-            if (talk && Build.VERSION.SDK_INT >= 33 && !canNotify(context)) add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-        if (ask.isEmpty()) begin(sport, talk) else { pending = sport to talk; permission.launch(ask.toTypedArray()) }
-    }
-}
-
-/** El test del habla mientras se graba: el tramo, la frase al acabarlo y los tramos cómodos (Recorder.kt). */
-@Composable
-private fun TalkPanel(app: BrivelApp, act: Act, talk: TalkView) {
-    Text("Test del habla", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
-    val result = talk.result
-    if (result != null) Text(result, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-    else if (!talk.asking) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Palette.bg).padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Tramo ${talk.stage} · ${talk.title}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Palette.muted)
-        Text(talk.left, fontFamily = Mono, fontSize = 54.sp, fontWeight = FontWeight.SemiBold)
-    } else Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Palette.okSoft).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("FIN DEL TRAMO ${talk.stage}: DILO EN VOZ ALTA", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Palette.ok)
-        Text("«$TALK_PHRASE»", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Text("¿Has podido decirlo cómodo?", fontWeight = FontWeight.SemiBold)
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PrimaryButton("Sí, cómodo", Modifier.weight(1f)) { act.run { app.answerTalk(true, now())?.let { act.show(it) } } }
-            SecondaryButton("Me ha costado", Modifier.weight(1f)) { act.run { app.answerTalk(false, now())?.let { act.show(it) } } }
-        }
-        Secondary("Si te ha costado, el test acaba aquí y pasas a caminar.")
-    }
-    talk.done.forEach { Secondary(it) }
-    if (result == null) TextButton(onClick = { act.run { app.stopTalkTest()?.let { act.show(it) } } }) { LinkText("Parar el test") }
 }
