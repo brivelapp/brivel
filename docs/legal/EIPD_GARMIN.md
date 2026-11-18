@@ -7,8 +7,22 @@ vigente para la copia cifrada. Se puede pasar a Gestiona EIPD de la AEPD, que si
 
 Este documento está en un repositorio público: no cita la documentación de Garmin, que es confidencial.
 
+**Revisión del 2026-11-19 (pendiente de que Gabriel la apruebe):** lo que llega de Garmin, el cifrado, el plazo y el
+proveedor no cambian. Cambia dónde se enseñan y para qué se usan, siempre en el dispositivo:
+- Pantallas nuevas con datos de Garmin desde el 2026-11-15: actividades (lista y ficha), material (kilómetros por
+  actividad), medallas y más datos de salud (fases del sueño, estrés medio del día, grasa corporal), todas con la
+  atribución «Garmin [modelo]» o «En parte con datos de Garmin». Desde el 2026-11-18, «¿Cómo fue tu carrera?» en Hoy
+  (distancia y ritmo de la última carrera, con «Garmin [modelo]» desde el 2026-11-19) y los ritmos de quien empieza,
+  que salen de sus carreras, también de las de Garmin. Necesitan el segundo aviso de 30 días a Garmin antes de abrirse
+  a otras personas.
+- La valoración de cada carrera (fácil, normal o dura) se guarda con el identificador de la actividad, también de las de
+  Garmin, y viaja en la copia cifrada (EIPD de la sincronización).
+- Al reloj irán más ejercicios de fuerza con su equivalente de Garmin (tabla del relevo ampliada): es el mismo tipo de
+  dato que ya salía (ejercicio y peso de cada paso).
+El riesgo no cambia: los datos siguen sin poder leerse en el servidor y no salen del dispositivo para otros fines.
+
 **Revisar** cada vez que cambie lo que llega de Garmin (permisos nuevos), el cifrado, el plazo, el proveedor o lo que se
-manda al reloj, y antes de abrir la conexión a otras personas (no antes del 2026-12-04, por el aviso de 30 días a
+manda al reloj, y antes de abrir la conexión a otras personas (no antes del 2026-12-07, por el aviso de 30 días a
 Garmin).
 
 ## 1. Por qué hace falta
