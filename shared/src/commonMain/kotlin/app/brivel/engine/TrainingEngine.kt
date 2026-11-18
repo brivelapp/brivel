@@ -423,8 +423,7 @@ data class Profile(
     val runPace: Double? = null,  // ritmo umbral de carrera, s/km
     val ftp: Double? = null,  // vatios; sin FTP la bici va por FC
     val runModel: Pair<Double, Double>? = null,  // velocidad (m/s) = a + b·FC, de tus carreras (hrPaceModel)
-    val easyPace: Double? = null,  // s/km: techo de lo suave del test del habla (FieldTests.kt), sin ritmo umbral
-    val easyHr: Double? = null,  // ppm del último tramo cómodo del test del habla
+    val easyPace: Double? = null,  // s/km: lo suave de quien empieza, de sus carreras fáciles (FieldTests.kt), sin ritmo umbral
     val dayMinutes: Map<String, Int>? = null,  // minutos disponibles por día; null = sin límite
     val planStart: LocalDate? = null,
     val warnings: MutableList<String> = mutableListOf(),
@@ -475,7 +474,7 @@ fun buildSession(kind: String, sport: String, profile: Profile, volume: Double =
     return buildFrom(entry, kind, sport, profile, volume, maxMinutes)
 }
 
-/** Un test del catálogo por su id (R-TEST-TALK, R-TEST-LTHR, C-TEST, C-TEST-FTP, S-TEST-CSS). */
+/** Un test del catálogo por su id (R-TEST-LTHR, C-TEST, C-TEST-FTP, S-TEST-CSS). */
 fun buildTest(id: String, profile: Profile): Session {
     val entry = CATALOG.first { it.id == id }
     return buildFrom(entry, "test", entry.sport, profile, 1.0, null)
@@ -525,12 +524,9 @@ internal fun finishSession(id: String, sport: String, kind: String, name: String
     // Un test se hace al máximo sostenible: un objetivo calculado con la LTHR que se quiere medir lo sesgaría
     var targets: MutableMap<String, String?> =
         if (kind == "test") mutableMapOf() else zones.associateWith { zoneTarget(it, sport, lthr, profile.css) }.toMutableMap()
-    // Techo de sesión fácil = umbral aeróbico: el pulso del test del habla si se hizo (Persinger 2004) o, si no, el
-    // estimado (LTHR − 30, Friel) hasta que se mida
-    val easyHr = profile.easyHr?.takeIf { sport == "running" }
+    // Techo de sesión fácil = umbral aeróbico, estimado como LTHR − 30 (Friel)
     val hrCap = when {
         kind in QUALITY || sport in SWIM -> null
-        easyHr != null -> pyRound(easyHr)
         lthr != null && lthr != 0.0 -> pyRound(lthr - 30)
         else -> null
     }
@@ -540,9 +536,6 @@ internal fun finishSession(id: String, sport: String, kind: String, name: String
         val z2Lo = pyRound(lthr * hrZone(sport, "Z2").first)
         targets["Z2"] = if (hrCap - z2Lo >= 10) "$z2Lo-$hrCap ppm" else "<= $hrCap ppm"
         if (targets["Z1"] != null && z2Lo > hrCap) targets["Z1"] = "< $hrCap ppm"
-    } else if (hrCap != null && easyHr != null) {
-        targets["Z2"] = "<= $hrCap ppm"  // solo el test del habla, sin umbral de pulso
-        targets["Z1"] = "< $hrCap ppm"
     }
     val trail = id.startsWith("T-")  // en trail el ritmo no sirve: por FC
     val fmtPace = { sec: Double -> "${floorDiv(sec, 60.0).toInt()}:${twoDigits(pyRound(sec % 60))}" }
@@ -555,9 +548,9 @@ internal fun finishSession(id: String, sport: String, kind: String, name: String
             if (z == "Z1") "> ${fmtPace(runPace * fast)} /km" else "${fmtPace(runPace * fast)}-${fmtPace(runPace * slow)} /km"
         }.toMutableMap()
     } else if (sport == "running" && kind != "test" && !trail && profile.runModel == null && easyPace != null) {
-        // Solo el test del habla: lo suave hasta un 12 % más lento que el último tramo cómodo [Inferencia]
-        targets["Z2"] = "${fmtPace(easyPace)}-${fmtPace(easyPace * 1.12)} /km"
-        if ("Z1" in zones) targets["Z1"] = "> ${fmtPace(easyPace * 1.12)} /km"
+        // Quien empieza, de sus carreras fáciles: lo suave, un 5 % a cada lado de su ritmo [Inferencia]
+        targets["Z2"] = "${fmtPace(easyPace * 0.95)}-${fmtPace(easyPace * 1.05)} /km"
+        if ("Z1" in zones) targets["Z1"] = "> ${fmtPace(easyPace * 1.05)} /km"
     }
     val ftp = profile.ftp?.takeIf { it != 0.0 }
     if (sport == "cycling" && kind != "test" && ftp != null) {

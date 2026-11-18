@@ -6,6 +6,8 @@ package app.brivel.web
 // JSON para que la interfaz (web/) reciba objetos planos de JavaScript.
 
 import app.brivel.app.TEST_FIELDS
+import app.brivel.app.EFFORTS
+import app.brivel.app.EFFORT_LABEL
 import app.brivel.app.EVIDENCE_MEANING
 import app.brivel.app.GoalKind
 import app.brivel.app.HEALTH_NOTICE
@@ -287,6 +289,9 @@ class WebApp {
     /** Las dos etiquetas del resultado de un test (TEST_FIELDS): [dato principal, pulso o null]. */
     fun testFields(kind: String): Array<String?> = TEST_FIELDS.getValue(kind).let { arrayOf(it.first, it.second) }
     fun saveTestResult(date: String, kind: String, main: String, hr: String?) = app.saveTestResult(date, kind, main, hr)
+    val efforts: Array<String> get() = EFFORTS.toTypedArray()
+    fun effortLabel(effort: String): String = EFFORT_LABEL.getValue(effort)
+    fun rateRun(id: String, effort: String): String = app.rateRun(id, effort)
 
     fun logMeasure(kind: String, value: String) =
         app.logMeasure(kind, value.replace(',', '.').toDoubleOrNull() ?: throw IllegalArgumentException("Escribe un número"))

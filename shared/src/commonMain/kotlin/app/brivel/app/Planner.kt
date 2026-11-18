@@ -139,12 +139,16 @@ class Planner(private val data: AppData, private val today: LocalDate) {
     private val intervalsPhysiology: Profile? = cache?.let {
         fillPhysiology(Profile(activeSports = listOf("running", "cycling")), it.athlete)
     }
-    val physiology: Profile? = intervalsPhysiology.withTests(data)
+    /** Quien empieza aprende su ritmo suave de sus carreras: tras cada una, Hoy pregunta cómo le fue (FieldTests.kt). */
+    internal val learnsEasyPace: Boolean = profile.level == "beginner" && "running" in profile.cardio &&
+        goal != null && goal.kind != GoalKind.OWN && data.latestTest("running", "threshold") == null && intervalsPhysiology?.runPace == null
+    internal val activities = cache?.activities ?: emptyList()
+    val physiology: Profile? = intervalsPhysiology.withTests(data, if (learnsEasyPace) data.learnedEasyPace(activities, today) else null)
 
     /**
      * El test que toca en cada deporte (id del catálogo): cuando falta el dato que da o el último tiene más de 10
-     * semanas [Práctica: cada 8 a 12]. Quien empieza, el del habla: nunca un esfuerzo máximo. En bici, el de 20′ si
-     * sus salidas traen potencia.
+     * semanas [Práctica: cada 8 a 12]. Quien empieza no hace test de carrera: su ritmo sale de sus carreras fáciles. En
+     * bici, el de 20′ si sus salidas traen potencia.
      */
     internal val neededTests: Map<String, String> by lazy {
         val old = today.plusDays(-70).toString()
@@ -154,7 +158,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
         val running = when {
             thr != null -> "R-TEST-LTHR".takeIf { due(thr) }
             known?.runPace != null -> null
-            profile.level == "beginner" -> "R-TEST-TALK".takeIf { due(data.latestTest("running", "talk")) }
+            profile.level == "beginner" -> null
             else -> "R-TEST-LTHR"
         }
         val ftp = data.latestTest("cycling", "ftp")
@@ -218,7 +222,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             age = profile.birthYear?.let { today.year - it },
             intensityCap = intensityCap,
             lthr = ph?.lthr, maxHr = ph?.maxHr, css = ph?.css, lthrBySport = ph?.lthrBySport ?: emptyMap(),
-            runPace = ph?.runPace, ftp = ph?.ftp, easyPace = ph?.easyPace, easyHr = ph?.easyHr,
+            runPace = ph?.runPace, ftp = ph?.ftp, easyPace = ph?.easyPace,
         )
     }
 
@@ -332,7 +336,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
 
     /**
      * Sin fecha: el test que toca va esta semana en lugar de una sesión de su deporte; la sesión queda como alternativa.
-     * El del habla, en la primera (no cansa); los de 30′ y 20′, en la segunda, tras un rodaje suave [Práctica].
+     * Los de 30′ y 20′, en la segunda, tras un rodaje suave [Práctica].
      */
     private fun applyTests(week: WeekView): WeekView {
         if (week.monday != mondayOf(today).toString()) return week
@@ -352,8 +356,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             val cardio = { i: PlanItem -> !i.isStrength }
             val options = days.filter { fits(it, same) }
             val swap = if (options.isNotEmpty()) same else cardio
-            val day = (if (id == "R-TEST-TALK") options.firstOrNull() else options.getOrNull(1) ?: options.firstOrNull())
-                ?: days.firstOrNull { fits(it, cardio) } ?: continue
+            val day = (options.getOrNull(1) ?: options.firstOrNull()) ?: days.firstOrNull { fits(it, cardio) } ?: continue
             days = days.map { d ->
                 if (d.date != day.date) return@map d
                 var placed = false  // en lugar de una sola sesión de ese día

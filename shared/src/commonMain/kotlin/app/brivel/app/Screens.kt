@@ -64,7 +64,28 @@ data class TodayScreen(
     val noPlan: Boolean = false,  // «Ya tengo mi rutina»: sin sesiones de Brivel, solo las tuyas
     val strengthDone: Int = 0,  // días de esta semana con fuerza hecha (sin plan, frente a los 2 de la OMS)
     val nextRoutine: String? = null,  // sin plan y sin rutina hoy: «Mañana, Torso» o «El viernes, Torso»
+    val rateRun: RunToRate? = null,  // quien empieza: ¿cómo fue su última carrera? (de ahí sale su ritmo suave)
 )
+
+/** La carrera de hoy o de ayer que falta valorar (EFFORTS), con lo que lleva aprendido Brivel. */
+@Serializable
+data class RunToRate(val id: String, val question: String, val detail: String, val note: String)
+
+private fun runToRate(data: AppData, planner: Planner, today: LocalDate): RunToRate? {
+    if (!planner.learnsEasyPace) return null
+    val yesterday = today.plusDays(-1).toString()
+    val runs = recentRuns(planner.activities, today)
+    val run = runs.firstOrNull() ?: return null
+    val id = run.runId() ?: return null
+    val date = run["start_date_local"].str()?.take(10) ?: return null
+    if (date < yesterday || id in data.efforts) return null
+    val easy = runs.count { data.efforts[it.runId()] == "easy" }
+    val km = app.brivel.engine.fmt((run["distance"].num() ?: 0.0) / 1000, 1).replace('.', ',')
+    return RunToRate(id, "¿Cómo fue tu carrera de ${if (date == today.toString()) "hoy" else "ayer"}?",
+        "$km km a ${app.brivel.engine.paceText(run.runPace())} /km",
+        if (easy < EASY_RUNS) "Con $EASY_RUNS carreras fáciles, tus rodajes llevarán ritmo en min/km. Llevas $easy."
+        else "Con lo que contestes, Brivel ajusta tu ritmo suave.")
+}
 
 fun buildToday(data: AppData, today: LocalDate): TodayScreen {
     val planner = Planner(data, today)
@@ -114,6 +135,7 @@ fun buildToday(data: AppData, today: LocalDate): TodayScreen {
         garminNote = GARMIN_DERIVED.takeIf { data.usesGarmin() },
         noPlan = noPlan, strengthDone = week.days.count { "strength" in it.doneSports },
         nextRoutine = if (noPlan && day.items.isEmpty()) nextRoutine(planner, today) else null,
+        rateRun = runToRate(data, planner, today),
     )
 }
 

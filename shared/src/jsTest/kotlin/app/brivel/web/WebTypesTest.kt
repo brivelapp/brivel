@@ -13,6 +13,7 @@ import app.brivel.app.UserProfile
 import app.brivel.app.DailyHealth
 import app.brivel.app.HealthSnapshot
 import app.brivel.app.Workout
+import app.brivel.app.OwnActivity
 import app.brivel.engine.plusDays
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
@@ -30,6 +31,14 @@ class WebTypesTest {
         private val map = mutableMapOf<String, String>()
         override fun read(key: String) = map[key]
         override fun write(key: String, value: String?) { if (value == null) map.remove(key) else map[key] = value }
+    }
+
+    /** Quien empieza, con una carrera de ayer sin valorar: Hoy le pregunta cómo fue (rateRun). */
+    private fun beginnerToday() = BrivelApp(MemoryStore(), MemoryStore(), { LocalDate(2026, 10, 30) }).run {
+        saveProfile(UserProfile(birthYear = 1990, level = "beginner", strength = "gym", cardio = listOf("running"), days = mapOf("MON" to 45, "SAT" to 45)))
+        setGoal(GoalKind.FITNESS)
+        replaceData(data.copy(activities = listOf(OwnActivity("r1", "running", "2026-10-29T08:00:00", 1800.0, 3750.0, source = "gps"))))
+        todayScreen().also { check(it.rateRun != null) }
     }
 
     private fun keys(e: JsonElement): Set<String> = when (e) {
@@ -58,7 +67,7 @@ class WebTypesTest {
                 json.encodeToString(app.strengthScreen(today.toString()))
             }
             (listOfNotNull(json.encodeToString(screen), strength, figureLinesJson("sentadilla"))).flatMap { keys(Json.parseToJsonElement(it)) }
-        }.toSet()
+        }.toSet() + keys(Json.parseToJsonElement(json.encodeToString(beginnerToday())))
         // Calendario y Progreso, con datos de Salud (días, entrenamientos con pulso, zonas y distancia)
         app.importHealth(HealthSnapshot("Apple Salud",
             (1..40).map { n -> DailyHealth(today.plusDays(-n).toString(), 420.0 + n % 7, 50.0 + n % 9, 50.0 + n % 4, 72.0, 8000.0 + 100 * n) },

@@ -32,13 +32,12 @@ data class HealthProfile(
     val lthr: Double? = null,
     val maxHr: Double? = null,
     val css: Double? = null,
-    val keep: Set<String> = emptySet(),
+    val keep: Set<String> = emptySet(),  // días que el usuario pidió entrenar: nunca pasan a descanso extra (§5.6)
     // De los tests de campo o de intervals.icu (FieldTests.kt): ritmos, vatios y techo de lo suave en las sesiones
     val lthrBySport: Map<String, Double> = emptyMap(),
     val runPace: Double? = null,
     val ftp: Double? = null,
     val easyPace: Double? = null,
-    val easyHr: Double? = null,  // días que el usuario pidió entrenar: nunca pasan a descanso extra (§5.6)
 ) {
     init {
         require(goal in HEALTH_GOALS && level in LEVELS && strength in setOf("gym", "bodyweight", "none"))
@@ -291,7 +290,7 @@ fun equivalentMinutes(session: Session): Double = session.blocks.sumOf { b ->
 /** Sesión del catálogo cuyo tiempo moderado equivalente se acerca a `equivalent`, sin pasar de `cap` minutos. */
 fun cardioSession(p: HealthProfile, sport: String, kind: String, equivalent: Double, week: Int, cap: Int): Session? {
     val ep = Profile(activeSports = listOf(sport), lthr = p.lthr, lthrBySport = p.lthrBySport, maxHr = p.maxHr, css = p.css,
-        runPace = p.runPace, ftp = p.ftp, easyPace = p.easyPace, easyHr = p.easyHr)
+        runPace = p.runPace, ftp = p.ftp, easyPace = p.easyPace)
     val entry = pickSession(kind, sport, "base", week) ?: return null
     val mid = (entry.duration.first + entry.duration.second) / 2.0
     var total = min(max(equivalent, 20.0), cap.toDouble())

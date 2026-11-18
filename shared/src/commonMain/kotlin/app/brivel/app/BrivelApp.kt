@@ -687,6 +687,16 @@ class BrivelApp(
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
     fun saveTestResult(date: String, kind: String, main: String, hr: String?) = saveFieldTest(parseTestResult(date, kind, main, hr))
 
+    /** Cómo le fue una carrera (EFFORTS) a quien empieza; devuelve el aviso, que dice si sus rodajes ya llevan ritmo. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun rateRun(id: String, effort: String): String {
+        require(effort in EFFORTS) { "Esa respuesta no existe" }
+        val before = Planner(data, today()).physiology?.easyPace
+        save(data.copy(efforts = data.efforts + (id to effort)))
+        return if (before == null && Planner(data, today()).physiology?.easyPace != null) "Hecho: tus rodajes ya llevan ritmo en min/km"
+        else "Apuntado"
+    }
+
     /** Apunta el resultado de un test (hoy o pasado); otro del mismo día, deporte y tipo lo sustituye. */
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
     fun saveFieldTest(test: FieldTest) {

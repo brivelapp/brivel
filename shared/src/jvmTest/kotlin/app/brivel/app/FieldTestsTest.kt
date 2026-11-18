@@ -39,12 +39,40 @@ class FieldTestsTest {
         assertTrue(easy.steps.all { it.target == null || it.target!!.endsWith("/km") })
     }
 
-    @Test fun theTalkTestGivesTheEasyPaceAndItsPulse() {
+    private fun run(id: String, daysAgo: Int, meters: Double) =
+        OwnActivity(id = id, sport = "running", start = "${today.plusDays(-daysAgo)}T08:00:00", seconds = 1800.0, meters = meters, source = "gps")
+
+    @Test fun aBeginnerLearnsTheEasyPaceFromThreeEasyRuns() {
         val a = app(listOf("running"), level = "beginner")
-        a.saveFieldTest(FieldTest(today.toString(), "running", "talk", paceSecKm = 434.0, hr = 146.0))  // 7:14 /km
-        val easy = a.cardio("running").first { it.kind == "aerobic" }
-        assertEquals("7:14-8:06 /km", easy.target)  // hasta un 12 % más lento
-        assertEquals("y por debajo de 146 ppm", easy.targetNote)
+        a.replaceData(a.data.copy(activities = listOf(run("r1", 5, 3750.0), run("r2", 3, 3600.0), run("r3", 1, 3900.0))))
+        assertEquals("¿Cómo fue tu carrera de ayer?", a.todayScreen().rateRun!!.question)
+        assertEquals("Apuntado", a.rateRun("r1", "easy"))
+        a.rateRun("r2", "easy")
+        assertTrue(a.cardio("running").all { it.target == null })  // con 2 aún no
+        assertTrue(a.todayScreen().rateRun!!.note.endsWith("Llevas 2."))
+        assertEquals("Hecho: tus rodajes ya llevan ritmo en min/km", a.rateRun("r3", "easy"))
+        assertNull(a.todayScreen().rateRun)  // ya contestada
+        // Mediana de 8:00, 8:20 y 7:42 /km: 8:00, y lo suave un 5 % a cada lado
+        assertEquals("7:36-8:24 /km", a.cardio("running").first { it.kind == "aerobic" }.target)
+    }
+
+    @Test fun onlyEasyRunsTeachThePace() {
+        val a = app(listOf("running"), level = "beginner")
+        a.replaceData(a.data.copy(activities = listOf(run("r1", 5, 3750.0), run("r2", 3, 3600.0), run("r3", 1, 3900.0))))
+        a.rateRun("r1", "easy")
+        a.rateRun("r2", "hard")
+        a.rateRun("r3", "easy")
+        assertTrue(a.cardio("running").all { it.target == null })
+        assertFailsWith<IllegalArgumentException> { a.rateRun("r1", "muy fácil") }
+    }
+
+    @Test fun onlyBeginnersAreAsked() {
+        val a = app(listOf("running"))
+        a.replaceData(a.data.copy(activities = listOf(run("r1", 0, 3750.0))))
+        assertNull(a.todayScreen().rateRun)  // con «A veces» va el test de 30′
+        val old = app(listOf("running"), level = "beginner")
+        old.replaceData(old.data.copy(activities = listOf(run("r1", 2, 3750.0))))
+        assertNull(old.todayScreen().rateRun)  // de hace dos días: ya no se pregunta
     }
 
     @Test fun theFtpTestGivesWattsOnTheBike() {
@@ -67,7 +95,8 @@ class FieldTestsTest {
         val a = app(listOf("running"))
         assertFailsWith<IllegalArgumentException> { a.saveFieldTest(FieldTest(today.toString(), "running", "threshold", paceSecKm = 60.0)) }
         assertFailsWith<IllegalArgumentException> { a.saveFieldTest(FieldTest(today.toString(), "running", "ftp", watts = 200.0)) }
-        assertFailsWith<IllegalArgumentException> { a.saveFieldTest(FieldTest(today.plusDays(1).toString(), "running", "talk", paceSecKm = 420.0)) }
+        assertFailsWith<IllegalArgumentException> { a.saveFieldTest(FieldTest(today.plusDays(1).toString(), "running", "threshold", paceSecKm = 420.0)) }
+        assertFailsWith<IllegalArgumentException> { a.saveFieldTest(FieldTest(today.toString(), "running", "talk", paceSecKm = 420.0)) }  // ya no existe
         assertTrue(a.data.fieldTests.isEmpty())
     }
 
@@ -96,10 +125,9 @@ class FieldTestsTest {
         assertTrue(a.day(day).items.sumOf { it.durationMin } <= 90)
     }
 
-    @Test fun aBeginnerGetsTheTalkTestNeverAnAllOutOne() {
+    @Test fun aBeginnerGetsNoRunningTest() {
         val a = app(listOf("running"), level = "beginner")
-        assertEquals(listOf("talk"), a.tests().map { it.testKind })
-        assertEquals("Test del habla", a.tests().single().title)
+        assertTrue(a.tests().isEmpty())  // ni a tope ni el del habla: su ritmo sale de sus carreras fáciles
     }
 
     @Test fun theTestGoesAwayWithItsResultAndComesBackAfterTenWeeks() {
@@ -131,10 +159,9 @@ class FieldTestsTest {
     }
 
     @Test fun resultsAreReadAsTheyAreWritten() {
-        assertEquals(434.0, parseTestResult("2026-10-19", "talk", "7:14", null).paceSecKm)
-        assertEquals(146.0, parseTestResult("2026-10-19", "talk", "7:14", "146").hr)
+        assertEquals(168.0, parseTestResult("2026-10-19", "threshold", "6,16", "168").hr)
         assertEquals(240.0, parseTestResult("2026-10-19", "ftp", "240", null).watts)
-        assertFailsWith<IllegalArgumentException> { parseTestResult("2026-10-19", "talk", "siete", null) }
+        assertFailsWith<IllegalArgumentException> { parseTestResult("2026-10-19", "threshold", "seis", null) }
         assertFailsWith<IllegalArgumentException> { parseTestResult("2026-10-19", "threshold", "0", null) }
     }
 }

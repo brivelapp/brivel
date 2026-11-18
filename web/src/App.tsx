@@ -71,8 +71,8 @@ export function App() {
   }, [core])
   const act: Act = (f, success) => {
     try {
-      f()
-      setMessage(success ?? null)
+      const said = f()
+      setMessage(typeof said === "string" ? said : success ?? null)
       syncSoon()
     } catch (e) {
       setMessage(e instanceof Error && e.message ? e.message : "No se pudo completar")

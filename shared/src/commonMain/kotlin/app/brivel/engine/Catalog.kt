@@ -170,14 +170,6 @@ val CATALOG: List<CatalogEntry> = listOf(
         B("principal", null, "Z2"),
       )),
     // Solo por su id (buildTest): con `events` propios, pickSession no los elige en lugar de R-TEST-LTHR o C-TEST
-    S("R-TEST-TALK", "running", "test", listOf("base_early", "base", "build", "peak", "taper"), 25 to 25,
-      listOf(
-        B("caminar rápido", 3.0, "Z1"),
-        B("trote muy suave", 3.0, "Z1"),
-        B("tramos cada vez más rápidos", 3.0, "Z2", reps = 4,
-          detail = "Cada 3\u2032 un poco más rápido. Al acabar cada tramo, di una frase en voz alta; para en cuanto te cueste"),
-        B("caminar", null, "Z1"),
-      ), events = listOf("por-id")),
     S("C-TEST-FTP", "cycling", "test", listOf("base_early", "base", "build", "peak", "taper"), 55 to 55,
       listOf(
         B("calentamiento", 20.0, "Z2", detail = "Suave, con 3 cambios de ritmo de 1\u2032 al final"),

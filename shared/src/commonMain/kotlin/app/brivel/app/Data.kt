@@ -145,6 +145,7 @@ data class AppData(
     val gearUses: List<GearUse> = emptyList(),  // las actividades apuntadas a cada material: permanente
     val badges: Map<String, String> = emptyMap(),  // medalla ganada → fecha (Badges.kt)
     val fieldTests: List<FieldTest> = emptyList(),  // resultados de los tests de campo: ritmos, pulsos y vatios (FieldTests.kt)
+    val efforts: Map<String, String> = emptyMap(),  // id de la carrera → cómo le fue (EFFORTS): quien empieza, sin test
 )
 
 /**
@@ -156,7 +157,7 @@ data class AppData(
  * `customExercises` (vacío), por lo mismo. v8 → v9: añade `equipment` (vacío), por lo mismo. v9 → v10: añade `workouts`,
  * `measurements` y `ownSessions` (vacíos), el tipo de cada serie y las superseries de las rutinas, por lo mismo.
  * v10 → v11: añade `activities`, `gear`, `gearUses` y `badges` (vacíos) y más datos de salud por día, por lo mismo.
- * v11 → v12: añade el objetivo sin plan (`GoalKind.OWN`) y `fieldTests` (vacío): un móvil sin actualizar no sabría leerlos.
+ * v11 → v12: añade el objetivo sin plan (`GoalKind.OWN`) y `fieldTests` y `efforts` (vacíos): un móvil sin actualizar no sabría leerlos.
  */
 fun migrate(data: AppData): AppData = migrateSchema(data).let {
     if (it.goal?.kind == GoalKind.HEALTH) it.copy(goal = it.goal.copy(kind = GoalKind.FITNESS)) else it

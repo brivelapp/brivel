@@ -35,17 +35,17 @@ val PLAIN_SESSION: Map<String, Pair<String, String>> = mapOf(
 
 /** Los tests de campo por su id: nombre, para qué sirve y el resultado que se apunta (FieldTests.kt). */
 val TEST_TITLE: Map<String, Triple<String, String, String?>> = mapOf(
-    "R-TEST-TALK" to Triple("Test del habla", "Nada de ir a tope: mide a qué ritmo vas cómodo y, desde ahí, cada sesión llevará tu ritmo en min/km.", "talk"),
     "R-TEST-LTHR" to Triple("Test de 30 minutos", "Para darte ritmos de verdad, Brivel necesita medirte una vez: desde ahí, cada sesión llevará tu ritmo en min/km.", "threshold"),
     "C-TEST" to Triple("Test de 30 minutos", "Sin potenciómetro, por pulso: desde ahí, cada salida llevará sus pulsaciones.", "lthr"),
     "C-TEST-FTP" to Triple("Test de 20 minutos", "Tus salidas llevan potenciómetro: con este test Brivel calcula tu FTP y cada sesión de bici llevará sus vatios.", "ftp"),
     "S-TEST-CSS" to Triple("Test de 400 y 200 m", "Para calcular tu ritmo en el agua (CSS) y darte el de cada serie.", null),
 )
+val EFFORT_LABEL = mapOf("easy" to "Fácil", "normal" to "Normal", "hard" to "Dura")
+
 const val TEST_REASON = "Hoy toca un test: Brivel aún no conoce tus ritmos, o hace más de 10 semanas que no los mides."
 
 /** Lo que se apunta tras cada test: el dato principal y, si lo hay, el pulso. */
 val TEST_FIELDS: Map<String, Pair<String, String?>> = mapOf(
-    "talk" to ("Ritmo del último tramo en que hablabas cómodo (min/km)" to "Pulso de ese tramo (opcional)"),
     "threshold" to ("Distancia en los 30 minutos (km)" to "Pulso medio de los últimos 20 minutos (opcional)"),
     "ftp" to ("Potencia media de los 20 minutos (W)" to null),
     "lthr" to ("Pulso medio de los últimos 20 minutos" to null),

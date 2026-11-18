@@ -76,6 +76,7 @@ fun merge(base: AppData, local: AppData, remote: AppData): Merged {
         workouts = items(base.workouts, local.workouts, remote.workouts).distinctBy { it.date },
         measurements = items(base.measurements, local.measurements, remote.measurements).distinctBy { it.date to it.kind },
         fieldTests = items(base.fieldTests, local.fieldTests, remote.fieldTests).distinctBy { Triple(it.date, it.sport, it.kind) },
+        efforts = byKey("efforts", base.efforts, local.efforts, remote.efforts),
         ownSessions = items(base.ownSessions, local.ownSessions, remote.ownSessions).distinctBy { it.id },
         activities = items(base.activities, local.activities, remote.activities).distinctBy { it.id }.sortedBy { it.start },
         // El orden de la lista dice cuál está en uso: se combina entera, como el perfil

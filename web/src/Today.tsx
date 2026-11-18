@@ -31,7 +31,7 @@ export function useWide() {
 }
 
 /** Ejecuta una acción del núcleo y vuelve a pintar; si falla, enseña su texto (como el aviso de las apps). */
-export type Act = (f: () => void, success?: string) => void
+export type Act = (f: () => void | string, success?: string) => void  // si f devuelve texto, ese es el aviso
 
 // Los SVG de iOS son plantillas en negro: como máscara toman el color del texto
 export const Icon = ({ src, label, size = 20 }: { src: string; label?: string; size?: number }) => (
@@ -220,6 +220,20 @@ export function Footer({ core, act }: { core: WebApp; act: Act }) {
   )
 }
 
+/** Quien empieza: cómo fue su última carrera. Con las fáciles, Brivel aprende su ritmo suave (sin test). */
+function RateRun({ core, act, run }: { core: WebApp; act: Act; run: NonNullable<TodayScreen["rateRun"]> }) {
+  return (
+    <section className="module">
+      <h2 className="settings-title">{run.question}</h2>
+      <p className="mono">{run.detail}</p>
+      <div className="row wrap" role="group" aria-label={run.question}>
+        {core.efforts.map((e) => <button key={e} className="secondary" onClick={() => act(() => core.rateRun(run.id, e))}>{core.effortLabel(e)}</button>)}
+      </div>
+      <p className="muted small-text">{run.note}</p>
+    </section>
+  )
+}
+
 /** El resultado de un test de campo: con él, cada sesión lleva su ritmo, sus vatios o su pulso. */
 function TestResult({ core, act, date, kind }: { core: WebApp; act: Act; date: string; kind: string }) {
   const [open, setOpen] = useState(false)
@@ -229,7 +243,7 @@ function TestResult({ core, act, date, kind }: { core: WebApp; act: Act; date: s
   if (!open) return <button className="primary" onClick={() => { setMain(""); setHr(""); setOpen(true) }}>Apuntar el resultado</button>
   return (
     <form className="stack" onSubmit={(e) => { e.preventDefault(); act(() => { core.saveTestResult(date, kind, main, hr || null); setOpen(false) }, "Hecho: tus sesiones ya llevan cifras") }}>
-      <label className="field">{mainLabel}<input value={main} inputMode={kind === "talk" ? "text" : "decimal"} onChange={(e) => setMain(e.target.value)} /></label>
+      <label className="field">{mainLabel}<input value={main} inputMode="decimal" onChange={(e) => setMain(e.target.value)} /></label>
       {hrLabel && <label className="field">{hrLabel}<input value={hr} inputMode="numeric" onChange={(e) => setHr(e.target.value.replace(/\D/g, ""))} /></label>}
       <div className="row wrap"><button className="primary" type="submit">Guardar</button><button className="text" type="button" onClick={() => setOpen(false)}>Cancelar</button></div>
     </form>
@@ -295,6 +309,7 @@ export function Today({ core, act, synced, openStrength, openTrain }:
       </section>}
       {screen.askReadiness && !wide && <ReadinessCard core={core} act={act} />}
       {screen.noPlan && screen.day.items.length === 0 && <NoRoutineToday core={core} next={screen.nextRoutine} act={act} openStrength={openStrength} openTrain={openTrain} />}
+      {screen.rateRun && <RateRun core={core} act={act} run={screen.rateRun} />}
       <DayContent core={core} day={screen.day} act={act} openStrength={openStrength} synced={synced} />
       </div>
       {/* En ordenador la semana va al lado, fija al desplazar; en el móvil, debajo como en las apps */}
