@@ -212,7 +212,13 @@ fun SessionCard(item: PlanItem, done: Boolean, actions: @Composable ColumnScope.
             Text(" min", fontFamily = Mono, fontSize = 13.sp, color = Palette.muted)
         }
         Text(item.title, fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.ExtraBold)
-        Secondary(item.hint)
+        // La cifra manda (2026-11-18): ritmo, vatios o pulso en grande; sin datos aún, cómo saber si vas bien
+        val target = item.target
+        if (target != null) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Palette.bg)
+            .padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Text(target, fontFamily = Mono, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
+            item.targetNote?.let { Text(it, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
+        } else Secondary(item.hint)
         if (item.steps.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (s in item.steps) {
@@ -221,6 +227,7 @@ fun SessionCard(item: PlanItem, done: Boolean, actions: @Composable ColumnScope.
                         Column(Modifier.weight(1f)) {
                             Text(s.name.replaceFirstChar { it.uppercase() }, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                             s.target?.let { Text(it, fontFamily = Mono, fontSize = 12.sp, color = Palette.muted) }
+                            if (item.testKind != null) s.detail?.let { Secondary(it) }  // en un test, cómo se hace cada tramo
                         }
                         val reps = if (s.reps > 1) "${s.reps}×" else ""
                         Text("$reps${s.meters?.let { "$it m" } ?: minutesText(s.minutes)}", fontFamily = Mono, fontSize = 14.sp, color = Palette.muted)

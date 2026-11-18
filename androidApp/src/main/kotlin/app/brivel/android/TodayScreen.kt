@@ -1,5 +1,10 @@
 package app.brivel.android
 
+import app.brivel.app.TEST_FIELDS
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
@@ -97,6 +102,30 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {},
     }
 }
 
+/** El resultado de un test de campo (TEST_FIELDS): con él, cada sesión lleva su ritmo, sus vatios o su pulso. */
+@Composable
+private fun TestResult(app: BrivelApp, act: Act, date: String, kind: String) {
+    var open by remember { mutableStateOf(false) }
+    var main by remember { mutableStateOf("") }
+    var hr by remember { mutableStateOf("") }
+    val (mainLabel, hrLabel) = TEST_FIELDS.getValue(kind)
+    PrimaryButton("Apuntar el resultado", Modifier.fillMaxWidth()) { main = ""; hr = ""; open = true }
+    if (open) AlertDialog(onDismissRequest = { open = false }, containerColor = Palette.surface,
+        title = { Text("Resultado del test") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(main, { main = it }, label = { Text(mainLabel) }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = if (kind == "talk") KeyboardType.Text else KeyboardType.Decimal))
+                hrLabel?.let { OutlinedTextField(hr, { v -> hr = v.filter { it.isDigit() } }, label = { Text(it) }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)) }
+            }
+        },
+        confirmButton = { TextButton(onClick = {
+            act.run("Hecho: tus sesiones ya llevan cifras") { app.saveTestResult(date, kind, main, hr.ifBlank { null }); open = false }
+        }) { Text("Guardar") } },
+        dismissButton = { TextButton(onClick = { open = false }) { Text("Cancelar") } })
+}
+
 /** Sin plan y sin rutina hoy: la próxima, tus rutinas para hacer una hoy o un entreno libre; sin rutinas, crear la primera. */
 @Composable
 private fun NoRoutineToday(app: BrivelApp, next: String?, version: Int, act: Act, openTrain: () -> Unit) {
@@ -158,6 +187,7 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
                 }
             }
             if (today) SendToWatch(app, act, item.sport)
+            item.testKind?.takeIf { today || day.isPast }?.let { TestResult(app, act, day.date, it) }
             if (item.chosen) TextButton(onClick = { act.run { app.clearChoice(day.date) } }) { LinkText("Volver a la planificada") }
             item.movedFrom?.let { Secondary("La has movido aquí desde el ${dateLabel(it).lowercase()}.") }
             val targets = remember(day, item.slot) { if (done || day.isPast) emptyList() else app.moveTargets(day.date, item.slot) }
