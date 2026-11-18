@@ -226,6 +226,7 @@ struct RecordSection: View {
     @ViewBuilder
     private func live(_ view: RecordingView) -> some View {
         VStack(alignment: .leading, spacing: 10) {
+            if let talk = view.talk { TalkPanel(talk: talk) }
             Text(sportLabel(view.sport) + (view.paused ? " · en pausa" : "")).font(.ui(16, .bold))
             HStack {
                 figure("Tiempo", view.time)
@@ -259,6 +260,52 @@ struct RecordSection: View {
             Text(label).font(.caption12).foregroundStyle(Palette.muted)
             Text(value).font(.mono(20, .semibold))
         }
+    }
+}
+
+/// El test del habla mientras se graba: el tramo, la frase al acabarlo y los tramos cómodos (Recorder.kt), como Recording.kt.
+private struct TalkPanel: View {
+    @EnvironmentObject var model: AppModel
+    let talk: TalkView
+
+    private func answer(_ comfortable: Bool) {
+        model.run {
+            if let done = try model.core.answerTalk(comfortable: comfortable, time: Int64(Date().timeIntervalSince1970)) { model.message = done }
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Test del habla").font(.ui(18, .heavy))
+            if let result = talk.result {
+                Text(result).font(.ui(18, .bold))
+            } else if !talk.asking {
+                VStack(spacing: 4) {
+                    Text("Tramo \(talk.stage) · \(talk.title)").font(.ui(14, .bold)).foregroundStyle(Palette.muted)
+                    Text(talk.left).font(.mono(54, .semibold, relativeTo: .largeTitle)).lineLimit(1).minimumScaleFactor(0.6)
+                }
+                .frame(maxWidth: .infinity).padding(16).background(Palette.bg)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            } else {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("FIN DEL TRAMO \(talk.stage): DILO EN VOZ ALTA").font(.ui(13, .heavy)).foregroundStyle(Palette.ok)
+                    Text("«\(RecorderKt.TALK_PHRASE)»").font(.ui(18, .bold))
+                    Text("¿Has podido decirlo cómodo?").font(.ui(15, .semibold))
+                    FitRow {
+                        Button { answer(true) } label: { Text("Sí, cómodo").frame(maxWidth: .infinity) }.buttonStyle(PrimaryStyle())
+                        Button { answer(false) } label: { Text("Me ha costado").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
+                    }
+                    Secondary("Si te ha costado, el test acaba aquí y pasas a caminar.")
+                }
+                .padding(16).background(Palette.okSoft).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
+            ForEach(talk.done, id: \.self) { Secondary($0) }
+            if talk.result == nil {
+                Button("Parar el test") { model.run { if let done = model.core.stopTalkTest() { model.message = done } } }
+                    .font(.ui(14, .bold)).buttonStyle(TextActionStyle())
+            }
+        }
+        .sensoryFeedback(.warning, trigger: talk.asking)  // con la app delante, el aviso es la vibración
     }
 }
 

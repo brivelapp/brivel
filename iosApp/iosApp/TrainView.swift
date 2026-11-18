@@ -11,30 +11,37 @@ struct TrainView: View {
         model.run { model.strengthDate = try model.core.startWorkout(routineId: routineId).date }
     }
 
+    @ViewBuilder private var planned: some View {
+        Module {
+            Text("Entreno libre").font(.section)
+            if let workout = model.core.workoutToday {
+                Text("Hoy: \(workout.name)").font(.ui(16, .bold))
+                Secondary(workout.exercises.count == 1 ? "1 ejercicio" : "\(workout.exercises.count) ejercicios")
+                Button { model.strengthDate = workout.date } label: { Text("Continuar").frame(maxWidth: .infinity) }
+                    .buttonStyle(PrimaryStyle())
+                Button("Descartar el entreno") { confirmDiscard = true }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
+            } else {
+                Secondary("Entrena sin plan: elige los ejercicios sobre la marcha y apunta cada serie. Hoy sustituye a la fuerza de tu plan.")
+                Button { start(nil) } label: { Text("Empezar entreno vacío").frame(maxWidth: .infinity) }
+                    .buttonStyle(PrimaryStyle())
+                ForEach(model.core.routines, id: \.id) { r in
+                    Button("Empezar «\(r.name)» hoy") { start(r.id) }.buttonStyle(SecondaryStyle())
+                }
+            }
+        }
+        SessionsSection()
+    }
+
     var body: some View {
         let _ = model.version
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 ScreenTitle(text: "Entrenar", subtitle: "Por tu cuenta")
-                Module {
-                    Text("Entreno libre").font(.section)
-                    if let workout = model.core.workoutToday {
-                        Text("Hoy: \(workout.name)").font(.ui(16, .bold))
-                        Secondary(workout.exercises.count == 1 ? "1 ejercicio" : "\(workout.exercises.count) ejercicios")
-                        Button { model.strengthDate = workout.date } label: { Text("Continuar").frame(maxWidth: .infinity) }
-                            .buttonStyle(PrimaryStyle())
-                        Button("Descartar el entreno") { confirmDiscard = true }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
-                    } else {
-                        Secondary("Entrena sin plan: elige los ejercicios sobre la marcha y apunta cada serie. Hoy sustituye a la fuerza de tu plan.")
-                        Button { start(nil) } label: { Text("Empezar entreno vacío").frame(maxWidth: .infinity) }
-                            .buttonStyle(PrimaryStyle())
-                        ForEach(model.core.routines, id: \.id) { r in
-                            Button("Empezar «\(r.name)» hoy") { start(r.id) }.buttonStyle(SecondaryStyle())
-                        }
-                    }
-                }
-                SessionsSection()
+                // Grabando (el test del habla también), la grabación va primero
+                let recording = model.core.recordingView(time: Int64(Date().timeIntervalSince1970)) != nil
+                if !recording { planned }
                 RecordSection()
+                if recording { planned }
                 ActivitiesSection()
                 RoutinesSection()
                 LibrarySection()
