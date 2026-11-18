@@ -79,7 +79,7 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {},
         if (screen.stateTitle.isNotEmpty()) StateCard(screen.tone, screen.stateTitle, screen.stateDetail, screen.garminNote)
         if (screen.askReadiness) ReadinessCard(act)
         if (screen.noPlan && day.items.isEmpty()) NoRoutineToday(app, screen.nextRoutine, version, act, openTrain)
-        DayContent(app, day, app.watchRoute != null, act, today = true)
+        DayContent(app, day, app.watchRoute != null, act, today = true, openTrain = openTrain)
         Module {
             TitleRow {
                 SectionTitle("Esta semana")
@@ -104,12 +104,17 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {},
 
 /** El resultado de un test de campo (TEST_FIELDS): con él, cada sesión lleva su ritmo, sus vatios o su pulso. */
 @Composable
-private fun TestResult(app: BrivelApp, act: Act, date: String, kind: String) {
+private fun TestResult(app: BrivelApp, act: Act, date: String, kind: String, guided: (() -> Unit)? = null) {
     var open by remember { mutableStateOf(false) }
     var main by remember { mutableStateOf("") }
     var hr by remember { mutableStateOf("") }
     val (mainLabel, hrLabel) = TEST_FIELDS.getValue(kind)
-    PrimaryButton("Apuntar el resultado", Modifier.fillMaxWidth()) { main = ""; hr = ""; open = true }
+    // El del habla, guiado con el GPS: avisa cada 3′ y guarda el ritmo solo (en cinta o sin GPS, a mano)
+    if (kind == "talk" && guided != null) {
+        val start = rememberRecordStart(app, act, onStarted = guided)
+        PrimaryButton("Empezar el test", Modifier.fillMaxWidth()) { start("running", true) }
+        TextButton(onClick = { main = ""; hr = ""; open = true }) { LinkText("Apuntar el resultado a mano") }
+    } else PrimaryButton("Apuntar el resultado", Modifier.fillMaxWidth()) { main = ""; hr = ""; open = true }
     if (open) AlertDialog(onDismissRequest = { open = false }, containerColor = Palette.surface,
         title = { Text("Resultado del test") },
         text = {
@@ -148,7 +153,7 @@ private fun NoRoutineToday(app: BrivelApp, next: String?, version: Int, act: Act
 
 /** Las sesiones de un día con sus acciones: hecha, cambiar de deporte, enviar al reloj, hoy no puedo. */
 @Composable
-fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: Boolean) {
+fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: Boolean, openTrain: (() -> Unit)? = null) {
     // En Hoy la tarjeta de estado ya dice que descansas: aquí solo lo que se puede hacer
     val changeable = app.canChangeDay(day.date)
     if (day.items.isEmpty() && (!today || changeable)) {
@@ -187,7 +192,7 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
                 }
             }
             if (today) SendToWatch(app, act, item.sport)
-            item.testKind?.takeIf { today || day.isPast }?.let { TestResult(app, act, day.date, it) }
+            item.testKind?.takeIf { today || day.isPast }?.let { TestResult(app, act, day.date, it, guided = if (today) openTrain else null) }
             if (item.chosen) TextButton(onClick = { act.run { app.clearChoice(day.date) } }) { LinkText("Volver a la planificada") }
             item.movedFrom?.let { Secondary("La has movido aquí desde el ${dateLabel(it).lowercase()}.") }
             val targets = remember(day, item.slot) { if (done || day.isPast) emptyList() else app.moveTargets(day.date, item.slot) }

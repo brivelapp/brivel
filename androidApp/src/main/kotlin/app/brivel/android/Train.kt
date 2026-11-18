@@ -32,23 +32,30 @@ fun TrainTab(app: BrivelApp, version: Int, act: Act) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ScreenTitle("Entrenar", subtitle = "Por tu cuenta")
-        Module {
-            SectionTitle("Entreno libre")
-            if (workout != null) {
-                Text("Hoy: ${workout.name}", fontWeight = FontWeight.Bold)
-                Secondary(if (workout.exercises.size == 1) "1 ejercicio" else "${workout.exercises.size} ejercicios")
-                PrimaryButton("Continuar", Modifier.fillMaxWidth()) { act.openStrength(workout.date) }
-                TextButton(onClick = { confirmDiscard = true }) { LinkText("Descartar el entreno") }
-            } else {
-                Secondary("Entrena sin plan: elige los ejercicios sobre la marcha y apunta cada serie. Hoy sustituye a la fuerza de tu plan.")
-                PrimaryButton("Empezar entreno vacío", Modifier.fillMaxWidth()) { start(null) }
-                remember(version) { app.routines }.forEach { r ->
-                    OutlinedButton(onClick = { start(r.id) }, modifier = Modifier.fillMaxWidth()) { Text("Empezar «${r.name}» hoy") }
+        // Grabando (el test del habla también), la grabación va primero; RecordCard no cambia de sitio en el código para
+        // no perder su estado
+        val recording = remember(version) { app.recordingView(System.currentTimeMillis() / 1000) != null }
+        @Composable fun planned() {
+            Module {
+                SectionTitle("Entreno libre")
+                if (workout != null) {
+                    Text("Hoy: ${workout.name}", fontWeight = FontWeight.Bold)
+                    Secondary(if (workout.exercises.size == 1) "1 ejercicio" else "${workout.exercises.size} ejercicios")
+                    PrimaryButton("Continuar", Modifier.fillMaxWidth()) { act.openStrength(workout.date) }
+                    TextButton(onClick = { confirmDiscard = true }) { LinkText("Descartar el entreno") }
+                } else {
+                    Secondary("Entrena sin plan: elige los ejercicios sobre la marcha y apunta cada serie. Hoy sustituye a la fuerza de tu plan.")
+                    PrimaryButton("Empezar entreno vacío", Modifier.fillMaxWidth()) { start(null) }
+                    remember(version) { app.routines }.forEach { r ->
+                        OutlinedButton(onClick = { start(r.id) }, modifier = Modifier.fillMaxWidth()) { Text("Empezar «${r.name}» hoy") }
+                    }
                 }
             }
+            SessionsCard(app, act, version)
         }
-        SessionsCard(app, act, version)
+        if (!recording) planned()
         RecordCard(app, act, version)
+        if (recording) planned()
         ActivitiesCard(app, act, version)
         RoutinesCard(app, act, version)
         LibraryCard(app)
