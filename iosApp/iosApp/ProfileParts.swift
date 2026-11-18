@@ -17,11 +17,10 @@ let levelChoices = [("beginner", "Empiezo", "Hace meses que no entreno"),
 struct SportPicker: View {
     let cardio: [String]
     let onChange: ([String]) -> Void
-    @ScaledMetric(relativeTo: .body) private var chipWidth: CGFloat = 96
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: chipWidth), spacing: 8, alignment: .leading)], alignment: .leading, spacing: 8) {
+            Flow(spacing: 8) {
                 ForEach(TextsKt.PICKABLE_CARDIO, id: \.self) { sport in
                     let on = cardio.contains(sport)
                     Button { onChange(TextsKt.toggleCardio(cardio: cardio, sport: sport)) } label: {
@@ -95,7 +94,7 @@ struct WeekBars: View {
                             commit()
                         }))
                         .keyboardType(.numberPad).multilineTextAlignment(.trailing).font(.mono(16, .semibold))
-                        .padding(.horizontal, 8).frame(width: fieldWidth, height: fieldHeight)
+                        .padding(.horizontal, 8).frame(width: min(fieldWidth, 112), height: fieldHeight)
                         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Palette.muted, lineWidth: 1))
                         .accessibilityLabel("Minutos el \(name.lowercased())")
                         Secondary("min").fixedSize()

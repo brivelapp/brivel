@@ -81,10 +81,10 @@ struct StrengthSessionView: View {
                     HStack {
                         Button(action: close) { Glyph(name: "chevron_left", size: 24) }
                             .frame(minWidth: 44, minHeight: 44).accessibilityLabel("Cerrar la sesión")
-                        Text(screen.title).font(.ui(18, .heavy, relativeTo: .headline))
-                        Spacer()
+                        Text(screen.title).font(.ui(18, .heavy, relativeTo: .headline)).layoutPriority(1)
+                        Spacer(minLength: 8)
                         Text("\(exercises.reduce(0) { $0 + $1.done.count })/\(exercises.reduce(0) { $0 + Int($1.sets) }) series")
-                            .font(.mono(13, relativeTo: .caption)).foregroundStyle(Palette.muted)
+                            .font(.mono(13, relativeTo: .caption)).foregroundStyle(Palette.muted).lineLimit(1).minimumScaleFactor(0.5)
                     }
                     Segmented(options: [("set", "Serie"), ("session", "Sesión")], selected: mode) { mode = $0 }
                 }.padding(.horizontal, 18).padding(.top, 12)

@@ -133,6 +133,46 @@ struct ZoneChip: View {
     }
 }
 
+/// Como FlowRow en Android: en fila mientras quepan, y lo que no cabe baja a la línea siguiente. Cada pieza mide lo que
+/// pide su contenido (como mucho, el ancho entero), así que ninguna se parte a media palabra.
+struct Flow: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = arrange(proposal.width ?? .infinity, subviews)
+        return CGSize(width: rows.map { $0.width }.max() ?? 0,
+                      height: rows.map { $0.height }.reduce(0, +) + spacing * CGFloat(max(rows.count - 1, 0)))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in arrange(bounds.width, subviews) {
+            var x = bounds.minX
+            for (i, size) in row.items {
+                subviews[i].place(at: CGPoint(x: x, y: y + (row.height - size.height) / 2), proposal: ProposedViewSize(size))
+                x += size.width + spacing
+            }
+            y += row.height + spacing
+        }
+    }
+
+    private func arrange(_ width: CGFloat, _ subviews: Subviews) -> [(items: [(Int, CGSize)], width: CGFloat, height: CGFloat)] {
+        var rows: [(items: [(Int, CGSize)], width: CGFloat, height: CGFloat)] = []
+        for (i, view) in subviews.enumerated() {
+            let ideal = view.sizeThatFits(.unspecified)
+            let size = ideal.width <= width ? ideal : view.sizeThatFits(ProposedViewSize(width: width, height: nil))
+            if let last = rows.last, last.width + spacing + size.width <= width {
+                rows[rows.count - 1].items.append((i, size))
+                rows[rows.count - 1].width += spacing + size.width
+                rows[rows.count - 1].height = max(last.height, size.height)
+            } else {
+                rows.append(([(i, size)], size.width, size.height))
+            }
+        }
+        return rows
+    }
+}
+
 /// En fila si cabe; si no (texto grande del sistema, pantalla estrecha), uno debajo de otro. Para botones y opciones.
 struct FitRow<Content: View>: View {
     var spacing: CGFloat = 8
