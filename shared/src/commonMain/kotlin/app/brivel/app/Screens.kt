@@ -83,7 +83,8 @@ private fun runToRate(data: AppData, planner: Planner, today: LocalDate): RunToR
     val km = app.brivel.engine.fmt((run["distance"].num() ?: 0.0) / 1000, 1).replace('.', ',')
     return RunToRate(id, "¿Cómo fue tu carrera de ${if (date == today.toString()) "hoy" else "ayer"}?",
         "$km km a ${app.brivel.engine.paceText(run.runPace())} /km",
-        if (easy < EASY_RUNS) "Con $EASY_RUNS carreras fáciles, tus rodajes llevarán ritmo en min/km. Llevas $easy."
+        "Fácil es ligero: podrías haber seguido mucho más rato. " + if (easy < EASY_RUNS)
+            "Con $EASY_RUNS carreras fáciles, tus rodajes llevarán ritmo en min/km. Llevas $easy."
         else "Con lo que contestes, Brivel ajusta tu ritmo suave.")
 }
 

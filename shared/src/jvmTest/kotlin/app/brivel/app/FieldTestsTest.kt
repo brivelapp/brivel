@@ -52,8 +52,8 @@ class FieldTestsTest {
         assertTrue(a.todayScreen().rateRun!!.note.endsWith("Llevas 2."))
         assertEquals("Hecho: tus rodajes ya llevan ritmo en min/km", a.rateRun("r3", "easy"))
         assertNull(a.todayScreen().rateRun)  // ya contestada
-        // Mediana de 8:00, 8:20 y 7:42 /km: 8:00, y lo suave un 5 % a cada lado
-        assertEquals("7:36-8:24 /km", a.cardio("running").first { it.kind == "aerobic" }.target)
+        // 8:00, 8:20 y 7:41,5 /km: lo suave, de la más rápida a la más lenta
+        assertEquals("7:42-8:20 /km", a.cardio("running").first { it.kind == "aerobic" }.target)
     }
 
     @Test fun onlyEasyRunsTeachThePace() {
