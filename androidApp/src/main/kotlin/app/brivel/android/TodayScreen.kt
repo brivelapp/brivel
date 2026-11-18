@@ -1,6 +1,9 @@
 package app.brivel.android
 
 import app.brivel.app.TEST_FIELDS
+import app.brivel.app.EFFORTS
+import app.brivel.app.EFFORT_LABEL
+import app.brivel.app.RunToRate
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
@@ -78,6 +81,7 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {},
         // Tu cuerpo hoy en una frase: sale de la misma decisión que la sesión
         if (screen.stateTitle.isNotEmpty()) StateCard(screen.tone, screen.stateTitle, screen.stateDetail, screen.garminNote)
         if (screen.askReadiness) ReadinessCard(act)
+        screen.rateRun?.let { RateRun(app, act, it) }
         if (screen.noPlan && day.items.isEmpty()) NoRoutineToday(app, screen.nextRoutine, version, act, openTrain)
         DayContent(app, day, app.watchRoute != null, act, today = true)
         Module {
@@ -115,7 +119,7 @@ private fun TestResult(app: BrivelApp, act: Act, date: String, kind: String) {
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(main, { main = it }, label = { Text(mainLabel) }, singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = if (kind == "talk") KeyboardType.Text else KeyboardType.Decimal))
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
                 hrLabel?.let { OutlinedTextField(hr, { v -> hr = v.filter { it.isDigit() } }, label = { Text(it) }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)) }
             }
@@ -124,6 +128,17 @@ private fun TestResult(app: BrivelApp, act: Act, date: String, kind: String) {
             act.run("Hecho: tus sesiones ya llevan cifras") { app.saveTestResult(date, kind, main, hr.ifBlank { null }); open = false }
         }) { Text("Guardar") } },
         dismissButton = { TextButton(onClick = { open = false }) { Text("Cancelar") } })
+}
+
+/** Quien empieza: cómo fue su última carrera. Con las fáciles, Brivel aprende su ritmo suave (sin test). */
+@Composable
+private fun RateRun(app: BrivelApp, act: Act, run: RunToRate) = Module {
+    SectionTitle(run.question)
+    Text(run.detail, fontFamily = Mono, fontSize = 16.sp)
+    ChipRow {
+        EFFORTS.forEach { e -> SecondaryButton(EFFORT_LABEL.getValue(e)) { act.run { act.show(app.rateRun(run.id, e)) } } }
+    }
+    Secondary(run.note)
 }
 
 /** Sin plan y sin rutina hoy: la próxima, tus rutinas para hacer una hoy o un entreno libre; sin rutinas, crear la primera. */
