@@ -17,6 +17,15 @@
       "versions": [
         {
           "version": "0.1.0",
+          "buildVersion": "174",
+          "date": "2026-11-18T16:11:24Z",
+          "localizedDescription": "prueba-2026-11-18-1: letra grande y todos los tamaños de pantalla, pasos de ayer, icono de Entrenar",
+          "downloadURL": "https://github.com/brivelapp/brivel/releases/download/prueba-2026-11-18-1/Brivel.ipa",
+          "size": 5260655,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "0.1.0",
           "buildVersion": "167",
           "date": "2026-11-17T17:29:35Z",
           "localizedDescription": "prueba-2026-11-17-2: Ajustes con rueda, cristal de iOS 26, teclado numérico que se cierra",
@@ -35,10 +44,10 @@
         }
       ],
       "version": "0.1.0",
-      "versionDate": "2026-11-17T17:29:35Z",
-      "versionDescription": "prueba-2026-11-17-2: Ajustes con rueda, cristal de iOS 26, teclado numérico que se cierra",
-      "downloadURL": "https://github.com/brivelapp/brivel/releases/download/prueba-2026-11-17-2/Brivel.ipa",
-      "size": 5215881
+      "versionDate": "2026-11-18T16:11:24Z",
+      "versionDescription": "prueba-2026-11-18-1: letra grande y todos los tamaños de pantalla, pasos de ayer, icono de Entrenar",
+      "downloadURL": "https://github.com/brivelapp/brivel/releases/download/prueba-2026-11-18-1/Brivel.ipa",
+      "size": 5260655
     }
   ],
   "news": []
