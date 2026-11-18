@@ -181,6 +181,13 @@ class WebApp {
 
     fun saveProfileJson(text: String) = app.saveProfile(read.decodeFromString<UserProfile>(text))
 
+    /** La carrera principal del objetivo (RaceInfo en JSON); null si el objetivo no es una carrera. */
+    fun mainRaceJson(): String? = app.data.goal?.takeIf { it.kind == GoalKind.RACE }?.race?.let { json.encodeToString(it) }
+    /** Las carreras preparatorias (B o C) antes de la principal, como en las apps (2026-11-19). */
+    fun otherRacesJson(): String = json.encodeToString(app.data.goal?.otherRaces ?: emptyList())
+    fun addRace(raceJson: String) = app.addRace(read.decodeFromString<RaceInfo>(raceJson))
+    fun removeRace(date: String) = app.removeRace(date)
+
     /** `kind`: RACE, FITNESS, STRENGTH o HEALTH; `raceJson`, solo para una carrera. Los errores llegan con su texto. */
     fun setGoal(kind: String, raceJson: String?) =
         app.setGoal(GoalKind.valueOf(kind), raceJson?.let { read.decodeFromString<RaceInfo>(it) })

@@ -83,7 +83,7 @@ export function Segmented({ options, selected, onSelect, label }:
   return (
     <div className="segmented" role="radiogroup" aria-label={label}>
       {options.map(([k, l]) => (
-        <button key={k} role="radio" aria-checked={k === selected} className={k === selected ? "on" : ""} onClick={() => onSelect(k)}>{l}</button>
+        <button key={k} type="button" role="radio" aria-checked={k === selected} className={k === selected ? "on" : ""} onClick={() => onSelect(k)}>{l}</button>
       ))}
     </div>
   )
@@ -95,7 +95,7 @@ export function ChoiceCards({ options, selected, onSelect, label }:
   return (
     <div className="stack" role="radiogroup" aria-label={label}>
       {options.map(([k, title, detail]) => (
-        <button key={k} role="radio" aria-checked={k === selected} className={`choice${k === selected ? " on" : ""}`} onClick={() => onSelect(k)}>
+        <button key={k} type="button" role="radio" aria-checked={k === selected} className={`choice${k === selected ? " on" : ""}`} onClick={() => onSelect(k)}>
           <span className="choice-title">{title}</span>
           <span className="muted">{detail}</span>
         </button>

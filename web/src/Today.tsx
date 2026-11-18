@@ -220,6 +220,44 @@ export function Footer({ core, act }: { core: WebApp; act: Act }) {
   )
 }
 
+interface Race { name: string; sport: string; date: string; priority: string; distanceKm: number | null; trail: boolean }
+
+/** Carreras preparatorias (B o C) antes de la principal: el plan afina unos días antes y recupera después. Como en las apps. */
+function OtherRaces({ core, act }: { core: WebApp; act: Act }) {
+  const mainJson = core.mainRaceJson()
+  const main: Race | null = mainJson ? JSON.parse(mainJson) : null
+  const blank = (): Race => ({ name: "", sport: main?.sport ?? "running", date: "", priority: "C", distanceKm: null, trail: false })
+  const [adding, setAdding] = useState(false)
+  const [race, setRace] = useState<Race>(blank)
+  if (!main) return null
+  const others: Race[] = JSON.parse(core.otherRacesJson())
+  const today = new Date().toISOString().slice(0, 10)
+  return (
+    <details className="module">
+      <summary><strong>Otras carreras antes de {main.name}</strong>{others.length > 0 && <span className="muted"> · {others.length}</span>}</summary>
+      {others.map((r) => (
+        <div className="row" key={r.date}>
+          <span className="grow">{r.name}<br /><span className="muted small-text">{core.dateLabel(r.date)} · {r.priority === "B" ? "importante" : "de preparación"}</span></span>
+          <button className="text" onClick={() => act(() => core.removeRace(r.date))}>Quitar</button>
+        </div>
+      ))}
+      {adding ? (
+        <form className="stack" onSubmit={(e) => { e.preventDefault(); act(() => { core.addRace(JSON.stringify(race)); setAdding(false); setRace(blank()) }, "Carrera añadida") }}>
+          <label className="field">Nombre de la carrera<input value={race.name} onChange={(e) => setRace({ ...race, name: e.target.value })} /></label>
+          <label className="field">Fecha<input type="date" min={today} max={main.date} value={race.date} onChange={(e) => setRace({ ...race, date: e.target.value })} /></label>
+          <Segmented options={[["B", "Importante"], ["C", "De preparación"]]} selected={race.priority} onSelect={(priority) => setRace({ ...race, priority })} label="Prioridad" />
+          <div className="row wrap"><button className="primary" type="submit">Añadir</button><button className="text" type="button" onClick={() => setAdding(false)}>Cancelar</button></div>
+        </form>
+      ) : (
+        <>
+          <p className="muted small-text">El plan afina unos días antes de cada una y te deja recuperar después. Elige importante (B) o de preparación (C).</p>
+          <button className="secondary" onClick={() => setAdding(true)}>Añadir otra carrera</button>
+        </>
+      )}
+    </details>
+  )
+}
+
 /** Quien empieza: cómo fue su última carrera. Con las fáciles, Brivel aprende su ritmo suave (sin test). */
 function RateRun({ core, act, run }: { core: WebApp; act: Act; run: NonNullable<TodayScreen["rateRun"]> }) {
   return (
@@ -290,6 +328,7 @@ export function Today({ core, act, synced, openStrength, openTrain }:
         {screen.goalLine && <p className="muted goal">{screen.goalLine} · <button className="link" onClick={changeGoal}>Cambiar objetivo</button></p>}
         {screen.noPlan && <p className="goal"><button className="link" onClick={() => act(() => core.abandonGoal())}>Quiero un plan de Brivel</button></p>}
       </header>
+      {!screen.goalFinished && <OtherRaces core={core} act={act} />}
       <div className="layout">
       <div className="col">
       {screen.goalFinished && (
