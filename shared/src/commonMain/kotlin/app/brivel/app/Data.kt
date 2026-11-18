@@ -161,6 +161,16 @@ data class AppData(
  */
 fun migrate(data: AppData): AppData = migrateSchema(data).let {
     if (it.goal?.kind == GoalKind.HEALTH) it.copy(goal = it.goal.copy(kind = GoalKind.FITNESS)) else it
+}.withRenamedExercises()
+
+/** Ejercicios que cambian de nombre: lo apuntado con el viejo sigue siendo suyo (series, rutinas, entrenos y cambios). */
+private val RENAMED_EXERCISES = mapOf("Subida a cajón alto" to "Subida a cajón")  // 2026-11-19: «alto» invitaba a más de 46 cm
+
+private fun AppData.withRenamedExercises(): AppData {
+    fun n(s: String) = RENAMED_EXERCISES[s] ?: s
+    fun List<RoutineExercise>.fix() = map { it.copy(name = n(it.name)) }
+    return copy(sets = sets.map { it.copy(exercise = n(it.exercise)) }, routines = routines.map { it.copy(exercises = it.exercises.fix()) },
+        workouts = workouts.map { it.copy(exercises = it.exercises.fix()) })
 }
 
 private fun migrateSchema(data: AppData): AppData = when {

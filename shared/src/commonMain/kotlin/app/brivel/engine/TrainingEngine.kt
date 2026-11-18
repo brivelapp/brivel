@@ -423,7 +423,9 @@ data class Profile(
     val runPace: Double? = null,  // ritmo umbral de carrera, s/km
     val ftp: Double? = null,  // vatios; sin FTP la bici va por FC
     val runModel: Pair<Double, Double>? = null,  // velocidad (m/s) = a + b·FC, de tus carreras (hrPaceModel)
-    val easyPace: Double? = null,  // s/km: lo suave de quien empieza, de sus carreras fáciles (FieldTests.kt), sin ritmo umbral
+    val easyPace: Double? = null,  // s/km: lo suave de quien empieza, de su carrera fácil más rápida (FieldTests.kt)
+    val easyPaceSlow: Double? = null,  // s/km: y de la más lenta
+    val strengthBase: Boolean = false,  // sentadilla de 1,5 veces su peso: puede hacer saltos de caída (buildStrength)
     val dayMinutes: Map<String, Int>? = null,  // minutos disponibles por día; null = sin límite
     val planStart: LocalDate? = null,
     val warnings: MutableList<String> = mutableListOf(),
@@ -548,9 +550,10 @@ internal fun finishSession(id: String, sport: String, kind: String, name: String
             if (z == "Z1") "> ${fmtPace(runPace * fast)} /km" else "${fmtPace(runPace * fast)}-${fmtPace(runPace * slow)} /km"
         }.toMutableMap()
     } else if (sport == "running" && kind != "test" && !trail && profile.runModel == null && easyPace != null) {
-        // Quien empieza, de sus carreras fáciles: lo suave, un 5 % a cada lado de su ritmo [Inferencia]
-        targets["Z2"] = "${fmtPace(easyPace * 0.95)}-${fmtPace(easyPace * 1.05)} /km"
-        if ("Z1" in zones) targets["Z1"] = "> ${fmtPace(easyPace * 1.05)} /km"
+        // Quien empieza: lo suave, entre su carrera fácil más rápida y la más lenta (FieldTests.learnedEasyPace)
+        val slow = profile.easyPaceSlow ?: easyPace
+        targets["Z2"] = if (fmtPace(slow) == fmtPace(easyPace)) "${fmtPace(easyPace)} /km" else "${fmtPace(easyPace)}-${fmtPace(slow)} /km"
+        if ("Z1" in zones) targets["Z1"] = "> ${fmtPace(slow)} /km"
     }
     val ftp = profile.ftp?.takeIf { it != 0.0 }
     if (sport == "cycling" && kind != "test" && ftp != null) {
@@ -604,7 +607,10 @@ fun buildStrength(goalSport: String, profile: Profile, phase: String): RaceStren
     val (dose, rpe, minutes) = STRENGTH_DOSE[phase]!!
     val kit = if (profile.strength == "gym") "gym" else "bodyweight"
     val upper = goalSport in SWIM || goalSport == "triathlon"
-    val exercises = LOWER[kit]!! + (if (phase == "build") PLYO[kit]!! else emptyList()) +
+    // Los saltos de caída piden base de fuerza (sentadilla de 1,5 veces el peso); los de baja intensidad, no: sin ella,
+    // un salto vertical [Práctica: NSCA, Kinetic Select «Stretch-Shortening Cycle» y manual CSCS cap. 18]
+    val plyo = PLYO[kit]!!.map { if (it == DROP_JUMPS && !profile.strengthBase) "Salto vertical" else it }
+    val exercises = LOWER[kit]!! + (if (phase == "build") plyo else emptyList()) +
         (if (upper) UPPER[kit]!! else emptyList()) + CORE
     // Eddens 2018: fuerza antes favorece la fuerza; en build y peak prima la calidad de la sesión de resistencia
     val order = if (phase in setOf("base_early", "base")) "antes" else "después"

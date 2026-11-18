@@ -55,7 +55,7 @@ private val EXERCISE_EQUIPMENT = mapOf(
     "Zancada atrás" to listOf("peso corporal"),
     "Zancada búlgara con mancuernas" to listOf("mancuernas", "banco o cajón"),
     "Sentadilla búlgara (progresión a sentadilla a una pierna)" to listOf("peso corporal", "banco o cajón"),
-    "Subida a cajón alto" to listOf("banco o cajón"),
+    "Subida a cajón" to listOf("banco o cajón"),
     "Elevación de gemelo de pie y sentado" to listOf("peso corporal"),
     "Gemelo a una pierna en escalón" to listOf("peso corporal"),
     "Saltos al cajón" to listOf("banco o cajón"),
