@@ -16,11 +16,11 @@ val SPORT_TYPES = mapOf("running" to "Run", "cycling" to "Ride", "swimming_pool"
     "walking" to "Walk")
 
 /** Running por ritmo sin modelo FC-velocidad: % del ritmo umbral (más % = más lento). [Práctica: Friel] */
-private val RUN_PACE_ZONES = mapOf("Z1" to (1.29 to 1.60), "Z2" to (1.14 to 1.29), "Z3" to (1.06 to 1.13),
+internal val RUN_PACE_ZONES = mapOf("Z1" to (1.29 to 1.60), "Z2" to (1.14 to 1.29), "Z3" to (1.06 to 1.13),
     "Z4" to (0.99 to 1.05), "Z5" to (0.90 to 1.00))
 
 /** Potencia en % del FTP (Coggan); el límite bajo de Z1 es [Inferencia]. */
-private val POWER_ZONES = mapOf("Z1" to (40 to 55), "Z2" to (56 to 75), "Z3" to (76 to 90), "Z4" to (91 to 105),
+internal val POWER_ZONES = mapOf("Z1" to (40 to 55), "Z2" to (56 to 75), "Z3" to (76 to 90), "Z4" to (91 to 105),
     "Z5" to (106 to 120), "Z6" to (121 to 150))
 private val PACE_FIRST = setOf("vo2max", "threshold", "race_specific", "tempo")  // sin modelo: solo la calidad [Práctica]
 

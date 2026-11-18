@@ -37,12 +37,13 @@ export function Landing({ onStart, onLogin }: { onStart: () => void; onLogin: ()
         <div className="hero-card" aria-hidden="true">
           <span className="muted small-text">Ejemplo</span>
           <span className="hero-card-title">Hoy</span>
-          <span className="hero-state">Hoy: ritmo cómodo, 52 min</span>
+          <span className="hero-state">Hoy: rodaje suave, 52 min</span>
           <div className="hero-session">
             <div className="row between"><span className="muted small-text">Carrera</span><span className="mono">52 min</span></div>
-            <strong className="hero-session-title">Ritmo cómodo</strong>
+            <strong className="hero-session-title">Rodaje suave</strong>
+            <span className="mono">5:33-6:17 /km</span>
             <span className="row"><span className="zone" style={{ background: "var(--z1)" }}>Z1</span>Calentamiento · 10 min</span>
-            <span className="row"><span className="zone" style={{ background: "var(--z2)" }}>Z2</span>Ritmo cómodo · 37 min</span>
+            <span className="row"><span className="zone" style={{ background: "var(--z2)" }}>Z2</span>Principal · 37 min</span>
             <span className="row"><span className="zone" style={{ background: "var(--z1)" }}>Z1</span>Vuelta a la calma · 5 min</span>
           </div>
         </div>

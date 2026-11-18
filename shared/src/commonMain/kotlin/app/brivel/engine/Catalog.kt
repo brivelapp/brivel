@@ -96,7 +96,7 @@ val CATALOG: List<CatalogEntry> = listOf(
     S("R-TEST-LTHR", "running", "test", listOf("base_early", "base", "build", "peak", "taper"), 50 to 50,
       listOf(
         B("calentamiento", 15.0, "Z2"),
-        B("test", 30.0, "Z4", detail = "30\u2032 al m\u00e1ximo sostenible en solitario; LTHR = FC media de los \u00faltimos 20\u2032"),
+        B("test", 30.0, "Z4", detail = "Lo más rápido que puedas mantener los 30\u2032, igual de principio a fin, en llano y sin parar. Brivel usa tu ritmo medio y, con pulsómetro, el pulso medio de los últimos 20\u2032"),
         B("vuelta a la calma", null, "Z1"),
       )),
     S("T-HILL-VO2", "running", "vo2max", listOf("base_early", "base", "build", "peak"), 50 to 70,
@@ -169,10 +169,25 @@ val CATALOG: List<CatalogEntry> = listOf(
         B("esprints", 0.17, "Z6", reps = 8, rest = 4.0, detail = "6\u20138\u00d710\u2033 a tope"),
         B("principal", null, "Z2"),
       )),
+    // Solo por su id (buildTest): con `events` propios, pickSession no los elige en lugar de R-TEST-LTHR o C-TEST
+    S("R-TEST-TALK", "running", "test", listOf("base_early", "base", "build", "peak", "taper"), 25 to 25,
+      listOf(
+        B("caminar rápido", 3.0, "Z1"),
+        B("trote muy suave", 3.0, "Z1"),
+        B("tramos cada vez más rápidos", 3.0, "Z2", reps = 4,
+          detail = "Cada 3\u2032 un poco más rápido. Al acabar cada tramo, di una frase en voz alta; para en cuanto te cueste"),
+        B("caminar", null, "Z1"),
+      ), events = listOf("por-id")),
+    S("C-TEST-FTP", "cycling", "test", listOf("base_early", "base", "build", "peak", "taper"), 55 to 55,
+      listOf(
+        B("calentamiento", 20.0, "Z2", detail = "Suave, con 3 cambios de ritmo de 1\u2032 al final"),
+        B("test", 20.0, "Z4", detail = "20\u2032 lo más fuerte que puedas mantener, sin bajar al final; FTP = 95 % de la potencia media"),
+        B("vuelta a la calma", null, "Z1"),
+      ), events = listOf("por-id")),
     S("C-TEST", "cycling", "test", listOf("base_early", "base", "build", "peak", "taper"), 55 to 55,
       listOf(
         B("calentamiento", 15.0, "Z2"),
-        B("test", 30.0, "Z4", detail = "30\u2032 al m\u00e1ximo sostenible; LTHR = FC media de los \u00faltimos 20\u2032"),
+        B("test", 30.0, "Z4", detail = "Lo más fuerte que puedas mantener los 30\u2032, sin bajar al final. Brivel usa el pulso medio de los últimos 20\u2032"),
         B("vuelta a la calma", null, "Z1"),
       )),
     S("C-BRICK", "cycling", "brick", listOf("build", "peak"), 75 to 150,

@@ -224,8 +224,8 @@ class HealthDataTest {
                 Workout("race", "running", "${today.plusDays(-5)}T09:00:00", 40.0, avgHr = 170.0, maxHr = 186.0)), "${today}T08:00:00")
             return buildMonth(AppData(health = s), today, today.year, today.month.number).weeks.flatten().first { it.date == today.toString() }.done.single().title
         }
-        assertEquals("${SPORT_LABEL["running"]} · Ritmo cómodo", title("running", 45.0, 130.0))
-        assertEquals("${SPORT_LABEL["running"]} · Larga a ritmo cómodo", title("running", 100.0, 130.0))
+        assertEquals("${SPORT_LABEL["running"]} · Rodaje suave", title("running", 45.0, 130.0))
+        assertEquals("${SPORT_LABEL["running"]} · Tirada larga", title("running", 100.0, 130.0))
         assertEquals("${SPORT_LABEL["running"]} · Ritmo medio", title("running", 45.0, 150.0))
         assertEquals("${SPORT_LABEL["running"]} · Ritmo alto", title("running", 45.0, 168.0))
         assertEquals(SPORT_LABEL["running"], title("running", 45.0, null))  // sin pulso, solo el deporte

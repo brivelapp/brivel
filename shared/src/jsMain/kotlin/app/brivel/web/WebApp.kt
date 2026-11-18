@@ -5,6 +5,7 @@ package app.brivel.web
 // Puente de la versión web: el mismo controlador que las apps, con los datos en el navegador. Las pantallas salen en
 // JSON para que la interfaz (web/) reciba objetos planos de JavaScript.
 
+import app.brivel.app.TEST_FIELDS
 import app.brivel.app.EVIDENCE_MEANING
 import app.brivel.app.GoalKind
 import app.brivel.app.HEALTH_NOTICE
@@ -283,6 +284,10 @@ class WebApp {
 
     // Medidas corporales (Training.kt): [clave, nombre, unidad]
     fun measuresJson(): String = json.encodeToString(MEASURES.map { (k, m) -> listOf(k, m.label, m.unit) })
+    /** Las dos etiquetas del resultado de un test (TEST_FIELDS): [dato principal, pulso o null]. */
+    fun testFields(kind: String): Array<String?> = TEST_FIELDS.getValue(kind).let { arrayOf(it.first, it.second) }
+    fun saveTestResult(date: String, kind: String, main: String, hr: String?) = app.saveTestResult(date, kind, main, hr)
+
     fun logMeasure(kind: String, value: String) =
         app.logMeasure(kind, value.replace(',', '.').toDoubleOrNull() ?: throw IllegalArgumentException("Escribe un número"))
     fun deleteMeasure(date: String, kind: String) = app.deleteMeasure(date, kind)

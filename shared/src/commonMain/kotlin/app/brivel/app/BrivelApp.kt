@@ -681,6 +681,20 @@ class BrivelApp(
     /** Los discos por lado para ese peso con la barra de 20 kg; null si no se puede montar. */
     fun plates(weightKg: Double): String? = platesText(weightKg)
 
+    // ------------------------------------------------------------ tests de campo (FieldTests.kt)
+
+    /** Apunta el resultado de un test tal como se escribe (parseTestResult): ritmo, distancia, vatios o pulso. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun saveTestResult(date: String, kind: String, main: String, hr: String?) = saveFieldTest(parseTestResult(date, kind, main, hr))
+
+    /** Apunta el resultado de un test (hoy o pasado); otro del mismo día, deporte y tipo lo sustituye. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun saveFieldTest(test: FieldTest) {
+        test.check()
+        require(test.date <= today().toString()) { "No se puede apuntar un test futuro" }
+        save(data.copy(fieldTests = data.fieldTests.filterNot { it.date == test.date && it.sport == test.sport && it.kind == test.kind } + test))
+    }
+
     // ------------------------------------------------------------ medidas corporales (Training.kt)
 
     /** Apunta una medida de hoy; otra de hoy del mismo tipo la sustituye. */

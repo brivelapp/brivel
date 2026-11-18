@@ -98,7 +98,10 @@ function SessionCard({ core, item, done, children }: { core: WebApp; item: PlanI
         <span className="mono big">{item.durationMin}</span><span className="mono muted">&nbsp;min</span>
       </div>
       <h2>{item.title}</h2>
-      <p className="muted">{item.hint}</p>
+      {/* La cifra manda (2026-11-18): ritmo, vatios o pulso en grande; sin datos aún, cómo saber si vas bien */}
+      {item.target
+        ? <div className="target"><span className="mono">{item.target}</span>{item.targetNote && <strong>{item.targetNote}</strong>}</div>
+        : <p className="muted">{item.hint}</p>}
       {item.steps.length > 0 && (
         <ul className="steps">
           {item.steps.map((s, i) => (
@@ -107,6 +110,7 @@ function SessionCard({ core, item, done, children }: { core: WebApp; item: PlanI
               <span className="step">
                 <strong>{s.name.charAt(0).toUpperCase() + s.name.slice(1)}</strong>
                 {s.target && <span className="mono muted small">{s.target}</span>}
+                {item.testKind && s.detail && <span className="muted small">{s.detail}</span>}
               </span>
               <span className="mono muted">{s.reps > 1 ? `${s.reps}×` : ""}{s.meters != null ? `${s.meters} m` : minutesText(s.minutes)}</span>
             </li>
@@ -185,6 +189,7 @@ export function DayContent({ core, day, act, openStrength, synced }:
             {synced && day.isToday && core.garminConnected && (
               <button className="text" disabled={sending} onClick={() => send(item.sport)}>Enviar al reloj</button>
             )}
+            {item.testKind && (day.isToday || day.isPast) && <TestResult core={core} act={act} date={day.date} kind={item.testKind} />}
             {item.chosen && <button className="text" onClick={() => act(() => core.clearChoice(day.date))}>Volver a la planificada</button>}
           </SessionCard>
         )
@@ -212,6 +217,22 @@ export function Footer({ core, act }: { core: WebApp; act: Act }) {
       <a href="https://github.com/brivelapp/brivel">Código fuente</a>
       <button className="link" onClick={erase}>Borrar mis datos</button>
     </footer>
+  )
+}
+
+/** El resultado de un test de campo: con él, cada sesión lleva su ritmo, sus vatios o su pulso. */
+function TestResult({ core, act, date, kind }: { core: WebApp; act: Act; date: string; kind: string }) {
+  const [open, setOpen] = useState(false)
+  const [main, setMain] = useState("")
+  const [hr, setHr] = useState("")
+  const [mainLabel, hrLabel] = core.testFields(kind)
+  if (!open) return <button className="primary" onClick={() => { setMain(""); setHr(""); setOpen(true) }}>Apuntar el resultado</button>
+  return (
+    <form className="stack" onSubmit={(e) => { e.preventDefault(); act(() => { core.saveTestResult(date, kind, main, hr || null); setOpen(false) }, "Hecho: tus sesiones ya llevan cifras") }}>
+      <label className="field">{mainLabel}<input value={main} inputMode={kind === "talk" ? "text" : "decimal"} onChange={(e) => setMain(e.target.value)} /></label>
+      {hrLabel && <label className="field">{hrLabel}<input value={hr} inputMode="numeric" onChange={(e) => setHr(e.target.value.replace(/\D/g, ""))} /></label>}
+      <div className="row wrap"><button className="primary" type="submit">Guardar</button><button className="text" type="button" onClick={() => setOpen(false)}>Cancelar</button></div>
+    </form>
   )
 }
 

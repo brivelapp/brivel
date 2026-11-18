@@ -20,8 +20,8 @@ val MONTH_LABEL = listOf("enero", "febrero", "marzo", "abril", "mayo", "junio", 
 /** Nombre llano y cómo saber si vas bien (prueba del habla). [Práctica: ACSM] */
 val PLAIN_SESSION: Map<String, Pair<String, String>> = mapOf(
     "recovery" to ("Suave" to "Muy tranquilo: podrías ir cantando."),
-    "aerobic" to ("Ritmo cómodo" to "Puedes mantener una conversación sin quedarte sin aire."),
-    "long" to ("Larga a ritmo cómodo" to "Más tiempo que otros días, pero siempre pudiendo hablar."),
+    "aerobic" to ("Rodaje suave" to "Puedes mantener una conversación sin quedarte sin aire."),
+    "long" to ("Tirada larga" to "Más tiempo que otros días, pero siempre pudiendo hablar."),
     "threshold" to ("Ritmo exigente" to "Constante y exigente: solo puedes decir frases cortas."),
     "vo2max" to ("Series intensas" to "En cada serie casi no puedes hablar; entre series, muy suave."),
     "tempo" to ("Ritmo de carrera larga" to "Firme pero controlado: frases cortas, como en una maratón."),
@@ -31,6 +31,32 @@ val PLAIN_SESSION: Map<String, Pair<String, String>> = mapOf(
     "brick" to ("Bici y carrera seguidas" to "Bici y, sin parar, a correr: acostumbra las piernas al cambio."),
     "test" to ("Test para fijar tus zonas" to "Al máximo que puedas sostener; sirve para calcular tus ritmos."),
     "strength" to ("Fuerza" to "Ejercicios de fuerza con el esfuerzo indicado en cada serie."),
+)
+
+/** Los tests de campo por su id: nombre, para qué sirve y el resultado que se apunta (FieldTests.kt). */
+val TEST_TITLE: Map<String, Triple<String, String, String?>> = mapOf(
+    "R-TEST-TALK" to Triple("Test del habla", "Nada de ir a tope: mide a qué ritmo vas cómodo y, desde ahí, cada sesión llevará tu ritmo en min/km.", "talk"),
+    "R-TEST-LTHR" to Triple("Test de 30 minutos", "Para darte ritmos de verdad, Brivel necesita medirte una vez: desde ahí, cada sesión llevará tu ritmo en min/km.", "threshold"),
+    "C-TEST" to Triple("Test de 30 minutos", "Sin potenciómetro, por pulso: desde ahí, cada salida llevará sus pulsaciones.", "lthr"),
+    "C-TEST-FTP" to Triple("Test de 20 minutos", "Tus salidas llevan potenciómetro: con este test Brivel calcula tu FTP y cada sesión de bici llevará sus vatios.", "ftp"),
+    "S-TEST-CSS" to Triple("Test de 400 y 200 m", "Para calcular tu ritmo en el agua (CSS) y darte el de cada serie.", null),
+)
+const val TEST_REASON = "Hoy toca un test: Brivel aún no conoce tus ritmos, o hace más de 10 semanas que no los mides."
+
+/** Lo que se apunta tras cada test: el dato principal y, si lo hay, el pulso. */
+val TEST_FIELDS: Map<String, Pair<String, String?>> = mapOf(
+    "talk" to ("Ritmo del último tramo en que hablabas cómodo (min/km)" to "Pulso de ese tramo (opcional)"),
+    "threshold" to ("Distancia en los 30 minutos (km)" to "Pulso medio de los últimos 20 minutos (opcional)"),
+    "ftp" to ("Potencia media de los 20 minutos (W)" to null),
+    "lthr" to ("Pulso medio de los últimos 20 minutos" to null),
+)
+
+/** El nombre llano según el deporte donde «rodaje» o «tirada» no encajan. */
+val SPORT_TITLE: Map<Pair<String, String>, String> = mapOf(
+    ("walking" to "aerobic") to "Caminata a buen paso", ("walking" to "long") to "Caminata larga",
+    ("swimming_pool" to "aerobic") to "Nado suave", ("swimming_pool" to "long") to "Nado largo",
+    ("swimming_open" to "aerobic") to "Nado suave", ("swimming_open" to "long") to "Nado largo",
+    ("cycling" to "long") to "Salida larga",
 )
 
 /** Términos técnicos con su explicación (se muestran al tocar). */
@@ -83,9 +109,9 @@ fun activityTitle(activity: JsonObject): String? {
         f[4] >= 0.10 -> "Series VO2max"
         f[3] >= 0.20 -> "Umbral"
         f[2] >= 0.25 -> "Tempo (Z3)"
-        minutes >= 90 && f[0] + f[1] >= 0.8 -> "Larga a ritmo cómodo (Z2)"
+        minutes >= 90 && f[0] + f[1] >= 0.8 -> "Tirada larga (Z2)"
         f[0] >= 0.7 && minutes < 50 -> "Recuperación (Z1)"
-        else -> "Ritmo cómodo (Z2)"
+        else -> "Rodaje suave (Z2)"
     }
     return "$label · $kind"
 }

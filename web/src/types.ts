@@ -1,9 +1,9 @@
 // Forma del JSON de TodayScreen (shared/.../app/Screens.kt y Planner.kt): solo los campos que pinta la web
 export type Tone = "OK" | "CAUTION" | "REST"
 export interface Reason { text: string; evidence: string | null }
-export interface Step { name: string; reps: number; minutes: number; intensityZone: string; target: string | null; meters: number | null }
+export interface Step { name: string; reps: number; minutes: number; intensityZone: string; target: string | null; meters: number | null; detail: string | null }
 export interface PlanItem { sport: string; title: string; hint: string; durationMin: number; steps: Step[]; exercises: string[]; notes: string | null; chosen: boolean; slot: string
-  alternatives: PlanItem[]; movedFrom: string | null }
+  alternatives: PlanItem[]; movedFrom: string | null; target: string | null; targetNote: string | null; testKind: string | null }
 export interface DayView { date: string; isToday: boolean; isPast: boolean; items: PlanItem[]; note: string | null; reasons: Reason[]; adjustments: Reason[]; doneSports: string[] }
 export interface WeekDot { letter: string; date: string; isToday: boolean; planned: boolean; done: boolean }
 export interface TodayScreen {

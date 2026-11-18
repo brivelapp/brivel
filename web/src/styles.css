@@ -345,3 +345,8 @@ main.wide ~ .legal { padding-block: 8px 32px; }
 .settings-row .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--chip); flex: none; }
 .settings-row .dot.on { background: var(--ok); }
 .settings-row .chev { color: var(--muted); font-size: 20px; line-height: 1; }
+
+/* La cifra de la sesión (2026-11-18): ritmo, vatios o pulso en grande */
+.target { display: flex; flex-direction: column; gap: 2px; background: var(--bg); border-radius: 18px; padding: 12px 16px; }
+.target .mono { font-size: 28px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+.target strong { font-size: 15px; }

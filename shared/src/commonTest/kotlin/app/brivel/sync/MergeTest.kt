@@ -48,6 +48,7 @@ class MergeTest {
         equipment = listOf("mancuernas", "goma"),
         workouts = listOf(app.brivel.app.FreeWorkout("2026-11-02", "Entreno libre", listOf(app.brivel.app.RoutineExercise("Flexiones", 3, 8, 12)))),
         measurements = listOf(app.brivel.app.BodyMeasure("2026-11-02", "waist", 82.0)),
+        fieldTests = listOf(app.brivel.app.FieldTest("2026-11-02", "running", "threshold", paceSecKm = 292.0, hr = 168.0)),
         ownSessions = listOf(app.brivel.app.OwnSession("s1", "Series", "running", listOf(app.brivel.app.OwnStep("Rápido", 3.0, "Z4", 5, 2.0)), listOf("TUE"), since = "2026-11-02")),
         activities = listOf(app.brivel.app.OwnActivity("own-2026-11-02T08:00:00", "running", "2026-11-02T08:00:00", 1800.0, 5000.0)),
         gear = listOf(app.brivel.app.Gear("g1", "Zapatillas", "running", "2026-11-01")),

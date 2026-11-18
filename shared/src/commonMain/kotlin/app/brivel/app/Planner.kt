@@ -13,6 +13,7 @@ import app.brivel.engine.HealthProfile
 import app.brivel.engine.HealthStrength
 import app.brivel.engine.Planned
 import app.brivel.engine.Profile
+import app.brivel.engine.buildTest
 import app.brivel.engine.RaceStrength
 import app.brivel.engine.RaceStrengthItem
 import app.brivel.engine.Session
@@ -66,6 +67,9 @@ data class PlanItem(
     val chosen: Boolean,  // la eligió el usuario en lugar de la planificada
     val slot: String,  // deporte de la sesión planificada que ocupa (para el calendario del reloj)
     val movedFrom: String? = null,  // la movió el usuario desde ese día
+    val target: String? = null,  // la cifra de la parte principal («5:33-6:17 /km», «134-180 W»), en grande; null sin datos
+    val targetNote: String? = null,  // el techo de pulso de las suaves cuando la cifra es de ritmo o vatios
+    val testKind: String? = null,  // un test de campo: talk / threshold / ftp / lthr (el resultado se apunta en FieldTests.kt)
     @Transient internal val session: Session? = null,  // la web recibe la pantalla en JSON: lo interno no sale
     @Transient internal val healthStrength: HealthStrength? = null,
     @Transient internal val raceStrength: RaceStrength? = null,
@@ -132,8 +136,38 @@ class Planner(private val data: AppData, private val today: LocalDate) {
     private val cache = data.deviceData(today)
 
     /** Fisiología de intervals.icu (LTHR, FC máx., CSS…) si está vinculado. */
-    val physiology: Profile? = cache?.let {
+    private val intervalsPhysiology: Profile? = cache?.let {
         fillPhysiology(Profile(activeSports = listOf("running", "cycling")), it.athlete)
+    }
+    val physiology: Profile? = intervalsPhysiology.withTests(data)
+
+    /**
+     * El test que toca en cada deporte (id del catálogo): cuando falta el dato que da o el último tiene más de 10
+     * semanas [Práctica: cada 8 a 12]. Quien empieza, el del habla: nunca un esfuerzo máximo. En bici, el de 20′ si
+     * sus salidas traen potencia.
+     */
+    internal val neededTests: Map<String, String> by lazy {
+        val old = today.plusDays(-70).toString()
+        fun due(t: FieldTest?) = t == null || t.date < old
+        val known = intervalsPhysiology
+        val thr = data.latestTest("running", "threshold")
+        val running = when {
+            thr != null -> "R-TEST-LTHR".takeIf { due(thr) }
+            known?.runPace != null -> null
+            profile.level == "beginner" -> "R-TEST-TALK".takeIf { due(data.latestTest("running", "talk")) }
+            else -> "R-TEST-LTHR"
+        }
+        val ftp = data.latestTest("cycling", "ftp")
+        val bikeHr = data.latestTest("cycling", "lthr")
+        val cycling = when {
+            data.hasPowerMeter() && ftp != null -> "C-TEST-FTP".takeIf { due(ftp) }
+            data.hasPowerMeter() && known?.ftp != null -> null
+            data.hasPowerMeter() -> "C-TEST-FTP"
+            bikeHr != null -> "C-TEST".takeIf { due(bikeHr) }
+            known?.lthrFor("cycling") != null -> null
+            else -> "C-TEST"
+        }
+        listOfNotNull(running?.let { "running" to it }, cycling?.let { "cycling" to it }).toMap()
     }
 
     /** Estado de hoy (carga, HRV, sueño) si hay datos de intervals.icu. */
@@ -183,7 +217,8 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             level = profile.level,
             age = profile.birthYear?.let { today.year - it },
             intensityCap = intensityCap,
-            lthr = ph?.lthr, maxHr = ph?.maxHr, css = ph?.css,
+            lthr = ph?.lthr, maxHr = ph?.maxHr, css = ph?.css, lthrBySport = ph?.lthrBySport ?: emptyMap(),
+            runPace = ph?.runPace, ftp = ph?.ftp, easyPace = ph?.easyPace, easyHr = ph?.easyHr,
         )
     }
 
@@ -246,7 +281,10 @@ class Planner(private val data: AppData, private val today: LocalDate) {
         val base = Profile(activeSports = sports, strength = profile.strength,
             restDays = WEEKDAYS.filter { (profile.days[it] ?: 0) == 0 }, dayMinutes = profile.days.filterValues { it > 0 },
             intensityCap = intensityCap)
-        return cache?.let { fillPhysiology(base, it.athlete) } ?: base
+        val physio = (cache?.let { fillPhysiology(base, it.athlete) } ?: base).withTests(data)!!
+        // Natación: el test de CSS si no se sabe; carrera y bici, los de neededTests
+        val swim = "S-TEST-CSS".takeIf { "swimming_pool" in physio.activeSports && (physio.css == null || physio.css == 0.0) }
+        return physio.copy(testIds = neededTests + listOfNotNull(swim?.let { "swimming_pool" to it }))
     }
 
     /** El perfil de carrera de ese día con los cambios de su semana ("hoy no puedo", "este día tengo X min"). */
@@ -290,6 +328,49 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             rp.warnings, emptyList(), null, null, data.weekChanges.containsKey(monday.toString()))
     }
 
+    // ------------------------------------------------------------ tests de campo (FieldTests.kt)
+
+    /**
+     * Sin fecha: el test que toca va esta semana en lugar de una sesión de su deporte; la sesión queda como alternativa.
+     * El del habla, en la primera (no cansa); los de 30′ y 20′, en la segunda, tras un rodaje suave [Práctica].
+     */
+    private fun applyTests(week: WeekView): WeekView {
+        if (week.monday != mondayOf(today).toString()) return week
+        val tests = neededTests.filterKeys { it in profile.cardio }
+        if (tests.isEmpty()) return week
+        val physio = (physiology ?: Profile(activeSports = listOf("running"))).copy(intensityCap = intensityCap)
+        var days = week.days
+        for ((sport, id) in tests) {
+            val test = cardioItem(buildTest(id, physio.copy(activeSports = listOf(sport))), emptyList())
+            // Solo donde quepa con lo demás de ese día en sus minutos (con los cambios de esta semana)
+            fun minutes(d: DayView) = data.weekChanges[week.monday]?.changes?.get(d.weekday) ?: profile.days[d.weekday] ?: 0
+            // Nunca en lugar de algo elegido a mano (otra alternativa ese día). Si en ningún día de su deporte cabe, en
+            // lugar de otra sesión de cardio de un día que tenga los minutos (una caminata larga del sábado) [Inferencia]
+            fun fits(d: DayView, swap: (PlanItem) -> Boolean) = d.date >= today.toString() && d.items.any { swap(it) && !it.chosen } &&
+                d.items.filter { !swap(it) }.sumOf { it.durationMin } + test.durationMin <= minutes(d)
+            val same = { i: PlanItem -> i.sport == sport }
+            val cardio = { i: PlanItem -> !i.isStrength }
+            val options = days.filter { fits(it, same) }
+            val swap = if (options.isNotEmpty()) same else cardio
+            val day = (if (id == "R-TEST-TALK") options.firstOrNull() else options.getOrNull(1) ?: options.firstOrNull())
+                ?: days.firstOrNull { fits(it, cardio) } ?: continue
+            days = days.map { d ->
+                if (d.date != day.date) return@map d
+                var placed = false  // en lugar de una sola sesión de ese día
+                val items = d.items.map {
+                    when {
+                        !swap(it) || it.chosen || placed -> it
+                        // Si ese día eligió la sesión de siempre («Cambiar»), queda ella como elegida y el test como alternativa
+                        data.choices[d.date]?.get(it.slot) == it.sport -> it.copy(chosen = true, alternatives = listOf(test.copy(slot = it.slot))).also { placed = true }
+                        else -> test.copy(slot = it.slot, alternatives = listOf(it.copy(alternatives = emptyList()))).also { placed = true }
+                    }
+                }
+                dayView(d.date, d.weekday, items, d.note, d.availableMin, d.reasons + Reason(TEST_REASON, "Práctica"), d.adjustments, d.phase)
+            }
+        }
+        return week.copy(days = days, activeMinutes = activeMinutes(days))
+    }
+
     // ------------------------------------------------------------ sin plan («Ya tengo mi rutina»)
 
     /** Sin plan: ninguna sesión de Brivel; los días se llenan con las rutinas, las sesiones propias y los entrenos libres. */
@@ -307,7 +388,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
         val base = when {
             goal?.kind == GoalKind.OWN -> emptyWeek(monday)
             race != null && race.date >= today -> raceWeek(monday, race)
-            else -> healthWeek(monday)
+            else -> applyTests(healthWeek(monday))
         }
         val week = applyWorkouts(moveSessions(applyOwnSessions(applyRoutines(base))))
             .let { w -> zoneLine(w)?.let { w.copy(info = w.info + it) } ?: w }
@@ -489,8 +570,14 @@ class Planner(private val data: AppData, private val today: LocalDate) {
     }
 
     private fun cardioItem(s: Session, alts: List<Session>): PlanItem {
-        val (title, hint) = PLAIN_SESSION[s.type] ?: (s.name to s.goal)
+        val test = TEST_TITLE[s.id]
+        val (plain, hint) = test?.let { it.first to it.second } ?: PLAIN_SESSION[s.type] ?: (s.name to s.goal)
+        val title = if (test != null) plain else SPORT_TITLE[s.sport to s.type] ?: plain
+        // La cifra que manda: la de la parte más larga de la sesión
+        val target = s.blocks.maxByOrNull { it.reps * it.minutes }?.let { s.targets[it.zone] }
+        val note = s.hrCap?.takeIf { target != null && !target.endsWith("ppm") }?.let { "y por debajo de $it ppm" }
         return PlanItem(
+            target = target, targetNote = note, testKind = test?.third,
             sport = s.sport, kind = s.type, title = title, hint = hint, technicalName = s.name, durationMin = s.durationMin,
             steps = s.blocks.map { Step(it.block, it.reps, it.minutes, it.zone, it.restMinutes, it.detail, s.targets[it.zone], it.meters) },
             exercises = emptyList(), notes = "${s.ifBad} ${s.ifGood}",

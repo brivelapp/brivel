@@ -231,8 +231,8 @@ private fun titleFromHr(a: JsonObject, athlete: JsonObject): String {
     if (lthr == null || lthr <= 0 || avg == null) return label
     val easy = avg < 0.85 * lthr
     return "$label · " + when {
-        easy && (a["moving_time"].num() ?: 0.0) >= 90 * 60 -> "Larga a ritmo cómodo"
-        easy -> "Ritmo cómodo"
+        easy && (a["moving_time"].num() ?: 0.0) >= 90 * 60 -> "Tirada larga"
+        easy -> "Rodaje suave"
         avg < 0.95 * lthr -> "Ritmo medio"
         else -> "Ritmo alto"
     }
