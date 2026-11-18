@@ -351,13 +351,24 @@ struct SessionCard<Actions: View>: View {
                     + Text(" min").font(.mono(13, relativeTo: .footnote)).foregroundColor(Palette.muted))
             }
             Text(item.title).font(.cardTitle)
-            Secondary(item.hint)
+            // La cifra manda (2026-11-18): ritmo, vatios o pulso en grande; sin datos aún, cómo saber si vas bien
+            if let target = item.target {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(target).font(.mono(28, .semibold, relativeTo: .title)).lineLimit(1).minimumScaleFactor(0.6)
+                    if let note = item.targetNote { Text(note).font(.ui(15, .bold, relativeTo: .subheadline)) }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.vertical, 12)
+                .background(Palette.bg).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            } else {
+                Secondary(item.hint)
+            }
             ForEach(Array(item.steps.enumerated()), id: \.offset) { _, s in
                 HStack(spacing: 10) {
                     ZoneChip(zone: s.intensityZone)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(s.name.prefix(1).uppercased() + s.name.dropFirst()).font(.ui(15, .semibold, relativeTo: .subheadline))
                         if let target = s.target { Text(target).font(.mono(12, relativeTo: .caption)).foregroundStyle(Palette.muted) }
+                        if item.testKind != nil, let detail = s.detail { Secondary(detail) }  // en un test, cómo se hace cada tramo
                     }
                     Spacer()
                     Text("\(s.reps > 1 ? "\(s.reps)×" : "")\(s.meters.map { "\($0.intValue) m" } ?? minutesText(s.minutes))")

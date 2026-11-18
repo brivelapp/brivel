@@ -180,6 +180,7 @@ private struct SessionItem: View {
                     Button("Cancelar", role: .cancel) {}
                 }
             }
+            if let kind = item.testKind, today || day.isPast { TestResultButton(date: day.date, kind: kind) }
             if item.chosen { Button("Volver a la planificada") { model.run { core.clearChoice(date: day.date) } }.font(.ui(14, .bold)).buttonStyle(TextActionStyle()) }
             if let from = item.movedFrom { Secondary("La has movido aquí desde el \(ScreensKt.dateLabel(date: from).lowercased()).") }
             let targets = done || day.isPast ? [] : core.moveTargets(date: day.date, slot: item.slot)
@@ -249,5 +250,34 @@ private struct NoRoutineToday: View {
                 Button { start(nil) } label: { Text("Entreno libre").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
             }
         }
+    }
+}
+
+/// El resultado de un test de campo (TEST_FIELDS): con él, cada sesión lleva su ritmo, sus vatios o su pulso.
+private struct TestResultButton: View {
+    @EnvironmentObject var model: AppModel
+    let date: String
+    let kind: String
+    @State private var open = false
+    @State private var main = ""
+    @State private var hr = ""
+
+    var body: some View {
+        let fields = TextsKt.TEST_FIELDS[kind]
+        let mainLabel = (fields?.first as? String) ?? "Resultado"
+        let hrLabel = fields?.second as? String
+        Button { main = ""; hr = ""; open = true } label: { Text("Apuntar el resultado").frame(maxWidth: .infinity) }
+            .buttonStyle(PrimaryStyle())
+            .alert("Resultado del test", isPresented: $open) {
+                TextField(mainLabel, text: $main).keyboardType(kind == "talk" ? .numbersAndPunctuation : .decimalPad)
+                if let hrLabel { TextField(hrLabel, text: $hr).keyboardType(.numberPad) }
+                Button("Guardar") {
+                    let (m, h) = (main, hr)
+                    model.run("Hecho: tus sesiones ya llevan cifras") {
+                        try model.core.saveTestResult(date: date, kind: kind, main: m, hr: h.isEmpty ? nil : h)
+                    }
+                }
+                Button("Cancelar", role: .cancel) {}
+            } message: { Text(mainLabel) }
     }
 }
