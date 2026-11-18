@@ -35,7 +35,7 @@ val PLAIN_SESSION: Map<String, Pair<String, String>> = mapOf(
 
 /** Los tests de campo por su id: nombre, para qué sirve y el resultado que se apunta (FieldTests.kt). */
 val TEST_TITLE: Map<String, Triple<String, String, String?>> = mapOf(
-    "R-TEST-TALK" to Triple("Test del habla", "Nada de ir a tope: tramos de 3′, cada uno algo más rápido. Brivel te avisa al acabar cada uno y mide con el GPS a qué ritmo vas cómodo; desde ahí, cada sesión llevará tu ritmo en min/km.", "talk"),
+    "R-TEST-TALK" to Triple("Test del habla", "Nada de ir a tope: mide a qué ritmo vas cómodo y, desde ahí, cada sesión llevará tu ritmo en min/km.", "talk"),
     "R-TEST-LTHR" to Triple("Test de 30 minutos", "Para darte ritmos de verdad, Brivel necesita medirte una vez: desde ahí, cada sesión llevará tu ritmo en min/km.", "threshold"),
     "C-TEST" to Triple("Test de 30 minutos", "Sin potenciómetro, por pulso: desde ahí, cada salida llevará sus pulsaciones.", "lthr"),
     "C-TEST-FTP" to Triple("Test de 20 minutos", "Tus salidas llevan potenciómetro: con este test Brivel calcula tu FTP y cada sesión de bici llevará sus vatios.", "ftp"),
