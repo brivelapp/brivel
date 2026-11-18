@@ -46,6 +46,7 @@ class FieldTestsTest {
         val a = app(listOf("running"), level = "beginner")
         a.replaceData(a.data.copy(activities = listOf(run("r1", 5, 3750.0), run("r2", 3, 3600.0), run("r3", 1, 3900.0))))
         assertEquals("¿Cómo fue tu carrera de ayer?", a.todayScreen().rateRun!!.question)
+        assertNull(a.todayScreen().rateRun!!.source)  // grabada con el móvil: sin atribución
         assertEquals("Apuntado", a.rateRun("r1", "easy"))
         a.rateRun("r2", "easy")
         assertTrue(a.cardio("running").all { it.target == null })  // con 2 aún no

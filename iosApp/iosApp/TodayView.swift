@@ -291,6 +291,7 @@ private struct RateRunCard: View {
     var body: some View {
         Module {
             Text(run.question).font(.section)
+            if let source = run.source { Source(text: source) }  // «Garmin [modelo]» bajo el título (normas de marca de Garmin)
             Text(run.detail).font(.mono(16, relativeTo: .body))
             Flow(spacing: 8) {
                 ForEach(FieldTestsKt.EFFORTS, id: \.self) { e in

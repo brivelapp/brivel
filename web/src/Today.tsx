@@ -263,6 +263,7 @@ function RateRun({ core, act, run }: { core: WebApp; act: Act; run: NonNullable<
   return (
     <section className="module">
       <h2 className="settings-title">{run.question}</h2>
+      {run.source && <p className="muted small source">{run.source}</p>}
       <p className="mono">{run.detail}</p>
       <div className="row wrap" role="group" aria-label={run.question}>
         {core.efforts.map((e) => <button key={e} className="secondary" onClick={() => act(() => core.rateRun(run.id, e))}>{core.effortLabel(e)}</button>)}
