@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -324,3 +325,14 @@ fun ChipRow(content: @Composable () -> Unit) =
 /** De dónde sale un dato («Garmin Forerunner 965»): las normas de marca de Garmin lo piden bajo el título, siempre a la vista. */
 @Composable
 fun Source(text: String) = Text(text, fontSize = 12.sp, color = Palette.muted)
+
+/**
+ * Chip de filtro como en iOS y la web: el elegido, verde suave con borde y texto verdes (el beige de Material sobre
+ * blanco apenas se distinguía, 2026-11-19). Sustituye al de Material en toda la app: los ficheros no lo importan.
+ */
+@Composable
+fun FilterChip(selected: Boolean, onClick: () -> Unit, label: @Composable () -> Unit, modifier: Modifier = Modifier) =
+    androidx.compose.material3.FilterChip(selected = selected, onClick = onClick, label = label, modifier = modifier,
+        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Palette.okSoft, selectedLabelColor = Palette.ok),
+        border = FilterChipDefaults.filterChipBorder(enabled = true, selected = selected, selectedBorderColor = Palette.ok,
+            selectedBorderWidth = 1.5.dp))
