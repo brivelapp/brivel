@@ -134,6 +134,7 @@ private fun TestResult(app: BrivelApp, act: Act, date: String, kind: String) {
 @Composable
 private fun RateRun(app: BrivelApp, act: Act, run: RunToRate) = Module {
     SectionTitle(run.question)
+    run.source?.let { Source(it) }  // «Garmin [modelo]» bajo el título (normas de marca de Garmin)
     Text(run.detail, fontFamily = Mono, fontSize = 16.sp)
     ChipRow {
         EFFORTS.forEach { e -> SecondaryButton(EFFORT_LABEL.getValue(e)) { act.run { act.show(app.rateRun(run.id, e)) } } }

@@ -69,7 +69,8 @@ data class TodayScreen(
 
 /** La carrera de hoy o de ayer que falta valorar (EFFORTS), con lo que lleva aprendido Brivel. */
 @Serializable
-data class RunToRate(val id: String, val question: String, val detail: String, val note: String)
+data class RunToRate(val id: String, val question: String, val detail: String, val note: String,
+    val source: String? = null)  // «Garmin [modelo]» si la carrera llegó de Garmin: sus normas piden decirlo bajo el título
 
 private fun runToRate(data: AppData, planner: Planner, today: LocalDate): RunToRate? {
     if (!planner.learnsEasyPace) return null
@@ -83,8 +84,9 @@ private fun runToRate(data: AppData, planner: Planner, today: LocalDate): RunToR
     val km = app.brivel.engine.fmt((run["distance"].num() ?: 0.0) / 1000, 1).replace('.', ',')
     return RunToRate(id, "¿Cómo fue tu carrera de ${if (date == today.toString()) "hoy" else "ayer"}?",
         "$km km a ${app.brivel.engine.paceText(run.runPace())} /km",
-        if (easy < EASY_RUNS) "Con $EASY_RUNS carreras fáciles, tus rodajes llevarán ritmo en min/km. Llevas $easy."
-        else "Con lo que contestes, Brivel ajusta tu ritmo suave.")
+        "Fácil es ligero: podrías haber seguido mucho más rato. " + if (easy < EASY_RUNS)
+            "Con $EASY_RUNS carreras fáciles, tus rodajes llevarán ritmo en min/km. Llevas $easy."
+        else "Con lo que contestes, Brivel ajusta tu ritmo suave.", run["brivel_source"].str())
 }
 
 fun buildToday(data: AppData, today: LocalDate): TodayScreen {

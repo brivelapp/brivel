@@ -11,7 +11,7 @@ export interface TodayScreen {
   meetsWho: boolean; weekMinutes: number; strengthDays: number; weekDots: WeekDot[]; warnings: string[]; info: string[]
   askReadiness: boolean; goalFinished: boolean; garminNote: string | null
   noPlan: boolean; strengthDone: number; nextRoutine: string | null
-  rateRun: { id: string; question: string; detail: string; note: string } | null
+  rateRun: { id: string; question: string; detail: string; note: string; source: string | null } | null
 }
 // Sesión de fuerza serie a serie (Workout.kt) y figura de su movimiento (Figures.kt); reps son segundos si timed
 export interface LoggedSet { set: number; weightKg: number | null; reps: number; rir: number | null; kind: string | null }
