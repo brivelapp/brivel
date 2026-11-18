@@ -31,6 +31,7 @@ struct TodayView: View {
                     StateCard(tone: screen.tone, title: screen.stateTitle, detail: screen.stateDetail, source: screen.garminNote)
                 }
                 if screen.askReadiness { ReadinessCard() }
+                if let run = screen.rateRun { RateRunCard(run: run) }
                 if screen.noPlan && day.items.isEmpty { NoRoutineToday(next: screen.nextRoutine, openTrain: openTrain) }
                 DayContent(day: day, linked: model.core.watchRoute != nil, today: true)
                 Module {
@@ -269,7 +270,7 @@ private struct TestResultButton: View {
         Button { main = ""; hr = ""; open = true } label: { Text("Apuntar el resultado").frame(maxWidth: .infinity) }
             .buttonStyle(PrimaryStyle())
             .alert("Resultado del test", isPresented: $open) {
-                TextField(mainLabel, text: $main).keyboardType(kind == "talk" ? .numbersAndPunctuation : .decimalPad)
+                TextField(mainLabel, text: $main).keyboardType(.decimalPad)
                 if let hrLabel { TextField(hrLabel, text: $hr).keyboardType(.numberPad) }
                 Button("Guardar") {
                     let (m, h) = (main, hr)
@@ -279,5 +280,26 @@ private struct TestResultButton: View {
                 }
                 Button("Cancelar", role: .cancel) {}
             } message: { Text(mainLabel) }
+    }
+}
+
+/// Quien empieza: cómo fue su última carrera. Con las fáciles, Brivel aprende su ritmo suave (sin test).
+private struct RateRunCard: View {
+    @EnvironmentObject var model: AppModel
+    let run: RunToRate
+
+    var body: some View {
+        Module {
+            Text(run.question).font(.section)
+            Text(run.detail).font(.mono(16, relativeTo: .body))
+            Flow(spacing: 8) {
+                ForEach(FieldTestsKt.EFFORTS, id: \.self) { e in
+                    Button(TextsKt.EFFORT_LABEL[e] ?? e) {
+                        model.run { model.message = try model.core.rateRun(id: run.id, effort: e) }
+                    }.buttonStyle(SecondaryStyle())
+                }
+            }
+            Secondary(run.note)
+        }
     }
 }
