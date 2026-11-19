@@ -16,6 +16,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -29,7 +31,18 @@ private class FakeServer {
     var beforeNextPut: (suspend () -> Unit)? = null  // otro dispositivo que sube justo antes
     var puts = 0
 
+    val accounts = mutableMapOf<String, String>()  // cuenta de Google o Apple → secreto (base64url), como cuentas.ts
+
     val engine = MockEngine { request ->
+        // El billete de la prueba es la cuenta misma: la primera vez se queda con el secreto que llega
+        if (request.url.encodedPath == "/api/cuenta/canjear") {
+            val body = Json.parseToJsonElement(request.body.toByteArray().decodeToString()).jsonObject
+            val account = body["billete"]!!.jsonPrimitive.content
+            val sent = body["secreto"]!!.jsonPrimitive.content
+            val secret = accounts.getOrPut(account) { sent }
+            return@MockEngine respond("""{"secreto":"$secret","nueva":${secret == sent}}""", HttpStatusCode.OK,
+                headersOf(HttpHeaders.ContentType, "application/json"))
+        }
         val id = request.headers[HttpHeaders.Authorization]!!.removePrefix("Bearer ")
         val current = copies[id]
         when (request.method) {
@@ -183,6 +196,28 @@ class SyncerTest {
         b.syncer.sync(); a.syncer.sync()
         assertNull(a.app.data.cache)
         assertNull(a.app.data.intervalsAthlete)
+    }
+
+    @Test
+    fun signingInWithTheSameAccountJoinsTheSameCopy() = runTest {
+        val a = BrivelApp(Store(), Store(), { LocalDate(2026, 11, 2) }, server.engine)
+        val b = BrivelApp(Store(), Store(), { LocalDate(2026, 11, 2) }, server.engine)
+        a.markDone(run.date, run.sport)
+        a.signIn("google", "cuenta-1")  // cuenta nueva: crea la copia con los datos de a
+        assertEquals("google", a.accountProvider)
+        val code = a.syncCode!!
+        b.signIn("google", "cuenta-1")  // la misma cuenta en otro dispositivo: recibe el mismo código
+        assertEquals(code, b.syncCode)
+        assertEquals(setOf(run), b.data.manualDone.toSet())
+        // Quien ya sincronizaba con un código y entra con una cuenta nueva la enlaza a su copia, sin cambiar de código
+        val c = BrivelApp(Store(), Store(), { LocalDate(2026, 11, 2) }, server.engine)
+        val own = c.createSync()
+        c.signIn("apple", "cuenta-2")
+        assertEquals(own, c.syncCode)
+        assertEquals(own, SyncCode.fromSecret(kotlin.io.encoding.Base64.UrlSafe.withPadding(kotlin.io.encoding.Base64.PaddingOption.ABSENT)
+            .decode(server.accounts["cuenta-2"]!!)).text)
+        c.forgetSync()
+        assertNull(c.accountProvider)
     }
 
     @Test

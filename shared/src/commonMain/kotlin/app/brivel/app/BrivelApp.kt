@@ -19,6 +19,22 @@ import dev.whyoleg.cryptography.random.CryptographyRandom
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import kotlin.io.encoding.Base64
+import io.ktor.client.HttpClient
+import io.ktor.client.request.delete
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import app.brivel.sync.SyncException
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import app.brivel.sync.SyncClient
 import app.brivel.sync.SyncCode
 import app.brivel.sync.Syncer
@@ -37,6 +53,8 @@ internal const val SYNC_STATE_KEY = "brivel.sync"  // sync/Syncer.kt
 private const val SYNC_CODE_KEY = "sync.code"  // en el almacén seguro, como la clave de intervals.icu
 private const val SYNC_CONSENT_KEY = "brivel.syncConsent"  // fecha y versión de la política aceptadas (CUMPLIMIENTO #6)
 private const val SYNC_URL = "https://brivel.app/api/boveda"
+private const val ACCOUNT_URL = "https://brivel.app/api/cuenta"
+private const val ACCOUNT_KEY = "brivel.account"  // con qué cuenta se entra en este dispositivo
 private const val GARMIN_URL = "https://brivel.app/api/garmin"
 private const val GARMIN_KEY = "garmin.key"  // en el almacén seguro mientras se conecta; después, en AppData.garminLink
 private const val GARMIN_PUB = "garmin.pub"
@@ -910,6 +928,56 @@ class BrivelApp(
         startSync(code)
     }
 
+    /** Con qué cuenta se entra en este dispositivo («google» o «apple»); null si solo con el código. */
+    val accountProvider: String? get() = store.read(ACCOUNT_KEY)
+
+    /** La dirección que abre la app en el navegador para entrar con Google o Apple; vuelve a brivel://cuenta. */
+    fun signInUrl(provider: String): String {
+        require(provider == "google" || provider == "apple") { "Proveedor desconocido: $provider" }
+        return "$ACCOUNT_URL/$provider?plataforma=app"
+    }
+
+    /**
+     * Entrar con Google o Apple (server/src/cuentas.ts): `ticket` llega en brivel://cuenta?cuenta=…. Se manda el secreto
+     * del código de este dispositivo (o uno nuevo): si la cuenta es nueva se queda con él y, si este dispositivo aún no
+     * sincronizaba, se crea la copia; si ya existía, se recibe el suyo y se une a esa copia juntando los datos.
+     */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    suspend fun signIn(provider: String, ticket: String) {
+        val mine = syncCode?.let { SyncCode.parse(it) }
+        val (secret, created) = redeemAccount(ticket, (mine ?: SyncCode.generate()).secret)
+        val code = SyncCode.fromSecret(secret)
+        if (code.text != mine?.text) {
+            syncerFor(code).sync(create = created)
+            startSync(code)
+        } else recordSyncConsent()
+        store.write(ACCOUNT_KEY, provider)
+    }
+
+    /** Deja de entrar con Google o Apple en todos los dispositivos; la sincronización por código sigue. */
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    suspend fun signOutAccount() {
+        val code = syncCode?.let { SyncCode.parse(it) } ?: return store.write(ACCOUNT_KEY, null)
+        val http = (if (httpEngine != null) HttpClient(httpEngine) else HttpClient())
+        val response = http.delete(ACCOUNT_URL) { header(HttpHeaders.Authorization, "Bearer ${deriveKeys(code).bearer}") }
+        if (!response.status.isSuccess()) throw SyncException(response.status.value, "No se pudo quitar la cuenta: vuelve a intentarlo")
+        store.write(ACCOUNT_KEY, null)
+    }
+
+    private suspend fun redeemAccount(ticket: String, secret: ByteArray): Pair<ByteArray, Boolean> {
+        val http = (if (httpEngine != null) HttpClient(httpEngine) else HttpClient())
+        val b64 = Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT)
+        val response = http.post("$ACCOUNT_URL/canjear") {
+            contentType(ContentType.Application.Json)
+            setBody(buildJsonObject { put("billete", ticket); put("secreto", b64.encode(secret)) }.toString())
+        }
+        val body = runCatching { Json.parseToJsonElement(response.bodyAsText()).jsonObject }.getOrNull()
+        if (!response.status.isSuccess()) {
+            throw SyncException(response.status.value, body?.get("error")?.jsonPrimitive?.content ?: "No se pudo entrar: vuelve a intentarlo")
+        }
+        return b64.decode(body!!["secreto"]!!.jsonPrimitive.content) to body["nueva"]!!.jsonPrimitive.boolean
+    }
+
     /** Sincroniza si está activado. Devuelve el aviso si los dos dispositivos cambiaron lo mismo; null si no. */
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
     suspend fun syncDevices(): String? {
@@ -920,6 +988,7 @@ class BrivelApp(
 
     /** Deja de sincronizar en este móvil; la copia del servidor y los datos de aquí se quedan. */
     fun forgetSync() {
+        store.write(ACCOUNT_KEY, null)
         secrets.write(SYNC_CODE_KEY, null)
         store.write(SYNC_STATE_KEY, null)
         store.write(SYNC_CONSENT_KEY, null)
