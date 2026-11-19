@@ -115,9 +115,16 @@ fun exerciseCard(name: String, custom: List<CustomExercise> = emptyList()): Exer
     if (name in LIBRARY) CARDS.getOrPut(name) { buildCard(name, custom)!! } else buildCard(name, custom)
 
 private fun buildCard(name: String, custom: List<CustomExercise>): ExerciseCard? = exerciseInfo(name, custom)?.let { info ->
-    val cues = PATTERN_CUES[info.pattern]
+    // Las propias del ejercicio, con su fuente y su certeza (ExerciseCues.kt); si no tiene, las de su patrón
+    val own = EXERCISE_CUES[name]
+    val cues = own?.cues ?: PATTERN_CUES[info.pattern]
+    val source = when {
+        own != null -> "Claves de ${own.source}. Certeza ${own.certainty}. No sustituyen a un entrenador."
+        cues != null -> CUE_SOURCE
+        else -> NO_CUES
+    }
     ExerciseCard(name, info.pattern, PATTERN_LABEL[info.pattern]!!, EXERCISE_EQUIPMENT[name] ?: CATALOG_EQUIPMENT[name] ?: emptyList(), info.timed,
-        cues ?: emptyList(), if (cues != null) CUE_SOURCE else NO_CUES, info.pattern)
+        cues ?: emptyList(), source, info.pattern)
         .let { c -> c.copy(zone = PATTERN_ZONE[c.pattern] ?: "", muscles = muscles(name, c.pattern),
             description = describeExercise(name, c.pattern, c.equipment, c.timed)) }
 }
