@@ -13,6 +13,10 @@ Borrador del 2026-11-19 para Gabriel. No se publica nada hasta que lo apruebe; a
    campos) y **todas las actividades propias**, no solo las 400 más recientes. Las series y los recorridos siguen sin
    subirse.
 3. **Sin el tope de 1 MB**: ahora 16 MB por copia, solo contra abusos.
+4. **Pedido por Gabriel (pendiente de hacer): los archivos FIT y GPX** —las series y el **recorrido con coordenadas**
+   de cada actividad— también se guardarían en el servidor, cifrados, para verlos en otros dispositivos. Hoy la política
+   dice que el recorrido no sale del dispositivo: hay que cambiarlo y valorar el riesgo (el recorrido revela dónde vives
+   o entrenas), sobre todo para quien entra con Google o Apple.
 
 ## Texto que cambia en la política
 
