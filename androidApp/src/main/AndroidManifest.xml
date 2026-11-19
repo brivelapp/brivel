@@ -55,6 +55,8 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="brivel" android:host="garmin" />
                 <data android:scheme="brivel" android:host="intervals" />
+                <!-- y de entrar con Google o Apple (brivel://cuenta con el billete, server/src/cuentas.ts) -->
+                <data android:scheme="brivel" android:host="cuenta" />
             </intent-filter>
             <!-- Health Connect enseña por qué la app pide permisos (Android 13 o anterior) -->
             <intent-filter>

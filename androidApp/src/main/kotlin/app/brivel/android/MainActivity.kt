@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import app.brivel.app.BrivelApp
 import app.brivel.app.GarminException
 import app.brivel.app.systemToday
+import app.brivel.app.accountName
 import app.brivel.sync.SyncException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -55,12 +56,15 @@ class MainActivity : ComponentActivity() {
     private val garminReturns = mutableIntStateOf(0)
     /** La dirección de vuelta de intervals.icu (brivel://intervals?code=…&state=…): Root termina de conectar. */
     private val intervalsReturn = mutableStateOf<String?>(null)
+    /** La vuelta de Google o Apple (brivel://cuenta?cuenta=…&proveedor=…): Root canjea el billete. */
+    private val accountReturn = mutableStateOf<android.net.Uri?>(null)
 
     private fun fromBrowser(intent: Intent?) {
         val uri = intent?.data?.takeIf { it.scheme == "brivel" } ?: return
         when (uri.host) {
             "garmin" -> garminReturns.intValue += 1
             "intervals" -> intervalsReturn.value = uri.toString()
+            "cuenta" -> accountReturn.value = uri
         }
     }
 
@@ -76,7 +80,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT))
         val app = Core.get(this)
-        setContent { BrivelTheme { Root(app, garminReturns.intValue, intervalsReturn.value) } }
+        setContent { BrivelTheme { Root(app, garminReturns.intValue, intervalsReturn.value, accountReturn.value) } }
     }
 }
 
@@ -157,7 +161,7 @@ private val TABS = listOf("Hoy" to R.drawable.ic_tab_today, "Calendario" to R.dr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null) {
+fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null, accountReturn: android.net.Uri? = null) {
     var version by remember { mutableIntStateOf(0) }
     var tab by remember { mutableIntStateOf(0) }
     var settings by rememberSaveable { mutableStateOf(false) }  // la rueda del Perfil abre Ajustes
@@ -193,6 +197,15 @@ fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null
     // De vuelta de intervals.icu con el código
     LaunchedEffect(intervalsReturn) {
         intervalsReturn?.let { act.suspend("intervals.icu conectado") { app.finishIntervals(it) } }
+    }
+    // De vuelta de Google o Apple con el billete
+    LaunchedEffect(accountReturn) {
+        val uri = accountReturn ?: return@LaunchedEffect
+        val ticket = uri.getQueryParameter("cuenta")
+        val provider = uri.getQueryParameter("proveedor") ?: "google"
+        if (ticket != null) act.suspend("Has entrado con ${accountName(provider)}: tus datos se sincronizan en tus dispositivos") {
+            app.signIn(provider, ticket)
+        } else uri.getQueryParameter("cuenta-error")?.takeIf { it != "Cancelado" }?.let { act.show(it) }
     }
 
     val onboarding = version >= 0 && app.needsOnboarding  // version: se recalcula tras cada acción
