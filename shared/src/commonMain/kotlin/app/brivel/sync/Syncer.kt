@@ -31,8 +31,8 @@ class Syncer(
         ?.let { runCatching { json.decodeFromString<SyncState>(it) }.getOrNull() }
         ?.takeIf { it.account == keys.account }
 
-    private fun saveState(version: Long, base: AppData) =
-        store.write(SYNC_STATE_KEY, json.encodeToString(SyncState(keys.account, version, base)))
+    private fun saveState(version: Long, payload: AppData) =
+        store.write(SYNC_STATE_KEY, json.encodeToString(SyncState(keys.account, version, syncBase(payload))))
 
     /** Si este dispositivo ya sincronizó con este código. */
     val active: Boolean get() = state() != null

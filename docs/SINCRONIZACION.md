@@ -57,7 +57,7 @@ create table bovedas (
   `database_id` en `server/wrangler.jsonc`. La jurisdicción **no se puede cambiar después**, y garantiza dónde se
   guardan los datos (`location_hint` solo es una preferencia). No dejar que `wrangler deploy` la cree sola.
 - **Abuso:** límite por IP con el binding de rate limiting de Workers (periodo de 10 o 60 s). Es aproximado, no
-  estricto; lo acotan también el tope de 1 MB por cuenta y el límite de altas por IP.
+  estricto; lo acotan también el tope de 16 MB por cuenta y el límite de altas por IP.
 - Plan gratis: Workers 100.000 peticiones al día; D1 5 GB.
 
 ## Conflictos
@@ -128,7 +128,12 @@ Revisado como lo haría un auditor de seguridad. Lo que se añade al diseño:
    llamar al servidor.
 6. **Cambio de código:** primero se sube con el código nuevo y después se borra la cuenta vieja. Los demás
    dispositivos reciben `404` y piden el código nuevo; nunca borran sus datos locales.
-7. **Tamaño:** comprobar `Content-Length` y la longitud real del cuerpo (≤ 1 MB) antes de escribir en D1.
+7. **Tamaño:** comprobar `Content-Length` y la longitud real del cuerpo antes de escribir en D1. Hasta el 2026-11-19 el
+   tope era 1 MB; ahora es 16 MB, solo contra abusos. D1 admite como mucho 2 MB por fila (y 500 MB por base en el plan
+   gratis), así que la copia va en trozos de 1 MB (`trozos`, migración 0002): la fila de `bovedas` lleva la marca de la
+   subida que los escribió (`escritura`) y cada trozo se escribe solo si la marca es la suya, todo en un lote de D1, que
+   es una transacción. La lectura también va en un lote: versión y trozos son siempre de la misma subida. Las copias de
+   antes siguen enteras en `bovedas.datos`.
 8. **Registros:** el Worker no escribe cabeceras ni cuerpos en los logs (el token iría en ellos).
 9. **Sin CORS en `/api`:** la web es del mismo origen y las apps no lo necesitan; así otras webs no pueden usar la API
    desde el navegador.
@@ -169,14 +174,16 @@ Revisado como lo haría un auditor de seguridad. Lo que se añade al diseño:
   se devuelve en `conflicts`. Lo descargado (copia de intervals.icu y de Salud) sigue la misma regla, pero sin avisar.
   **Se niega a combinar** datos de una versión más nueva de la app (`schema` mayor): los campos que esta no conoce se
   perderían al volver a subir.
-- **Lo que se sube (`syncPayload`): todo menos la copia de intervals.icu (`cache`).** La app descarga 365 días de
-  actividades y bienestar con todos sus campos; para quien entrena a diario puede pasar de 1 MB [Inferencia: sin medir
-  con datos reales]. Esos datos viven en intervals.icu y cada dispositivo con la clave los vuelve a descargar, y así el
-  servidor guarda menos datos de salud (minimización, RGPD art. 5.1.c). La base guardada tampoco la lleva, y `merge`
-  conserva la de cada dispositivo. Los datos de Salud (`health`, unos KB) sí se suben: la web no puede leerlos.
-  **Actividades propias (2026-11-15):** se sube el resumen de las 400 más recientes (`SYNCED_ACTIVITIES`); las anteriores
-  siguen en el dispositivo que las tiene y `merge` no las da por borradas, porque tampoco están en la base. Las series y
-  el recorrido (`brivel.activity.<id>`, fuera de `AppData`) no se suben nunca.
+- **Lo que se sube (`syncPayload`): todo** (desde el 2026-11-19, `ciclo-12`, decisión de Gabriel). Antes la copia de
+  intervals.icu (`cache`) se quedaba fuera por minimización (RGPD art. 5.1.c) y solo subían las 400 actividades propias
+  más recientes, por el tope de 1 MB. Ahora un dispositivo sin conectar a intervals.icu ve lo mismo que el conectado: es
+  la finalidad que justifica subirla. **La base guardada no lleva la copia** (`syncBase`): `merge` se queda con la más
+  reciente de las dos (`syncedAt`) y con ninguna si la combinación deja intervals.icu desconectado
+  (`intervalsAthlete = null`), así que desconectar en un dispositivo la borra en todos. Los datos de Salud (`health`)
+  y de Garmin (`garmin`) también se suben. Las series y el recorrido (`brivel.activity.<id>`, fuera de `AppData`) no se
+  suben nunca.
+  shortcut: la copia de intervals.icu (365 días con todos sus campos) se sube entera en cada cambio, sin comprimir; si
+  pesa en datos móviles, comprimir el JSON antes de cifrar (cada plataforma tiene su gzip).
 
 **Paso 2, servidor (2026-11-02, probado en local, sin publicar):** `server/src/index.ts`,
 `server/migrations/0001_bovedas.sql` y `server/test/boveda.test.mjs` (`npm test`: arranca `wrangler dev` con una D1
@@ -187,7 +194,7 @@ local nueva).
 - **Respuestas:** `401` sin token válido; `GET` → `200` con el bloque y `ETag: "n"`, o `404`; `PUT` con
   `If-None-Match: *` → `201` y `ETag: "1"`, o `409` si ya existe; con `If-Match: "n"` → `200` y `ETag: "n+1"`, o `409`
   si otro subió antes (o la cuenta ya no existe); `428` sin ninguna de las dos; `411` sin `Content-Length`; `413` si
-  está vacío o pasa de 1 MB; `DELETE` → `204`; `429` al pasar un límite. Todo con `Cache-Control: no-store` y sin CORS.
+  está vacío o pasa de 16 MB; `DELETE` → `204`; `429` al pasar un límite. Todo con `Cache-Control: no-store` y sin CORS.
 - **Límites (binding de rate limiting de Workers):** 60 peticiones por minuto por IP en toda la API, 5 altas por
   minuto por IP y 20 subidas por minuto por cuenta.
 - **Publicar:** `npm run deploy` aplica la migración en la D1 real y despliega. Hecho el 2026-11-02, con una prueba

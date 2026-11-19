@@ -153,16 +153,36 @@ class SyncerTest {
         assertEquals(setOf(run), a.done)
     }
 
+    private fun cache(at: String) = IntervalsCache(JsonObject(emptyMap()), emptyList(), emptyList(), at)
+
     @Test
-    fun intervalsCopyStaysLocal() = runTest {
-        val (a, _) = pair()
-        val cache = IntervalsCache(JsonObject(emptyMap()), emptyList(), emptyList(), "2026-11-02T08:00")
-        a.app.replaceData(a.app.data.copy(cache = cache))
+    fun intervalsCopyTravelsToTheOtherDevices() = runTest {
+        val (a, b) = pair()
+        a.app.replaceData(a.app.data.copy(intervalsAthlete = "i123", cache = cache("2026-11-02T08:00")))
         a.syncer.sync(create = true)
         val (version, blob) = server.copies.getValue(a.keys.bearer)
         val uploaded = Json { ignoreUnknownKeys = true }.decodeFromString<AppData>(open(a.keys, blob, version).decodeToString())
-        assertNull(uploaded.cache)
-        assertEquals(cache, a.app.data.cache)
+        assertEquals(cache("2026-11-02T08:00"), uploaded.cache)
+        b.syncer.sync()
+        assertEquals(cache("2026-11-02T08:00"), b.app.data.cache)  // b no está conectado y la ve igual
+        // Los dos la refrescan: se queda la más reciente
+        a.app.replaceData(a.app.data.copy(cache = cache("2026-11-03T09:00")))
+        b.app.replaceData(b.app.data.copy(cache = cache("2026-11-03T07:00")))
+        a.syncer.sync(); b.syncer.sync(); a.syncer.sync()
+        assertEquals(cache("2026-11-03T09:00"), a.app.data.cache)
+        assertEquals(cache("2026-11-03T09:00"), b.app.data.cache)
+    }
+
+    @Test
+    fun disconnectingIntervalsRemovesItsCopyEverywhere() = runTest {
+        val (a, b) = pair()
+        a.app.replaceData(a.app.data.copy(intervalsAthlete = "i123", cache = cache("2026-11-02T08:00")))
+        a.syncer.sync(create = true)
+        b.syncer.sync()
+        b.app.replaceData(b.app.data.copy(intervalsAthlete = null, cache = null))  // como al desconectar
+        b.syncer.sync(); a.syncer.sync()
+        assertNull(a.app.data.cache)
+        assertNull(a.app.data.intervalsAthlete)
     }
 
     @Test

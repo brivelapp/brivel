@@ -8,18 +8,14 @@ import app.brivel.app.AppData
 import app.brivel.app.SCHEMA
 
 /**
- * Lo que se sube: todo menos la copia de intervals.icu. Son hasta 365 días de actividades y bienestar (podría pasar del
- * tope de 1 MB) y viven en intervals.icu: cada dispositivo con la clave los vuelve a descargar. Así el servidor guarda
- * menos datos de salud (RGPD art. 5.1.c). La base guardada tampoco la lleva, y `merge` conserva la de este dispositivo.
+ * Lo que se sube: todo, también la copia de intervals.icu (decisión de Gabriel, 2026-11-19: un dispositivo sin conectar
+ * a intervals.icu ve lo mismo que el que sí lo está) y todas las actividades propias, desde que el servidor no tiene el
+ * tope de 1 MB. Las series y el recorrido de cada actividad siguen fuera de `AppData` y no se suben.
  */
-fun syncPayload(data: AppData): AppData = data.copy(cache = null,
-    activities = data.activities.sortedByDescending { it.start }.take(SYNCED_ACTIVITIES).sortedBy { it.start })
+fun syncPayload(data: AppData): AppData = data
 
-/**
- * Las actividades propias que se suben: las más recientes (por el tope de 1 MB). Las anteriores siguen en el dispositivo
- * que las tiene: como tampoco están en la base, `merge` las conserva sin darlas por borradas.
- */
-const val SYNCED_ACTIVITIES = 400
+/** La base guardada para combinar: sin la copia de intervals.icu, que `merge` no compara con la base (y ocupa mucho). */
+fun syncBase(payload: AppData): AppData = payload.copy(cache = null)
 
 /** Los datos combinados y los apartados en los que el cambio de este dispositivo perdió frente al del servidor. */
 class Merged(val data: AppData, val conflicts: Set<String>)
@@ -47,6 +43,7 @@ fun merge(base: AppData, local: AppData, remote: AppData): Merged {
     // El objetivo y el inicio de su bloque cambian juntos (setGoal)
     val (goal, blockStart) = pick("goal", base.goal to base.blockStart, local.goal to local.blockStart,
         remote.goal to remote.blockStart)
+    val intervalsAthlete = pick("intervalsAthlete", base.intervalsAthlete, local.intervalsAthlete, remote.intervalsAthlete)
     // Desde remote: un campo que se olvide aquí se queda como en el servidor, no vacío
     val data = remote.copy(
         schema = SCHEMA,
@@ -58,8 +55,10 @@ fun merge(base: AppData, local: AppData, remote: AppData): Merged {
         readiness = byKey("readiness", base.readiness, local.readiness, remote.readiness),
         choices = byKey("choices", base.choices, local.choices, remote.choices),
         renamed = items(base.renamed, local.renamed, remote.renamed).toSet(),
-        cache = pick(null, base.cache, local.cache, remote.cache),
-        intervalsAthlete = pick("intervalsAthlete", base.intervalsAthlete, local.intervalsAthlete, remote.intervalsAthlete),
+        intervalsAthlete = intervalsAthlete,
+        // Se vuelve a descargar: la más reciente de las dos, y ninguna si se desconectó intervals.icu
+        cache = if (intervalsAthlete == null) null
+            else listOfNotNull(local.cache, remote.cache).maxByOrNull { it.syncedAt },
         health = pick(null, base.health, local.health, remote.health),
         garmin = pick(null, base.garmin, local.garmin, remote.garmin),
         garminLink = pick(null, base.garminLink, local.garminLink, remote.garminLink),

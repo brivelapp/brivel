@@ -1,7 +1,6 @@
 package app.brivel.app
 
 import app.brivel.engine.plusDays
-import app.brivel.sync.SYNCED_ACTIVITIES
 import app.brivel.sync.merge
 import app.brivel.sync.syncPayload
 import kotlinx.datetime.LocalDate
@@ -206,16 +205,14 @@ class ActivitiesTest {
     }
 
     @Test
-    fun `solo se suben las actividades mas recientes y las demas no se pierden`() {
-        val all = (0 until SYNCED_ACTIVITIES + 5).map {
+    fun `se suben todas las actividades, tambien las antiguas`() {
+        val all = (0 until 405).map {  // antes, solo las 400 más recientes (por el tope de 1 MB)
             val start = LocalDate(2024, 1, 1).plusDays(it).toString() + "T08:00:00"
             OwnActivity(OWN_ID + start, "running", start, 1800.0)
         }
         val local = AppData(activities = all)
-        val payload = syncPayload(local)
-        assertEquals(SYNCED_ACTIVITIES, payload.activities.size)
-        assertEquals(all.last(), payload.activities.last())
-        assertEquals(all, merge(payload, local, payload).data.activities)  // las 5 antiguas siguen en este dispositivo
+        assertEquals(all, syncPayload(local).activities)
+        assertEquals(all, merge(AppData(), local, AppData()).data.activities)
     }
 
     // ------------------------------------------------------------ grabar con el GPS

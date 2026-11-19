@@ -134,11 +134,12 @@ class MergeTest {
     }
 
     @Test
-    fun localIntervalsCopyStaysButIsNeverUploaded() {
-        val uploaded = syncPayload(full)
-        assertEquals(null, uploaded.cache)
-        val remote = uploaded.copy(reminderHour = 21)  // otro dispositivo cambió algo
-        val merged = merge(base = uploaded, local = full, remote = remote).data
+    fun theIntervalsCopyIsUploadedButNotKeptInTheBase() {
+        assertEquals(full.cache, syncPayload(full).cache)
+        val base = syncBase(syncPayload(full))
+        assertEquals(null, base.cache)  // la base no la lleva: ocupa mucho y merge no la compara
+        val remote = full.copy(cache = null, reminderHour = 21)  // otro dispositivo, sin la copia
+        val merged = merge(base = base, local = full, remote = remote).data
         assertEquals(full.cache, merged.cache)
         assertEquals(21, merged.reminderHour)
     }
