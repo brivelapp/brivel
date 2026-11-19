@@ -19,7 +19,7 @@ Etiquetas: **[Verificado]** comprobado en el código o en la app real · **[Fuen
 
 | # | Requisito | ¿Aplica? | Estado hoy | Cuándo | Base / nota |
 |---|---|---|---|---|---|
-| 1 | Política de privacidad | Sí | **Hecha (2026-11-02)**: `web/public/privacidad.html` → https://brivel.app/privacidad. **Versión 2 (2026-11-02.2):** añade la sincronización (apartado 4); publicada con la API | Revisar con cada cambio de datos (sincronización, OAuth) | RGPD arts. 13-14. Cubre: datos solo en el dispositivo (incluidos los de salud de Apple Salud y Health Connect), intervals.icu como servicio independiente, Cloudflare como encargado (IP; DPA v6.4 incorporado a su Self-Serve Subscription Agreement §6.1 [Verificado: cloudflare.com/terms y /cloudflare-customer-dpa, 2026-11-02]; transferencias a EE. UU. con el Marco de Privacidad UE-EE. UU. y cláusulas tipo de respaldo, DPA §6.2 y §6.4), derechos y AEPD. Las apps la enlazan en la bienvenida y al pie de Perfil (desde el 2026-11-03) [Verificado en código]; es la URL que piden Apple y Google |
+| 1 | Política de privacidad | Sí | **Hecha (2026-11-02)**: `web/public/privacidad.html` → https://brivel.app/privacidad. **Versión 2 (2026-11-02.2):** añade la sincronización (apartado 4); publicada con la API. **Versión 7 (2026-11-19.7), aprobada por Gabriel el 2026-11-19:** nombra los tests de campo y la valoración de cada carrera, que se sincronizan desde el formato 12; rutas de Ajustes y acceso OAuth de intervals.icu; la sincronización pide aceptarla de nuevo | Revisar con cada cambio de datos (sincronización, OAuth) | RGPD arts. 13-14. Cubre: datos solo en el dispositivo (incluidos los de salud de Apple Salud y Health Connect), intervals.icu como servicio independiente, Cloudflare como encargado (IP; DPA v6.4 incorporado a su Self-Serve Subscription Agreement §6.1 [Verificado: cloudflare.com/terms y /cloudflare-customer-dpa, 2026-11-02]; transferencias a EE. UU. con el Marco de Privacidad UE-EE. UU. y cláusulas tipo de respaldo, DPA §6.2 y §6.4), derechos y AEPD. Las apps la enlazan en la bienvenida y al pie de Perfil (desde el 2026-11-03) [Verificado en código]; es la URL que piden Apple y Google |
 | 2 | Términos de uso | Sí | **Hechos (2026-11-02)**: `web/public/terminos.html` → https://brivel.app/terminos | — | No es consejo médico ni producto sanitario, el usuario entrena bajo su responsabilidad, edad mínima 14, sin garantía en la medida que permita la ley, AGPL y ley española. La web enseña el aviso de salud (`HEALTH_NOTICE`) antes de empezar, como las apps |
 | 3 | Política de reembolso | **No**, mientras sea gratis | — | Si hay pago o donaciones con contraprestación | — |
 | 4 | Política de cookies | Hoy no hay cookies (descrito en la política de privacidad, §6) | [Verificado: 0 cookies en / y /plan] | Fase 1 (cookie de sesión) | Las cookies técnicas estrictamente necesarias (sesión, autenticación) están exentas de consentimiento (art. 22.2 LSSI, guía AEPD) [Fuente: resúmenes de la guía AEPD]. Se describirán en la política de privacidad |
@@ -76,7 +76,7 @@ Etiquetas: **[Verificado]** comprobado en el código o en la app real · **[Fuen
 
 ## 4. Sincronización: documentos del RGPD (2026-11-02)
 
-- **EIPD:** `docs/legal/EIPD_SINCRONIZACION.md`, aprobada por Gabriel el 2026-11-02. Riesgo residual bajo o
+- **EIPD:** `docs/legal/EIPD_SINCRONIZACION.md`, aprobada por Gabriel el 2026-11-02; revisiones del 2026-11-15 y del 2026-11-19 aprobadas el 2026-11-19. Riesgo residual bajo o
   medio-bajo; sin consulta previa a la AEPD.
 - **Registro de actividades (art. 30) y registro de brechas (art. 33.5):** `docs/legal/REGISTRO_ACTIVIDADES.md`.
 - **Encargado:** el DPA v6.4 de Cloudflare forma parte de su Self-Serve Subscription Agreement (§6.1) [Verificado el
@@ -87,7 +87,7 @@ Etiquetas: **[Verificado]** comprobado en el código o en la app real · **[Fuen
 
 ## 5. Garmin Connect: documentos del RGPD (2026-11-04)
 
-- **EIPD:** `docs/legal/EIPD_GARMIN.md`, aprobada por Gabriel el 2026-11-07. Riesgo residual
+- **EIPD:** `docs/legal/EIPD_GARMIN.md`, aprobada por Gabriel el 2026-11-07; revisión del 2026-11-19 aprobada el mismo día. Riesgo residual
   bajo o medio-bajo; el mayor, una cuenta de Cloudflare comprometida (el relevo ve los datos un instante al llegar).
 - **Registro de actividades:** actividad 4 en `docs/legal/REGISTRO_ACTIVIDADES.md`.
 - No abrir la conexión a otras personas antes del 2026-12-07: el aviso de 30 días se dio de nuevo desde `hola@brivel.app`
