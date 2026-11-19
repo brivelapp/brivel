@@ -331,7 +331,7 @@ main.wide ~ .legal { padding-block: 8px 32px; }
 .progress > span { display: block; height: 100%; background: var(--ok); }
 
 /* Ajustes (2026-11-17): la rueda del Perfil y una lista corta por grupos, como en las apps */
-.gear { width: 44px; height: 44px; padding: 0; border-radius: 50%; background: var(--chip); color: var(--text); display: grid; place-items: center; }
+.settings-button { width: 44px; height: 44px; padding: 0; border-radius: 50%; background: var(--chip); color: var(--text); display: grid; place-items: center; }
 .settings { display: flex; flex-direction: column; gap: 14px; max-width: 560px; }
 .settings-group { display: flex; flex-direction: column; gap: 6px; }
 .settings-title { font-size: 12px; line-height: 16px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-left: 4px; }
