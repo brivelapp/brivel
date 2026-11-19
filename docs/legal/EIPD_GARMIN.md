@@ -7,7 +7,7 @@ vigente para la copia cifrada. Se puede pasar a Gestiona EIPD de la AEPD, que si
 
 Este documento está en un repositorio público: no cita la documentación de Garmin, que es confidencial.
 
-**Revisión del 2026-11-19 (pendiente de que Gabriel la apruebe):** lo que llega de Garmin, el cifrado, el plazo y el
+**Revisión del 2026-11-19 (aprobada por Gabriel el 2026-11-19):** lo que llega de Garmin, el cifrado, el plazo y el
 proveedor no cambian. Cambia dónde se enseñan y para qué se usan, siempre en el dispositivo:
 - Pantallas nuevas con datos de Garmin desde el 2026-11-15: actividades (lista y ficha), material (kilómetros por
   actividad), medallas y más datos de salud (fases del sueño, estrés medio del día, grasa corporal), todas con la

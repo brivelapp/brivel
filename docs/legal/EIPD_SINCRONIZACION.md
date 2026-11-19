@@ -4,14 +4,14 @@
 `docs/SINCRONIZACION.md` y del código. Se puede pasar a la herramienta gratuita de la AEPD, Gestiona EIPD, que sigue
 los mismos apartados.
 
-**Revisión del 2026-11-15 (pendiente de que Gabriel la apruebe):** la copia lleva además el resumen de las actividades
+**Revisión del 2026-11-15 (aprobada por Gabriel el 2026-11-19):** la copia lleva además el resumen de las actividades
 importadas o grabadas (fecha y hora, duración, distancia, pulso, desnivel, vueltas y mejores marcas; **sin** el recorrido
 ni ninguna coordenada, que no salen del dispositivo), el material con sus kilómetros, las medallas y más datos de salud
 por día (fases del sueño, saturación de oxígeno, respiración, grasa corporal, estrés). El cifrado, el proveedor y los
 plazos no cambian; el riesgo tampoco: son datos de la misma categoría y el servidor sigue sin poder leerlos. Como máximo
 se suben las 400 actividades más recientes (`SYNCED_ACTIVITIES`), por el tope de 1 MB.
 
-**Revisión del 2026-11-19 (pendiente de que Gabriel la apruebe, junto con la del 2026-11-15):** la copia lleva además
+**Revisión del 2026-11-19 (aprobada por Gabriel el 2026-11-19, junto con la del 2026-11-15):** la copia lleva además
 los resultados de los tests de campo (fecha, deporte, ritmo, pulso o vatios), cómo le resultó cada carrera al usuario
 (fácil, normal o dura, por el identificador de la actividad) y el objetivo sin plan. Son datos de salud de la misma
 categoría que los que ya se subían; el cifrado, el proveedor, el plazo y el riesgo no cambian. La política pasa a la
