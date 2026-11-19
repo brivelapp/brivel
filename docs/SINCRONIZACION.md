@@ -15,6 +15,34 @@ leerlos.
 perder la copia del servidor; mientras quede un dispositivo, sus datos siguen ahí y desde él se crea un código nuevo.
 La app lo tiene que explicar al activar la sincronización.
 
+## Cuentas con Google o Apple (decisión de Gabriel, 2026-11-19; `ciclo-12`, sin publicar)
+
+Para entrar en un dispositivo nuevo sin el código. **Modelo elegido: el servidor guarda la clave** (Brivel podría
+leer la copia de quien entra así); el código solo sigue siendo de extremo a extremo y no cambia. Código en
+`server/src/cuentas.ts`, `BrivelApp.signIn` (apps) y `WebApp.signIn` (web).
+
+- **Ida:** `GET /api/cuenta/{google|apple}?plataforma=web|app` redirige al proveedor. Google: `scope=openid` (ni correo
+  ni nombre) con PKCE; Apple: sin scope, así vuelve por GET (`response_mode=query`). El `state` (y el verificador PKCE)
+  van en una cookie `__Host-` HttpOnly, SameSite=Lax, de 10 minutos.
+- **Vuelta:** `/api/cuenta/{p}/vuelta` canjea el código con el proveedor y lee `sub` del id_token, que llega directo de
+  su servidor por TLS (OIDC Core §3.1.3.7: basta comprobar `iss`, `aud` y `exp`). Guarda un **billete** de un solo uso
+  (2 minutos, `billetes`) y vuelve a `/#cuenta=…&proveedor=…` (web) o `brivel://cuenta?…` (apps).
+- **Canje:** `POST /api/cuenta/canjear {billete, secreto}`. El dispositivo manda el secreto de su código, o uno nuevo
+  (la web, que no guarda el código, siempre uno nuevo). Si la cuenta es nueva se queda con ese (`nueva: true`) y el
+  dispositivo crea la copia si no la tenía; si ya existía, recibe el suyo y se une a esa copia juntando sus datos, como
+  al escribir un código.
+- **Qué se guarda (`identidades`):** HMAC-SHA256(`CUENTAS_PIMIENTA`, «proveedor:sub») como identificador; el secreto
+  de 16 bytes cifrado con AES-256-GCM (`CUENTAS_CLAVE`, datos asociados: el identificador); la copia a la que da acceso
+  (`boveda`) y, en Apple, el token de refresco cifrado, que hay que revocar al borrar la cuenta (Apple lo exige,
+  guía 5.1.1(v)). Las claves son secretos del Worker, fuera de D1: una filtración de la base sola no abre nada.
+- **Borrar:** `DELETE /api/boveda` y la limpieza de copias sin uso borran también sus cuentas (y revocan en Apple);
+  `DELETE /api/cuenta` («Dejar de entrar con Google») las quita sin tocar la copia ni el código.
+- **Sin las claves** del proveedor, su botón responde 503. Límite: 5 cuentas nuevas por minuto y por IP (`ALTAS`).
+- shortcut: cambiar el código desvincula la cuenta (su copia se borra); hay que volver a entrar con Google o Apple.
+  Si molesta, enlazar el código nuevo antes de borrar el viejo.
+- shortcut: en iOS, Apple también va por la web (ASWebAuthenticationSession). La App Store prefiere el botón nativo
+  (AuthenticationServices): hacerlo al pasar a TestFlight, verificando el identityToken con las claves de Apple.
+
 ## Cifrado
 
 - Del secreto salen, con HKDF-SHA256 y etiquetas distintas: la **clave** AES-256-GCM (nunca sale del dispositivo) y el
