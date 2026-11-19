@@ -6,7 +6,7 @@
     "web": "cd ../web && npm run build",
     "types": "wrangler types",
     "dev": "wrangler dev",
-    "test": "node --test",
+    "test": "node --test --test-concurrency=1",
     "deploy": "wrangler d1 migrations apply brivel --remote && wrangler deploy"
   },
   "devDependencies": {
