@@ -360,3 +360,18 @@ main.wide ~ .legal { padding-block: 8px 32px; }
 .target { display: flex; flex-direction: column; gap: 2px; background: var(--bg); border-radius: 18px; padding: 12px 16px; }
 .target .mono { font-size: 28px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
 .target strong { font-size: 15px; }
+
+/* Entrar con Google o Apple: colores y logo de sus guías de marca (Google Identity, «Sign in with Google» branding;
+   Apple, Human Interface Guidelines, «Sign in with Apple»), en claro y en oscuro */
+.account-buttons { display: grid; gap: 10px; margin: 12px 0; max-width: 360px; }
+button.account {
+  display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; padding: 0 16px;
+  border-radius: 22px; font-weight: 500; font-size: 15px;
+}
+button.account svg { width: 18px; height: 18px; flex: none; }
+button.account.google { background: #FFFFFF; color: #1F1F1F; border: 1px solid #747775; }
+button.account.apple { background: #000000; color: #FFFFFF; border: 1px solid #000000; }
+@media (prefers-color-scheme: dark) {
+  button.account.google { background: #131314; color: #E3E3E3; border-color: #8E918F; }
+  button.account.apple { background: #FFFFFF; color: #000000; border-color: #FFFFFF; }
+}

@@ -9,8 +9,8 @@ import { Calendar } from "./Calendar"
 import { Progress } from "./Progress"
 import { Strength } from "./Strength"
 import { Train } from "./Train"
-import { SyncCard } from "./Sync"
-import { loadKeys } from "./sync"
+import { ACCOUNT_KEY, SyncCard } from "./Sync"
+import { loadKeys, saveKeys } from "./sync"
 import { pullGarmin } from "./garmin"
 
 type Entry = "landing" | "onboarding" | "login"
@@ -59,6 +59,23 @@ export function App() {
       core.retireFromWatch().catch(() => {})
       if (core.intervalsAthlete) core.syncIntervals().then(refresh, () => {})
     }
+    // Vuelta de Google o Apple (server/src/cuentas.ts): #cuenta=billete&proveedor=… o #cuenta-error=…
+    const back = new URLSearchParams(location.hash.slice(1))
+    if (back.has("cuenta") || back.has("cuenta-error")) {
+      history.replaceState(null, "", "/")  // el billete no se queda en el historial
+      const ticket = back.get("cuenta")
+      const provider = back.get("proveedor")
+      if (!ticket) {
+        setEntry("login")  // la portada no enseña mensajes: el error sale donde se vuelve a intentar
+        setMessage(back.get("cuenta-error") === "Cancelado" ? null : back.get("cuenta-error"))
+      }
+      else core.signIn(ticket).then(async (keys) => {
+        await saveKeys(keys)
+        try { if (provider) localStorage.setItem(ACCOUNT_KEY, provider) } catch { /* sin almacenamiento: no pasa nada */ }
+        setMessage("Has entrado: tus datos se sincronizan en todos tus dispositivos")
+        refresh()
+      }, (e) => setMessage(e instanceof Error && e.message ? e.message : "No se pudo entrar: vuelve a intentarlo"))
+    }
     if (location.pathname === "/intervals") {
       const back = location.href
       history.replaceState(null, "", "/")  // el código no se queda en el historial
@@ -101,7 +118,7 @@ export function App() {
         <main className="question">
           <button className="back" aria-label="Atrás" onClick={() => setEntry("landing")}>‹</button>
           <h1 className="question-title">Iniciar sesión</h1>
-          <p className="muted">Brivel no tiene cuentas con contraseña: en el móvil, abre Perfil → Ajustes → «Usar en otros dispositivos» → «Ver código» y escríbelo aquí.</p>
+          <p className="muted">Sin contraseñas: entra con Google o Apple, o escribe el código que ves en el móvil en Perfil → Ajustes → «Usar en otros dispositivos» → «Ver código».</p>
           <SyncCard core={core} onDone={synced} joinOnly />
           {status}
         </main>
