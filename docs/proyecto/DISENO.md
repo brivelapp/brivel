@@ -11,7 +11,8 @@
 2. **Suelo de salud común.** Todo plan, sea cual sea el objetivo, cumple las guías de la OMS (EA §1). El objetivo solo cambia
    cómo se reparte y cuánto se sube por encima de ese suelo.
 3. **Constancia antes que complejidad** (ACSM 2026, EA §2): planes sencillos que se ajustan a la adherencia real.
-4. **Sin fecha de fin.** Bloques de 4 semanas que se renuevan; el objetivo se puede cambiar en cualquier momento.
+4. **Sin fecha de fin.** Bloques flexibles que se renuevan (hasta el 2026-11-19, de 4 semanas fijas); el objetivo se puede
+   cambiar en cualquier momento.
 5. **Funciona con pocos datos.** Con reloj usa FC, HRV y sueño; sin reloj, sensación (RPE/RIR) y lo que el usuario registra.
 
 ## 2. Entradas
@@ -49,15 +50,27 @@ Minutos aeróbicos en **minutos moderados equivalentes** (1 min vigoroso = 2 mod
 
 ## 4. Bloques sin fecha (mesociclos)
 
-- Bloque = 4 semanas: 3 de carga + 1 de descarga (−30 % de volumen; patrón de MOTOR §8). [Práctica]
-- **Progresión dentro del bloque** hacia la meta del objetivo: aeróbico +10 % por semana de carga; fuerza +1 serie por grupo
-  y semana mientras no se supere la meta. [Inferencia: la regla del 10 % no tiene respaldo en ensayos; se valida en la fase D]
-- **Revisión al acabar el bloque**, por adherencia (sesiones hechas / planificadas):
-  - ≥ 85 % y esfuerzo percibido medio dentro de lo previsto → el siguiente bloque parte de un 5–10 % más;
-  - 60–85 % → se repite el volumen;
-  - < 60 % → baja un 20 % y se quita un día si sobran. [Inferencia: la constancia manda (ACSM 2026) y los abandonos se
-    concentran en la subida de volumen (EA §6)]
-- Alcanzada la meta, el bloque estable alterna estímulos (rotación del catálogo) para mantener sin subir más.
+**Bloques flexibles (decisión de Gabriel, 2026-11-19; `nextStep` en `HealthPlan.kt`).** Hasta entonces, bloque = 4 semanas
+fijas: 3 de carga + 1 de descarga, con la revisión por adherencia al acabar el bloque. Por qué se cambió: ningún ensayo
+compara 3+1 con otras pautas (MOTOR §9.1); en fuerza, la descarga media es cada 5,6 ± 2,3 semanas, casi siempre planificada
+y a veces por señales (encuesta, n = 246: Rogerson 2024); una semana sin entrenar a mitad de 9 no mejoró la hipertrofia y
+restó algo de fuerza (ensayo, n = 39: Coleman 2024); ajustar por la VFC da una ventaja pequeña y menos personas sin
+respuesta (metaanálisis: Düking 2021), y la planificación debe responder a la persona (revisión: Kiely 2012).
+
+- **Revisión semanal por adherencia** (sesiones hechas / planificadas de la semana terminada) [Inferencia, los umbrales de
+  antes]: ≥ 85 % → +10 % de aeróbico (hacia abajo) y +1 serie por grupo, sin pasar de la meta; 60–85 % → se repite la
+  semana; < 60 % → baja un 20 %, nunca por debajo de 60 min. [Inferencia: la regla del 10 % no tiene respaldo en ensayos;
+  la constancia manda (ACSM 2026) y los abandonos se concentran en la subida de volumen (EA §6)]
+- **Descarga** (−30 % de la última semana de subida; patrón de MOTOR §8) [Práctica]: como tarde tras 5 semanas de subida
+  (`MAX_LOAD_WEEKS`) [Práctica: Rogerson 2024], o antes, a partir de 2 (`MIN_LOAD_WEEKS`), si la semana terminada tuvo 2
+  días o más en versión suave por tus respuestas o los datos del reloj o del móvil (sueño, VFC, fatiga, carga: las reglas
+  de `watchReadiness`, §8) (`SOFT_DAYS`). [Inferencia en las cifras 2 y 2]
+- **Tras la descarga**, un 5 % por encima de la última semana de subida si se cumplió al menos el 60 %; si no, igual.
+  Cada descarga cierra un bloque: las variantes de los ejercicios cambian con el bloque (MOTOR §5.4).
+- Las semanas futuras se prevén como si se cumpliera todo y sin días suaves: «El plan entero» enseña 12 (Gabriel,
+  2026-11-19); cada semana se recalcula.
+- Alcanzada la meta, el plan se mantiene y sigue descargando como tarde cada 6 semanas; la rotación del catálogo alterna
+  estímulos.
 
 ## 5. Reparto semanal
 
@@ -137,7 +150,7 @@ grasa, cribado con tope) durante 24 semanas:
 | V2 | Mayores de 65: ≥ 3 días con equilibrio y fuerza | EA §1 |
 | V3 | Cada grupo muscular se trabaja ≥ 2 veces por semana en `strength` y las series semanales quedan en la meta | EA §2 |
 | ~~V4~~ | Retirado con el objetivo `fat_loss` (2026-10-21) | — |
-| V5 | La subida semanal de volumen no pasa del 10 % y cada 4.ª semana es de descarga | Diseño §4 |
+| V5 | La subida semanal de volumen no pasa del 10 % (tampoco al volver de una descarga), cada descarga baja el volumen y nunca hay más de 5 semanas seguidas de subida (hasta el 2026-11-19: cada 4.ª semana, descarga) | Diseño §4 |
 | V6 | Con tope ligero-moderado del cribado nunca aparece intensidad vigorosa, Z4+ ni RIR < 3; con "parar", ninguna sesión | EA §5 |
 | V7 | Al menos 1 día de descanso por semana; nunca dos sesiones de pierna pesadas en días seguidos | Diseño §5 |
 | V8 | En `strength`, nunca carrera intensa el mismo día que la sesión de pierna | EA §3 |

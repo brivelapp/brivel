@@ -368,7 +368,7 @@ Carga: `rTSS = (RPE/10)² × horas × 100` [Memoria 8.1]. El RPE real introducid
 Los motores siguen proponiendo los ejercicios de §5.2. Sobre eso, la app (`ExerciseGuide.kt`, `Planner.applyChoice`):
 
 - **Rotación de variantes.** Cada ejercicio del plan tiene de 1 a 4 variantes del mismo patrón, la misma forma de medirlo
-  y el mismo material (`ROTATION`). La variante se mantiene un bloque de 4 semanas (el del plan sin fecha, con su descarga;
+  y el mismo material (`ROTATION`). La variante se mantiene un bloque (el del plan sin fecha, hasta su descarga, de 3 a 6 semanas desde el 2026-11-19;
   cuatro semanas de calendario en el plan de carrera) y cambia con el bloque; dos sesiones de la misma semana usan
   variantes distintas. [Práctica: variar el ejercicio manteniendo el patrón; Fonseca et al. 2014, J Strength Cond Res
   28(11):3085–3092, comparan variar ejercicios con variar solo la carga. Cuatro semanas por variante: Inferencia]
@@ -546,7 +546,8 @@ La rampa depende del CTL actual, según la tabla de riesgo de TrainingPeaks [Pr�
 | ≥ 70 | +5 | +9 | CTL 80: 7 × (80 + 32,5) ≈ 788 |
 | Semana de descarga | — | — | 0,6–0,7 × semana de carga anterior [Práctica: −30 a −40 % habitual en mesociclos 3:1] |
 
-El patrón 3+1 no tiene ensayo que lo compare con otros (búsqueda sin resultados); se mantiene como práctica estándar. [Práctica]
+El patrón 3+1 no tiene ensayo que lo compare con otros (búsqueda sin resultados); se mantiene como práctica estándar en el
+plan de carrera. [Práctica] El plan sin fecha usa bloques flexibles desde el 2026-11-19 (`docs/proyecto/DISENO.md` §4).
 
 El TSS semanal se reparte entre los días de la plantilla según pesos fijos: long 25 %, cada Q 15 %, aerobic 10–12 %, recovery 5 %, fuerza por su rTSS. Las duraciones se escalan dentro de `duration_min` hasta encajar el objetivo. [Inferencia]
 
@@ -769,6 +770,10 @@ Python del prototipo queda congelado. Cada regla está cubierta por `ValidationT
 48. Berthon P, Fellmann N, Bedu M y cols. A 5-min running field test as a measurement of maximal aerobic velocity. *Eur J Appl Physiol.* 1997;75(3):233-238. https://pubmed.ncbi.nlm.nih.gov/9088842/ (resumen consultado por búsqueda el 2026-11-18, sin leer el artículo; descartado para dar ritmos: el umbral en % de la VAM varía mucho entre personas)
 49. Scherr J y cols. Associations between Borg's rating of perceived exertion and physiological measures of exercise intensity. *Eur J Appl Physiol.* 2013;113(1):147-155. https://pubmed.ncbi.nlm.nih.gov/22615009/ (resumen consultado por búsqueda el 2026-11-19, sin leer el artículo)
 50. NSCA. Stretch-Shortening Cycle (Kinetic Select). https://www.nsca.com/education/articles/kinetic-select/stretch-shortening-cycle/ y Explosive/plyometric exercises (position statement). *NSCA Journal.* 1993;15(3). https://journals.lww.com/nsca-scj/Abstract/1993/05000/POSITION_STATEMENT__Explosive_Plyometric_Exercises.3.aspx (consultados por búsqueda el 2026-11-19, sin leer el texto completo)
+51. Rogerson D y cols. Deloading Practices in Strength and Physique Sports: A Cross-sectional Survey. *Sports Med Open.* 2024;10:26. https://doi.org/10.1186/s40798-024-00691-y (descarga media cada 5,6 ± 2,3 semanas; encuesta, n = 246)
+52. Coleman M y cols. Gaining more from doing less? The effects of a one-week deload period during supervised resistance training on muscular adaptations. *PeerJ.* 2024;12:e16777. https://peerj.com/articles/16777 (ensayo, n = 39)
+53. Düking P y cols. Metaanálisis del entrenamiento guiado por la VFC frente al predefinido (8 estudios, 198 participantes). *J Sci Med Sport.* 2021 [Fuente secundaria: citado en Manresa-Rocamora 2021, PMC8507742]
+54. Kiely J. Periodization Paradigms in the 21st Century: Evidence-Led or Tradition-Driven? *Int J Sports Physiol Perform.* 2012
 
 
 **Título de la ref. 11:** el resultado de búsqueda confirma el artículo de mantenimiento en *Eur J Appl Physiol* 110(6):1269-82 del mismo grupo, pero no he visto el título ni la lista de autores. [No verificado: título literal y autores]

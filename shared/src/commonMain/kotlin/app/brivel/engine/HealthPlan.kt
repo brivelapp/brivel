@@ -13,7 +13,6 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.pow
 import kotlin.math.sqrt
 
 // "perder grasa" se retiró el 2026-10-21: con usuarios desde 14 años, mal cruce con los TCA (DISENO §2)
@@ -96,7 +95,7 @@ data class HealthDay(
 
 data class WeekPlan(
     val goal: String,
-    val weekInBlock: Int,
+    val step: WeekStep,
     val dose: Dose,
     val days: List<HealthDay>,
     val warnings: List<String>,
@@ -126,7 +125,14 @@ fun aerobicFloor(p: HealthProfile): Int = if (isYouth(p)) YOUTH_AEROBIC else FLO
 private val START = mapOf("beginner" to 0.6, "intermediate" to 0.8, "advanced" to 1.0)  // [Inferencia] §3
 private val START_SETS_PER_SESSION = mapOf("beginner" to 1, "intermediate" to 2, "advanced" to 3)  // [Inferencia] §3
 private const val AEROBIC_STEP = 1.10  // +10 % por semana de carga [Inferencia] §4
-private const val DELOAD = 0.7  // semana 4 del bloque: −30 % [Práctica: MOTOR §8]
+private const val DELOAD = 0.7  // semana de descarga: −30 % [Práctica: MOTOR §8]
+private const val AFTER_DELOAD = 1.05  // tras la descarga, un 5 % más que la última semana de subida (como antes entre bloques) [Inferencia]
+/** Bloques flexibles (Gabriel, 2026-11-19): como tarde, descarga tras 5 semanas de subida [Práctica: descarga media cada
+ *  5,6 ± 2,3 semanas en fuerza, Rogerson 2024]; antes de 2, no, aunque lo pidan las señales [Inferencia]. */
+const val MAX_LOAD_WEEKS = 5
+const val MIN_LOAD_WEEKS = 2
+/** Días de la semana en versión suave (sueño, VFC, cansancio, carga) que piden descargar la siguiente. [Inferencia] */
+const val SOFT_DAYS = 2
 
 fun strengthDays(p: HealthProfile): Int {
     if (p.strength == "none") return 0
@@ -137,37 +143,53 @@ fun strengthDays(p: HealthProfile): Int {
     return min(n, trainingDays(p).size)
 }
 
-/** Revisión del bloque por adherencia (§4): ≥ 85 % sube, 60–85 % repite, < 60 % baja. [Inferencia] */
-fun nextBase(base: Double, peak: Double, adherence: Double): Double = when {
-    adherence >= 0.85 -> peak * 1.05
-    adherence >= 0.60 -> base
-    else -> base * 0.8
+/**
+ * Una semana del plan sin fecha (§4, bloques flexibles desde el 2026-11-19; antes, 3 de subida y 1 de descarga fijas):
+ * `block`, cuántas descargas lleva antes; `loadWeek`, cuántas semanas de subida lleva el bloque antes de esta;
+ * `deload`, si es de descarga. `aerobic` y `sets`: minutos y series de la última semana de subida (en la de descarga se
+ * hace el 70 %).
+ */
+@Serializable
+data class WeekStep(val block: Int = 0, val loadWeek: Int = 0, val deload: Boolean = false, val aerobic: Double, val sets: Double)
+
+private fun goalAerobic(p: HealthProfile) = max(TARGET[p.goal]!!.aerobic, aerobicFloor(p)).toDouble()  // en menores, 60 al día
+
+/** La primera semana: un 60, 80 o 100 % de la meta según el nivel (§3). */
+fun firstStep(p: HealthProfile): WeekStep =
+    WeekStep(aerobic = max(60.0, goalAerobic(p) * START[p.level]!!), sets = (strengthDays(p) * START_SETS_PER_SESSION[p.level]!!).toDouble())
+
+/**
+ * La semana siguiente a `s`, con lo cumplido (`adherence`: sesiones hechas / planificadas) y los días que fueron en
+ * versión suave (`softDays`). La revisión por adherencia es semanal [Inferencia, los umbrales de antes]: ≥ 85 % sube un
+ * 10 % y una serie, 60–85 % repite y < 60 % baja un 20 %, nunca por debajo de 60 min (algo es mejor que nada, OMS
+ * 2020). Descarga como tarde tras 5 semanas de subida, o tras 2 si la semana tuvo 2 días suaves o más; después se
+ * vuelve un 5 % por encima de la última semana de subida si se cumplió al menos el 60 % [Kiely 2012: planes que
+ * responden a la persona; Düking 2021: ajustar por señales, ventaja pequeña].
+ */
+fun nextStep(p: HealthProfile, s: WeekStep, adherence: Double, softDays: Int = 0): WeekStep {
+    val goal = goalAerobic(p)
+    val target = TARGET[p.goal]!!.sets.toDouble()
+    if (s.deload) {
+        val up = adherence >= 0.60
+        return WeekStep(s.block + 1, 0, false, if (up) min(floor(s.aerobic * AFTER_DELOAD), goal) else s.aerobic, s.sets)
+    }
+    val (aerobic, sets) = when {
+        // Hacia abajo: la subida que se ve nunca pasa del 10 %
+        adherence >= 0.85 -> min(floor(s.aerobic * AEROBIC_STEP), goal) to min(s.sets + 1, target)
+        adherence >= 0.60 -> s.aerobic to s.sets
+        else -> max(s.aerobic * 0.8, 60.0) to max(s.sets * 0.8, strengthDays(p).toDouble())
+    }
+    val loads = s.loadWeek + 1
+    val deload = loads >= MAX_LOAD_WEEKS || (softDays >= SOFT_DAYS && loads >= MIN_LOAD_WEEKS)
+    // En la descarga se guarda la última semana de subida, no la que vendría: la descarga es el 70 % de lo ya hecho
+    return if (deload) WeekStep(s.block, loads, true, s.aerobic, s.sets) else WeekStep(s.block, loads, false, aerobic, sets)
 }
 
-/** Dosis de una semana. adherence: sesiones hechas / planificadas de cada bloque ya terminado. */
-fun weekDose(p: HealthProfile, adherence: List<Double>, weekInBlock: Int): Dose {
-    val target = TARGET[p.goal]!!
-    val goalAerobic = max(target.aerobic, aerobicFloor(p))  // en menores, al menos 60 al día de media
-    val nStrength = strengthDays(p)
-    var aero = max(60.0, goalAerobic * START[p.level]!!)
-    var sets = (nStrength * START_SETS_PER_SESSION[p.level]!!).toDouble()
-    for (done in adherence) {
-        // Nunca por debajo de 60 min: algo de actividad es mejor que nada (OMS 2020) [Inferencia en la cifra]
-        aero = max(min(nextBase(aero, min(aero * AEROBIC_STEP.pow(2), goalAerobic.toDouble()), done),
-            goalAerobic.toDouble()), 60.0)
-        sets = min(nextBase(sets, min(sets + 2, target.sets.toDouble()), done), target.sets.toDouble())
-    }
-    val week = min(weekInBlock, 2)
-    var minutes = pyRound(aero)
-    repeat(week) {  // sobre el valor redondeado y hacia abajo: la subida que se ve nunca pasa del 10 %
-        minutes = min(floor(minutes * AEROBIC_STEP).toInt(), goalAerobic)
-    }
-    sets = min(sets + week, target.sets.toDouble())  // +1 serie por patrón y semana de carga
-    if (weekInBlock == 3) {
-        minutes = pyRound(minutes * DELOAD)
-        sets *= DELOAD
-    }
-    return Dose(minutes, nStrength, max(pyRound(sets), nStrength))
+/** La dosis de esa semana: minutos, días de fuerza y series por patrón. */
+fun stepDose(p: HealthProfile, s: WeekStep): Dose {
+    val n = strengthDays(p)
+    val f = if (s.deload) DELOAD else 1.0
+    return Dose(pyRound(s.aerobic * f), n, max(pyRound(s.sets * f), n))
 }
 
 // ---------------------------------------------------------------- §5 reparto semanal
@@ -385,8 +407,8 @@ private data class Candidate(val strength: Map<String, HealthStrength>, val card
                              val doneEq: Double, val rest: String?)
 
 /** Plan de 7 días a partir de `start` (lunes): dosis, días y avisos. */
-fun weekPlan(p: HealthProfile, start: LocalDate, adherence: List<Double> = emptyList(), weekInBlock: Int = 0): WeekPlan {
-    val dose = weekDose(p, adherence, weekInBlock)
+fun weekPlan(p: HealthProfile, start: LocalDate, step: WeekStep = firstStep(p)): WeekPlan {
+    val dose = stepDose(p, step)
     val days = trainingDays(p)
     val sDays = spread(days, dose.strengthDays)
     // Semanas candidatas en orden de preferencia: la primera que cumple el suelo aeróbico de la OMS (§1.2) con monotonía
@@ -454,7 +476,7 @@ fun weekPlan(p: HealthProfile, start: LocalDate, adherence: List<Double> = empty
         HealthDay(day.toString(), wd, sessions, if (wd == extraRest) REST_NOTE else null,
             if (wd == extraRest) p.days[wd] else null)
     }
-    return WeekPlan(p.goal, weekInBlock, dose, out, warnings, info, pyRound(doneEq))
+    return WeekPlan(p.goal, step, dose, out, warnings, info, pyRound(doneEq))
 }
 
 // ---------------------------------------------------------------- §8 ajuste diario sin reloj
@@ -503,34 +525,31 @@ fun adjustDay(p: HealthProfile, sessions: List<Planned>, status: String, week: I
 
 // ---------------------------------------------------------------- §4 adherencia desde el historial
 
-/** (bloque, semana dentro del bloque) de la semana que empieza en `monday`. */
-fun position(blockStart: LocalDate, monday: LocalDate): Pair<Int, Int> {
-    val weeks = max(floor(blockStart.daysUntil(monday) / 7.0).toInt(), 0)
-    return weeks / 4 to weeks % 4
-}
+/** Semanas enteras entre el lunes del inicio del plan y el de `monday` (0 si es antes). */
+fun weeksSince(blockStart: LocalDate, monday: LocalDate): Int = max(floor(blockStart.daysUntil(monday) / 7.0).toInt(), 0)
 
 /**
  * Semana con cambios de disponibilidad: `changes` = minutos por día solo para esta semana (0 = ese día no puede). Se
  * recalcula con las mismas reglas; los días anteriores a `since` (cuando se hizo el cambio) quedan como estaban.
  * Los días pasados siguen contando como disponibles al recalcular: así el reparto de lo que queda no se dispara.
  */
-fun weekWithChanges(p: HealthProfile, start: LocalDate, adherence: List<Double>, weekInBlock: Int,
-                    changes: Map<String, Int>? = null, since: LocalDate? = null): WeekPlan =
-    weekWithHistory(p, start, adherence, weekInBlock, if (changes.isNullOrEmpty()) emptyList() else listOf(changes to (since ?: start)))
+fun weekWithChanges(p: HealthProfile, start: LocalDate, step: WeekStep, changes: Map<String, Int>? = null,
+                    since: LocalDate? = null): WeekPlan =
+    weekWithHistory(p, start, step, if (changes.isNullOrEmpty()) emptyList() else listOf(changes to (since ?: start)))
 
 /**
  * Lo mismo con varios cambios en la semana: `steps` = (cambios acumulados, desde cuándo), del más antiguo al último.
  * Cada día sale del plan que estaba vigente ese día; así lo ya pasado queda como lo viste entonces.
  */
-fun weekWithHistory(p: HealthProfile, start: LocalDate, adherence: List<Double>, weekInBlock: Int,
+fun weekWithHistory(p: HealthProfile, start: LocalDate, step: WeekStep,
                     steps: List<Pair<Map<String, Int>, LocalDate>>): WeekPlan {
-    val base = weekPlan(p, start, adherence, weekInBlock)
+    val base = weekPlan(p, start, step)
     val active = steps.filter { it.first.isNotEmpty() }
     if (active.isEmpty()) return base
     val plans = active.map { (changes, since) ->
         val days = (p.days + changes).filterValues { it != 0 }
         val keep = p.keep + changes.filterValues { it != 0 }.keys  // "quiero entrenar este día": no se vuelve a quitar
-        since to weekPlan(p.copy(days = days, keep = keep), start, adherence, weekInBlock)
+        since to weekPlan(p.copy(days = days, keep = keep), start, step)
     }
     val out = base.days.mapIndexed { i, b ->
         plans.lastOrNull { (since, _) -> b.date >= since.toString() }?.second?.days?.get(i) ?: b
@@ -598,24 +617,22 @@ fun matchDay(sessions: List<Planned>, done: List<Done>): List<Match> {
 }
 
 /**
- * Adherencia de cada bloque terminado: sesiones emparejadas con lo planificado (matchDay) / planificadas. Se reconstruye
- * cada bloque con el plan que tocaba entonces, con sus cambios (`changes`: lunes en ISO → (cambios, fecha del cambio)).
+ * La semana de cada lunes desde `blockStart` hasta la `weeks`-ésima, incluida (la de hoy): cada semana terminada se
+ * reconstruye con el plan que tocaba entonces, con sus cambios (`changes`: lunes en ISO → (cambios, fecha del cambio)),
+ * y su adherencia (sesiones emparejadas con lo planificado, `matchDay`) y sus días suaves (`softDays`) deciden la
+ * siguiente (`nextStep`).
  */
-fun adherenceHistory(p: HealthProfile, blockStart: LocalDate, done: Map<String, List<Done>>, blocks: Int,
-                     changes: Map<String, List<Pair<Map<String, Int>, LocalDate>>> = emptyMap()): List<Double> {
-    val history = mutableListOf<Double>()
-    for (b in 0 until blocks) {
-        var planned = 0
-        var completed = 0
-        for (w in 0 until 4) {
-            val monday = blockStart.plusDays(7 * (4 * b + w))
-            val week = weekWithHistory(p, monday, history, w, changes[monday.toString()] ?: emptyList())
-            for (day in week.days) {
-                planned += day.sessions.size
-                completed += matchDay(day.sessions, done[day.date] ?: emptyList()).count { it.matched != null }
-            }
-        }
-        history += if (planned != 0) pyRound(completed.toDouble() / planned, 3) else 1.0
+fun stepHistory(p: HealthProfile, blockStart: LocalDate, done: Map<String, List<Done>>, weeks: Int,
+                changes: Map<String, List<Pair<Map<String, Int>, LocalDate>>> = emptyMap(),
+                softDays: (LocalDate) -> Int = { 0 }): List<WeekStep> {
+    val out = mutableListOf(firstStep(p))
+    for (w in 0 until weeks) {
+        val monday = blockStart.plusDays(7 * w)
+        val week = weekWithHistory(p, monday, out.last(), changes[monday.toString()] ?: emptyList())
+        val planned = week.days.sumOf { it.sessions.size }
+        val completed = week.days.sumOf { day -> matchDay(day.sessions, done[day.date] ?: emptyList()).count { it.matched != null } }
+        val adherence = if (planned != 0) pyRound(completed.toDouble() / planned, 3) else 1.0
+        out += nextStep(p, out.last(), adherence, softDays(monday))
     }
-    return history
+    return out
 }

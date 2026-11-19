@@ -38,14 +38,16 @@ class PlanOverviewTest {
         assertTrue(o.weeks.all { it.minutes > 0 && it.key != null })
     }
 
-    @Test fun withoutADateItShowsWhatIsLeftOfTheBlock() {
+    @Test fun withoutADateItShowsTwelveWeeksAhead() {
         val a = app()
         a.setGoal(GoalKind.FITNESS)
         val o = a.planOverview()!!
         assertEquals("Cardio y salud", o.title)
-        assertEquals(listOf("Semana 1 de 4", "Semana 2 de 4", "Semana 3 de 4", "Semana 4 de 4 (más suave)"), o.weeks.map { it.phase })
+        // Bloques flexibles: si se cumple todo, 5 de subida y 1 de descarga
+        val block = (1..5).map { "Semana $it de subida" } + "Semana de descarga (más suave)"
+        assertEquals(block + block, o.weeks.map { it.phase })
         assertEquals(1, o.weeks.count { it.isCurrent })
         assertTrue(o.weeks.all { it.race == null && it.strengthDays > 0 })
-        assertTrue(o.subtitle.startsWith("Bloque 1:"))
+        assertTrue(o.subtitle.startsWith("Previsión de 12 semanas"))
     }
 }

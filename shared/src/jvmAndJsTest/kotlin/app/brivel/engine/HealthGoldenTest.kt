@@ -11,6 +11,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -55,7 +56,10 @@ class HealthGoldenTest {
 
     private fun enc(w: WeekPlan): JsonElement = buildJsonObject {
         put("goal", w.goal)
-        put("week_in_block", w.weekInBlock)
+        put("step", buildJsonObject {
+            put("block", w.step.block); put("load_week", w.step.loadWeek); put("deload", w.step.deload)
+            put("aerobic", w.step.aerobic); put("sets", w.step.sets)
+        })
         put("dose", json.encodeToJsonElement(w.dose))
         put("days", JsonArray(w.days.map { d ->
             buildJsonObject {
@@ -85,11 +89,11 @@ class HealthGoldenTest {
         if (failures.isNotEmpty()) fail("$kind: ${failures.size} de ${cases[kind]!!.jsonArray.size} casos distintos. Primero:\n${failures.first()}")
     }
 
-    private fun doubles(e: JsonElement?) = e!!.jsonArray.map { it.dbl()!! }
-
-    @Test
-    fun weekDose() = check("week_dose") { i ->
-        json.encodeToJsonElement(weekDose(profile(i["profile"].str()!!), doubles(i["adherence"]), i["week_in_block"]!!.jsonPrimitive.int))
+    // La dosis de cada caso va en la entrada (desde los bloques flexibles, 2026-11-19): la referencia prueba el reparto
+    // de la semana; la progresión de una semana a otra la prueban FlexibleBlocksTest y ValidationTest
+    private fun step(e: JsonElement): WeekStep = e.jsonObject.let { s ->
+        WeekStep(s["block"]!!.jsonPrimitive.int, s["load_week"]!!.jsonPrimitive.int, s["deload"]!!.jsonPrimitive.boolean,
+            s["aerobic"].dbl()!!, s["sets"].dbl()!!)
     }
 
     @Test
@@ -99,14 +103,13 @@ class HealthGoldenTest {
 
     @Test
     fun weekPlan() = check("week_plan") { i ->
-        enc(weekPlan(profile(i["profile"].str()!!), LocalDate.parse(i["start"].str()!!), doubles(i["adherence"]),
-            i["week_in_block"]!!.jsonPrimitive.int))
+        enc(weekPlan(profile(i["profile"].str()!!), LocalDate.parse(i["start"].str()!!), step(i["step"]!!)))
     }
 
     @Test
     fun weekWithChanges() = check("week_with_changes") { i ->
-        enc(weekWithChanges(profile(i["profile"].str()!!), LocalDate.parse(i["start"].str()!!), doubles(i["adherence"]),
-            i["week_in_block"]!!.jsonPrimitive.int, i["changes"]!!.jsonObject.mapValues { it.value.jsonPrimitive.int },
+        enc(weekWithChanges(profile(i["profile"].str()!!), LocalDate.parse(i["start"].str()!!), step(i["step"]!!),
+            i["changes"]!!.jsonObject.mapValues { it.value.jsonPrimitive.int },
             LocalDate.parse(i["since"].str()!!)))
     }
 
@@ -138,15 +141,5 @@ class HealthGoldenTest {
                 put("why", m.why)
             }
         })
-    }
-
-    @Test
-    fun adherence() = check("adherence") { i ->
-        val history = adherenceHistory(profile(i["profile"].str()!!), LocalDate.parse(i["block_start"].str()!!),
-            i["done"]!!.jsonObject.mapValues { (_, v) -> v.jsonArray.map { done(it) } }, i["blocks"]!!.jsonPrimitive.int,
-            i["changes"]!!.jsonObject.mapValues { (_, v) ->
-                listOf(v.jsonArray[0].jsonObject.mapValues { it.value.jsonPrimitive.int } to LocalDate.parse(v.jsonArray[1].str()!!))
-            })
-        JsonArray(history.map { JsonPrimitive(it) })
     }
 }

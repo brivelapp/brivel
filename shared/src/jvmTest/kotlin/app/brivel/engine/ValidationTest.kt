@@ -64,11 +64,11 @@ class ValidationTest {
 
     // ------------------------------------------------------------------ V1–V11: planes sin fecha
 
-    private fun simulate(p: HealthProfile, done: Double): List<WeekPlan> {
-        val history = mutableListOf<Double>()
+    // Bloques flexibles (2026-11-19): cada semana sale de la anterior, con su adherencia y sus días suaves
+    private fun simulate(p: HealthProfile, done: Double, softDays: (Int) -> Int = { 0 }): List<WeekPlan> {
+        var step = firstStep(p)
         return (0 until weeksCount).map { w ->
-            val (block, weekInBlock) = w / 4 to w % 4
-            weekPlan(p, start.plusDays(7 * w), history.take(block), weekInBlock).also { if (weekInBlock == 3) history += done }
+            weekPlan(p, start.plusDays(7 * w), step).also { step = nextStep(p, step, done, softDays(w)) }
         }
     }
 
@@ -84,8 +84,8 @@ class ValidationTest {
 
     private fun checkHealth(p: HealthProfile, label: String, weeks: List<WeekPlan>): Map<String, Pair<Boolean?, String>> {
         val target = TARGET[p.goal]!!
-        val stable = weeks.filter { it.weekInBlock < 3 && it.dose.aerobic >= target.aerobic }
-        val loading = weeks.filter { it.weekInBlock < 3 }
+        val stable = weeks.filter { !it.step.deload && it.dose.aerobic >= target.aerobic }
+        val loading = weeks.filter { !it.step.deload }
         val short = { w: WeekPlan -> (w.warnings + w.info).any { "llegas a" in it } }  // avisa de que no cabe la dosis
         val r = linkedMapOf<String, Pair<Boolean?, String>>()
 
@@ -102,9 +102,12 @@ class ValidationTest {
         }
         // V12 menores de 18 (OMS 2020): meta de 60 al día de media, fuerza 3 días y, si no cabe, el plan lo dice
         if (p.age != null && p.age < 18) {
-            val meta = weeks.first().dose.aerobic >= 0.6 * YOUTH_AEROBIC - 1 && weeks.maxOf { it.dose.aerobic } >= YOUTH_AEROBIC * 0.95
+            // La meta, con todo cumplido: desde los bloques flexibles (2026-11-19) quien cumple menos del 85 % repite su
+            // semana en vez de subir, y lo que se mide aquí es hacia dónde va el plan, no lo rápido que sube
+            val full = simulate(p, 1.0)
+            val meta = full.first().dose.aerobic >= 0.6 * YOUTH_AEROBIC - 1 && full.maxOf { it.dose.aerobic } >= YOUTH_AEROBIC * 0.95
             val strength = weeks.all { it.dose.strengthDays >= 3 }
-            val told = weeks.filter { it.weekInBlock < 3 && it.equivalentMin + 5 < minOf(it.dose.aerobic, YOUTH_AEROBIC) }.all { w -> (w.warnings + w.info).any { "60 al día" in it } }
+            val told = weeks.filter { !it.step.deload && it.equivalentMin + 5 < minOf(it.dose.aerobic, YOUTH_AEROBIC) }.all { w -> (w.warnings + w.info).any { "60 al día" in it } }
             r["V12"] = (meta && strength && told) to "meta hacia $YOUTH_AEROBIC min, fuerza 3 días: ${yes(strength)}; aviso si no cabe: ${yes(told)}"
         }
         if (p.age != null && p.age >= 65) {
@@ -118,13 +121,18 @@ class ValidationTest {
             }
             r["V3"] = (times && sets) to "cada patrón principal ≥ 2 veces/semana; series = dosis o aviso"
         }
-        // V5 progresión ≤ 10 % semanal y entre bloques; la 4.ª semana de cada bloque, descarga
+        // V5 progresión ≤ 10 % semanal, también al volver de una descarga (frente a la última de subida); cada
+        // descarga, por debajo de la semana anterior, y nunca más de MAX_LOAD_WEEKS semanas seguidas de subida
         val aero = weeks.map { it.dose.aerobic.toDouble() }
-        val rises = (1 until weeksCount).filter { weeks[it].weekInBlock in 1..2 && aero[it - 1] > 0 }.map { aero[it] / aero[it - 1] }
-        val rebounds = (4 until weeksCount step 4).filter { aero[it - 2] > 0 }.map { aero[it] / aero[it - 2] }
-        val deload = (3 until weeksCount step 4).all { aero[it] < aero[it - 1] || aero[it - 1] == 0.0 }
-        val top = (rises + rebounds).maxOrNull() ?: 1.0
-        r["V5"] = (top <= 1.105 && deload) to "subida máx. ${pct(top - 1)}; descarga cada 4.ª semana: ${yes(deload)}"
+        val deloads = weeks.indices.filter { weeks[it].step.deload }
+        val rises = (1 until weeksCount).filter { !weeks[it].step.deload && aero[it - 1] > 0 }.map { i ->
+            if (weeks[i - 1].step.deload && i >= 2) aero[i] / aero[i - 2] else aero[i] / aero[i - 1]
+        }
+        val deload = deloads.all { aero[it] < aero[it - 1] || aero[it - 1] == 0.0 }
+        val longest = weeks.fold(0 to 0) { (run, best), w -> if (w.step.deload) 0 to best else (run + 1) to maxOf(best, run + 1) }.second
+        val top = rises.maxOrNull() ?: 1.0
+        r["V5"] = (top <= 1.105 && deload && longest <= MAX_LOAD_WEEKS) to
+            "subida máx. ${pct(top - 1)}; descarga más suave: ${yes(deload)}; como mucho $longest semanas seguidas de subida"
         if (p.intensityCap != "vigorous") {
             val noVigorous = weeks.flatMap { it.sessions() }.filterIsInstance<HealthCardio>()
                 .all { s -> s.session.blocks.none { it.zone in vigorous } }
@@ -487,8 +495,8 @@ class ValidationTest {
                 intensityCap = cap, lthr = listOf(null, 160.0, 175.0).random(rnd), maxHr = 190.0, css = listOf(null, 95.0, 130.0).random(rnd))
             val tag = "#$n ${p.goal} ${p.level} ${p.days} ${p.strength} ${p.cardio} $cap"
             val weeks = try {
-                val history = mutableListOf<Double>()
-                (0 until 8).map { w -> weekPlan(p, start.plusDays(7 * w), history.take(w / 4), w % 4).also { if (w % 4 == 3) history += 0.7 } }
+                var step = firstStep(p)
+                (0 until 8).map { w -> weekPlan(p, start.plusDays(7 * w), step).also { step = nextStep(p, step, 0.7, w % 3) } }
             } catch (e: Exception) { fails["F1"]!! += "$tag: ${e.message}"; return@repeat }
             for (w in weeks) {
                 val strengthShort = w.warnings.any { "sesión mínima de fuerza" in it }

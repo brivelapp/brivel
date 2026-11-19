@@ -107,8 +107,7 @@ fun buildToday(data: AppData, today: LocalDate): TodayScreen {
             }
             listOfNotNull(race.name, left, planner.racePhase()?.let { Planner.PHASE_LABEL[it] }).joinToString(" · ")
         }
-        week.block != null -> "${goalLabel(data.goal)} · bloque ${week.block + 1}, semana ${week.weekInBlock!! + 1} de 4" +
-            if (week.weekInBlock == 3) " (más suave)" else ""
+        week.step != null -> "${goalLabel(data.goal)} · bloque ${week.step.block + 1}, ${stepLabel(week.step).replaceFirstChar { it.lowercase() }}"
         else -> goalLabel(data.goal)
     }
     val (headline, detail) = if (noPlan) ownHeadline(day, planner) else headline(day, planner)

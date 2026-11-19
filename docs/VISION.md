@@ -141,7 +141,8 @@ objetivo. Todo lo de hoy (Salud, Plan, Hoy) se reparte aquí; nada queda fuera.
 
 ## 6. Un solo motor
 
-- El objetivo decide la periodización: **sin fecha** (bloques de 4 semanas que se renuevan, lo que hoy es Salud) o
+- El objetivo decide la periodización: **sin fecha** (bloques flexibles que se renuevan: sube mientras vaya bien y descarga cuando lo piden las señales o como
+  tarde tras 5 semanas de subida; decisión de Gabriel, 2026-11-19, antes 4 semanas fijas) o
   **hacia un evento** (fases base → construcción → pico → taper, lo que hoy es el modo carrera).
 - Los mismos datos de entrada para los dos: perfil, disponibilidad, lo hecho de verdad y el estado del día.
 - Se reutiliza el código que hay: `training_engine.py` (periodización y catálogo de sesiones) y `health_plan.py`
