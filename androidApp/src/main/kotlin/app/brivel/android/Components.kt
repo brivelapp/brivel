@@ -136,7 +136,8 @@ fun ZoneChip(zone: String) {
     // Mínimos y no medidas fijas: con la letra grande del sistema, «Z2» no cabía en 24 dp de alto
     Box(Modifier.widthIn(min = 40.dp).heightIn(min = 24.dp).clip(RoundedCornerShape(999.dp)).background(Palette.zones[zone] ?: Palette.chip)
         .padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
-        Text(zone, fontFamily = Mono, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Palette.onZone)
+        Text(zone, fontFamily = Mono, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+            color = if (zone == "Z6") Color.White else Palette.onZone)  // sobre el rojo de Z6, el oscuro daba 3,1:1
     }
 }
 
@@ -327,12 +328,12 @@ fun ChipRow(content: @Composable () -> Unit) =
 fun Source(text: String) = Text(text, fontSize = 12.sp, color = Palette.muted)
 
 /**
- * Chip de filtro como en iOS y la web: el elegido, verde suave con borde y texto verdes (el beige de Material sobre
- * blanco apenas se distinguía, 2026-11-19). Sustituye al de Material en toda la app: los ficheros no lo importan.
+ * Chip de filtro como en iOS y la web: el elegido, verde suave con borde verde (el beige de Material sobre blanco apenas
+ * se distinguía, 2026-11-19). Sustituye al de Material en toda la app: los ficheros no lo importan.
  */
 @Composable
 fun FilterChip(selected: Boolean, onClick: () -> Unit, label: @Composable () -> Unit, modifier: Modifier = Modifier) =
     androidx.compose.material3.FilterChip(selected = selected, onClick = onClick, label = label, modifier = modifier,
-        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Palette.okSoft, selectedLabelColor = Palette.ok),
+        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Palette.okSoft, selectedLabelColor = Palette.text),  // verde sobre verde suave: 4,4:1
         border = FilterChipDefaults.filterChipBorder(enabled = true, selected = selected, selectedBorderColor = Palette.ok,
             selectedBorderWidth = 1.5.dp))

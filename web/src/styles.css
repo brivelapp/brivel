@@ -9,7 +9,7 @@
 
 :root {
   --bg: #F3F0E9; --surface: #FFFFFF; --chip: #ECE7DC; --text: #1B2420; --muted: #5D6762;
-  --ok: #1F7A5C; --on-ok: #FFFFFF; --ok-soft: #DCEFE5; --caution: #9A6400; --caution-soft: #F6E7C8;
+  --ok: #1F7A5C; --on-ok: #FFFFFF; --ok-soft: #DCEFE5; --caution: #8C5A00; --caution-soft: #F6E7C8;
   --band: #CDE8DA; --z1: #4ECDC4; --z2: #45B7D1; --z3: #FFA500; --z4: #FF6B35; --z5: #FF4757; --z6: #C0392B; --on-zone: #0B1F22;
 }
 @media (prefers-color-scheme: dark) {

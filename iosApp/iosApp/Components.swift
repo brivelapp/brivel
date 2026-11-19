@@ -12,7 +12,7 @@ enum Palette {
     static let onOk = Color(light: 0xFFFFFF, dark: 0x0B1F16)
     static let okSoft = Color(light: 0xDCEFE5, dark: 0x16302A)
     static let band = Color(light: 0xCDE8DA, dark: 0x1E4A3B)
-    static let caution = Color(light: 0x9A6400, dark: 0xF2B95A)
+    static let caution = Color(light: 0x8C5A00, dark: 0xF2B95A)  // #9A6400 daba 4,1:1 sobre cautionSoft
     static let cautionSoft = Color(light: 0xF6E7C8, dark: 0x3A2E17)
     static let danger = Color(light: 0xB3402A, dark: 0xFF8A73)
     // Las zonas no cambian con el modo: son el mismo código de color en la app, el reloj y la documentación
@@ -128,7 +128,7 @@ struct ZoneChip: View {
     let zone: String
     var body: some View {
         // Mínimos y no medidas fijas: con el texto grande del sistema, «Z2» no cabía en 24 puntos de alto
-        Text(zone).font(.mono(12, .semibold, relativeTo: .caption)).foregroundStyle(Palette.onZone).padding(.horizontal, 6)
+        Text(zone).font(.mono(12, .semibold, relativeTo: .caption)).foregroundStyle(zone == "Z6" ? .white : Palette.onZone)  // el oscuro daba 3,1:1 en Z6.padding(.horizontal, 6)
             .frame(minWidth: 40, minHeight: 24).background(Palette.zones[zone] ?? Palette.chip).clipShape(Capsule())
     }
 }
@@ -444,7 +444,7 @@ struct Chip: View {
     var body: some View {
         Button(action: action) {
             Text(label).font(.ui(14, .semibold, relativeTo: .subheadline)).padding(.horizontal, 14).padding(.vertical, 8)
-                .foregroundStyle(selected ? Palette.ok : Palette.text)
+                .foregroundStyle(Palette.text)  // verde sobre verde suave daba 4,4:1: el borde verde marca la elección
                 .glass(selected ? Palette.okSoft : Palette.chip, tint: selected ? Palette.okSoft : nil, in: Capsule())
                 .overlay(Capsule().stroke(selected ? Palette.ok : .clear, lineWidth: 1.5))
         }.buttonStyle(.plain)

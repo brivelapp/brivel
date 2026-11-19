@@ -23,7 +23,7 @@ el otro). Modo claro y oscuro según el ajuste del móvil.
 | onOk | `#0B1F16` | `#FFFFFF` | Texto sobre ok |
 | okSoft | `#16302A` | `#DCEFE5` | Fondo de la tarjeta de estado "bien", opción elegida |
 | band | `#1E4A3B` | `#CDE8DA` | Banda de "tu rango" |
-| caution | `#F2B95A` | `#9A6400` | Ajuste, fuera de rango hacia el lado malo |
+| caution | `#F2B95A` | `#8C5A00` (antes `#9A6400`: 4,1:1 sobre caution-soft; 2026-11-19) | Ajuste, fuera de rango hacia el lado malo |
 | cautionSoft | `#3A2E17` | `#F6E7C8` | Fondo de la tarjeta de estado "con cuidado" y del aviso de salud |
 | danger | `#FF8A73` | `#B3402A` | Borrar datos |
 | Zonas Z1–Z6 | `#4ECDC4` `#45B7D1` `#FFA500` `#FF6B35` `#FF4757` `#C0392B` | iguales | Siempre las mismas (app, reloj, documentación); texto `#0B1F22` encima |

@@ -106,7 +106,7 @@ function SessionCard({ core, item, done, children }: { core: WebApp; item: PlanI
         <ul className="steps">
           {item.steps.map((s, i) => (
             <li key={i}>
-              <span className="zone" style={{ background: `var(--${s.intensityZone.toLowerCase()}, var(--chip))` }}>{s.intensityZone}</span>
+              <span className="zone" style={{ background: `var(--${s.intensityZone.toLowerCase()}, var(--chip))`, color: s.intensityZone === "Z6" ? "#FFFFFF" : undefined }}>{s.intensityZone}</span>
               <span className="step">
                 <strong>{s.name.charAt(0).toUpperCase() + s.name.slice(1)}</strong>
                 {s.target && <span className="mono muted small">{s.target}</span>}
