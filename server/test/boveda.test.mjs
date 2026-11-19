@@ -57,7 +57,7 @@ test("crear, leer, actualizar y borrar", async () => {
   assert.equal(got.headers.get("Access-Control-Allow-Origin"), null)  // sin CORS
   assert.deepEqual(new Uint8Array(await got.arrayBuffer()), first)
 
-  const second = block()
+  const second = block(5 * 1024 * 1024 + 7)  // más de 2 MB, el tope de una fila de D1: va en trozos
   const updated = await call(token, "PUT", { "If-Match": '"1"' }, second)
   assert.equal(updated.status, 200)
   assert.equal(updated.headers.get("ETag"), '"2"')
@@ -77,8 +77,8 @@ test("cada token ve solo su copia", async () => {
   assert.equal((await call(a)).status, 200)
 })
 
-test("más de 1 MB: 413", async () => {
-  const res = await call(newToken(), "PUT", { "If-None-Match": "*" }, block(1024 * 1024 + 1))
+test("más de 16 MB: 413", async () => {
+  const res = await call(newToken(), "PUT", { "If-None-Match": "*" }, block(16 * 1024 * 1024 + 1))
   assert.equal(res.status, 413)
 })
 
@@ -89,6 +89,9 @@ test("sin CORS: el navegador no deja a otras webs usar la API", async () => {
 
 // Lo mismo que hace el servidor: la cuenta es SHA-256 de los bytes del token
 const accountOf = (token) => createHash("sha256").update(Buffer.from(token, "base64url")).digest("hex")
+// shortcut: aquí wrangler dev a veces cierra la conexión ("other side closed") tras escribir en la D1 local desde
+// otro proceso; un reintento al segundo. Solo en local: en producción la D1 tiene un solo escritor
+const again = (...a) => call(...a).catch(() => new Promise((r) => setTimeout(r, 1000)).then(() => call(...a)))
 const sql = (command) => JSON.parse(execFileSync("npx", ["wrangler", "d1", "execute", "brivel", "--local", "--persist-to", state,
   "--json", "--command", command], { encoding: "utf8" }))[0].results
 
@@ -97,9 +100,6 @@ test("bajar cuenta como uso y a los 12 meses sin uso se borra", async () => {
   for (const t of [old, recent]) assert.equal((await call(t, "PUT", { "If-None-Match": "*" }, block())).status, 201)
   sql(`update bovedas set usado = '2025-01-01T00:00:00.000Z' where id = '${accountOf(old)}'`)
   sql(`update bovedas set usado = '2026-01-01T00:00:00.000Z' where id = '${accountOf(recent)}'`)
-  // shortcut: aquí wrangler dev a veces cierra la conexión ("other side closed") tras escribir en la D1 local desde
-  // otro proceso; un reintento al segundo. Solo en local: en producción la D1 tiene un solo escritor
-  const again = (...a) => call(...a).catch(() => new Promise((r) => setTimeout(r, 1000)).then(() => call(...a)))
   assert.equal((await again(recent)).status, 200)  // la baja: ya cuenta como usada hoy
   assert.ok(sql(`select usado from bovedas where id = '${accountOf(recent)}'`)[0].usado > "2026-01-02")
   // Por node:http y sin reutilizar la conexión: con fetch, wrangler dev a veces la cierra ("other side closed")
@@ -109,6 +109,18 @@ test("bajar cuenta como uso y a los 12 meses sin uso se borra", async () => {
   await new Promise((r) => setTimeout(r, 300))  // la tarea termina después de responder
   assert.equal((await again(old)).status, 404)
   assert.equal((await again(recent)).status, 200)
+  assert.equal(sql(`select count(*) as n from trozos where id = '${accountOf(old)}'`)[0].n, 0)  // sus trozos, también
+})
+
+test("una copia de antes de los trozos se sigue leyendo y se puede actualizar", async () => {
+  const token = newToken()
+  sql(`insert into bovedas (id, version, datos, usado) values ('${accountOf(token)}', 3, x'0102', '2026-11-01T00:00:00.000Z')`)
+  const got = await again(token)
+  assert.equal(got.headers.get("ETag"), '"3"')
+  assert.deepEqual(new Uint8Array(await got.arrayBuffer()), new Uint8Array([1, 2]))
+  const next = block()
+  assert.equal((await again(token, "PUT", { "If-Match": '"3"' }, next)).status, 200)
+  assert.deepEqual(new Uint8Array(await (await again(token)).arrayBuffer()), next)
 })
 
 // El último: agota las altas de esta IP (5 por minuto; las pruebas de arriba ya gastaron 5)
