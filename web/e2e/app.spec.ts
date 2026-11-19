@@ -51,7 +51,7 @@ test("la portada explica qué es y enlaza lo legal", async ({ page }) => {
 
 test("el alta lleva a Hoy con el objetivo, el plan de la semana y las cinco secciones", async ({ page }) => {
   await signUp(page)
-  await expect(page.getByText(/Fuerza y músculo · bloque 1, semana 1 de 4/)).toBeVisible()
+  await expect(page.getByText(/Fuerza y músculo · bloque 1, semana 1 de subida/)).toBeVisible()
   await expect(page.getByText("Esta semana")).toBeVisible()
   await expect(page.getByText(/Fuerza de la semana por zona: /)).toBeVisible()
   for (const section of ["Hoy", "Calendario", "Entrenar", "Progreso", "Perfil"]) {
@@ -301,12 +301,12 @@ test("el Calendario enseña el plan entero, semana a semana", async ({ page }) =
   await signUp(page)
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Calendario" }).click()
   const plan = page.locator("section.module", { hasText: "El plan entero" })
-  await expect(plan.getByText(/^Bloque 1: lo que queda de sus cuatro semanas/)).toBeVisible()
+  await expect(plan.getByText(/^Previsión de 12 semanas si cumples lo planificado/)).toBeVisible()
   await plan.getByRole("button", { name: "Ver semana a semana" }).click()
   await expect(plan.getByText("Esta semana")).toBeVisible()
-  await expect(plan.getByText("Semana 1 de 4", { exact: false }).first()).toBeVisible()
-  await expect(plan.getByText(/Semana 4 de 4 \(más suave\)/)).toBeVisible()
-  await expect(plan.getByText(/^Semana del \d+ de (noviembre|diciembre)/)).toHaveCount(3)  // las tres que quedan del bloque
+  await expect(plan.getByText("Semana 1 de subida", { exact: false }).first()).toBeVisible()
+  await expect(plan.getByText(/Semana de descarga \(más suave\)/).first()).toBeVisible()
+  await expect(plan.getByText(/^Semana del \d+ de [a-z]+/)).toHaveCount(11)  // las 11 que siguen a esta
 })
 
 test("actividad propia: se importa un FIT, se apunta al material, sale su detalle y da medallas", async ({ page }) => {

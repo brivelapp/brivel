@@ -56,7 +56,7 @@ class PlanVariantsTest {
         val a = app()
         val planner = Planner(a.data, today)
         val weeks = (0 until 12).map { planner.week(monday.plusDays(7 * it)) }
-        val byBlock = weeks.groupBy { it.block!! }.mapValues { (_, ws) -> ws.map { w -> w.days.flatMap { d -> d.items.filter { it.isStrength } }.map(::names) } }
+        val byBlock = weeks.groupBy { it.step!!.block }.mapValues { (_, ws) -> ws.map { w -> w.days.flatMap { d -> d.items.filter { it.isStrength } }.map(::names) } }
         // Dentro de un bloque, la misma sesión de la semana (primera, segunda…) trae los mismos ejercicios
         for ((block, sessions) in byBlock) {
             val count = sessions.minOf { it.size }

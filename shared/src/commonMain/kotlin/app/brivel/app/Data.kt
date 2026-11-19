@@ -118,7 +118,7 @@ data class AppData(
     val schema: Int = SCHEMA,
     val profile: UserProfile? = null,
     val goal: UserGoal? = null,
-    val blockStart: String? = null,  // inicio del primer bloque de 4 semanas (lunes)
+    val blockStart: String? = null,  // lunes en que empezó el plan sin fecha: desde ahí se reconstruye cada semana (HealthPlan.stepHistory)
     val manualDone: List<ManualDone> = emptyList(),
     val weekChanges: Map<String, WeekChange> = emptyMap(),  // lunes → cambios de esa semana
     val readiness: Map<String, Readiness> = emptyMap(),  // fecha → respuestas del día

@@ -20,7 +20,7 @@ import app.brivel.engine.Session
 import app.brivel.engine.WEEKDAYS
 import app.brivel.engine.ScreeningResult
 import app.brivel.engine.screen
-import app.brivel.engine.adherenceHistory
+import app.brivel.engine.WeekStep
 import app.brivel.engine.adjustDay
 import app.brivel.engine.alternatives
 import app.brivel.engine.effortNote
@@ -30,7 +30,9 @@ import app.brivel.engine.matchDay
 import app.brivel.engine.phaseFor
 import app.brivel.engine.plan
 import app.brivel.engine.plusDays
-import app.brivel.engine.position
+import app.brivel.engine.nextStep
+import app.brivel.engine.stepHistory
+import app.brivel.engine.weeksSince
 import app.brivel.engine.proposeDay
 import app.brivel.engine.watchReadiness
 import app.brivel.engine.pyRound
@@ -40,6 +42,7 @@ import app.brivel.engine.weekWithHistory
 import app.brivel.engine.weekday
 import app.brivel.intervals.dayState
 import app.brivel.intervals.num
+import app.brivel.intervals.str
 import app.brivel.intervals.fillPhysiology
 import app.brivel.intervals.watchSessions
 import kotlinx.datetime.LocalDate
@@ -110,8 +113,7 @@ data class WeekView(
     val strengthDays: Int,
     val warnings: List<String>,
     val info: List<String>,
-    val block: Int?,  // sin fecha: bloque y semana dentro del bloque
-    val weekInBlock: Int?,
+    val step: WeekStep?,  // sin fecha: bloque, semana de subida o de descarga y dosis
     val changed: Boolean,
 )
 
@@ -244,18 +246,44 @@ class Planner(private val data: AppData, private val today: LocalDate) {
 
     private val changes = data.weekChanges.mapValues { (_, c) -> c.steps() }
 
-    // La adherencia de los bloques terminados se calcula una vez: las semanas futuras usan la de hoy
-    private val history: List<Double> by lazy {
-        val (block, _) = position(blockStart, mondayOf(today))
-        adherenceHistory(healthProfile, blockStart, done, block, changes)
+    // Las semanas terminadas se reconstruyen una vez (bloques flexibles, §4): la última es la de hoy
+    private val history: List<WeekStep> by lazy {
+        stepHistory(healthProfile, blockStart, done, weeksSince(blockStart, mondayOf(today)), changes, ::softDays)
+    }
+
+    /** La semana de ese lunes; las futuras, previstas como si se cumpliera todo y sin días suaves. */
+    private fun stepFor(monday: LocalDate): WeekStep {
+        val w = weeksSince(blockStart, monday)
+        if (w < history.size) return history[w]
+        return (history.size..w).fold(history.last()) { s, _ -> nextStep(healthProfile, s, 1.0) }
+    }
+
+    /**
+     * Días de esa semana que fueron en versión suave: por tus respuestas o, sin ellas, por los datos del reloj o del
+     * móvil de ese día (las mismas reglas que en Hoy, `watchReadiness`).
+     * shortcut: solo las últimas 26 semanas (cada día rehace el estado con todo el historial); si hiciera falta más,
+     * calcular el estado de todos los días de una pasada.
+     */
+    private fun softDays(monday: LocalDate): Int {
+        if (monday < today.plusDays(-182)) return 0
+        return (0 until 7).map { monday.plusDays(it) }.filter { it < today }.count { d ->
+            val day = d.toString()
+            val status = data.readiness[day]?.let { readiness(it.sleep, it.energy, it.soreness) }
+                ?: cache?.let { c ->
+                    runCatching {
+                        watchReadiness(dayState(c.wellness.filter { (it["id"].str() ?: "") <= day },
+                            c.activities.filter { (it["start_date_local"].str() ?: "").take(10) <= day }, d)).first
+                    }.getOrNull()
+                }
+            status != null && status != "normal"
+        }
     }
 
     private fun healthWeek(monday: LocalDate): WeekView {
         val p = healthProfile
-        val (block, week) = position(blockStart, monday)
-        val adherence = history.take(block)
+        val step = stepFor(monday)
         val change = data.weekChanges[monday.toString()]
-        val plan = weekWithHistory(p, monday, adherence, week, change?.steps() ?: emptyList())
+        val plan = weekWithHistory(p, monday, step, change?.steps() ?: emptyList())
         val rotate = rotates(p.level, p.age, p.intensityCap)
         var slot = 0  // orden de la sesión de fuerza en la semana, según el plan (antes de los ajustes de hoy)
         val days = plan.days.map { d ->
@@ -284,10 +312,10 @@ class Planner(private val data: AppData, private val today: LocalDate) {
                     is RaceStrengthItem -> raceStrengthItem(s.strength)
                 }
             }
-            dayView(d.date, d.weekday, applyChoice(d.date, items, block, mine, rotate), note, d.availableMin, emptyList(), adjustments, null)
+            dayView(d.date, d.weekday, applyChoice(d.date, items, step.block, mine, rotate), note, d.availableMin, emptyList(), adjustments, null)
         }
         return WeekView(monday.toString(), days, activeMinutes(days), days.count { d -> d.items.any { it.isStrength } },
-            plan.warnings, plan.info, block, week, plan.changed == true)
+            plan.warnings, plan.info, step, plan.changed == true)
     }
 
     // ------------------------------------------------------------ hacia una carrera
@@ -343,7 +371,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             dayView(d.date, d.weekday, applyChoice(d.date, items, rotationBlock(monday), mine, rotate), null, null, reasons, adjustments, d.phase)
         }
         return WeekView(monday.toString(), days, activeMinutes(days), days.count { d -> d.items.any { it.isStrength } },
-            rp.warnings, emptyList(), null, null, data.weekChanges.containsKey(monday.toString()))
+            rp.warnings, emptyList(), null, data.weekChanges.containsKey(monday.toString()))
     }
 
     // ------------------------------------------------------------ tests de campo (FieldTests.kt)
@@ -395,7 +423,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
         val days = WEEKDAYS.mapIndexed { i, w ->
             dayView(monday.plusDays(i).toString(), w, emptyList(), null, null, emptyList(), emptyList(), null)
         }
-        return WeekView(monday.toString(), days, 0, 0, emptyList(), emptyList(), null, null, false)
+        return WeekView(monday.toString(), days, 0, 0, emptyList(), emptyList(), null, false)
     }
 
     // ------------------------------------------------------------ común
