@@ -102,18 +102,26 @@ final class HealthKitReader {
                         spo2: k(spo2[d]), respiratoryRate: k(breathing[d]), bodyFat: k(fat[d]), stress: nil)
         }
 
-        let heart: [HKQuantitySample] = try await samples(HKQuantityType(.heartRate), from: from, to: to, as: HKQuantitySample.self)
-        let beats = heart.map { ($0.startDate, $0.quantity.doubleValue(for: bpm)) }
-        let measuredMax = beats.map { $0.1 }.max()
+        // Pulso solo durante cada entrenamiento nuevo, como en Android: leer el de todo el año (cientos de miles de muestras
+        // de un reloj) tardaba en cada refresco. Los que ya tienen pulso se quedan como estaban
+        let workouts: [HKWorkout] = try await samples(HKObjectType.workoutType(), from: from, to: to, as: HKWorkout.self)
+        let known = Dictionary((core.data.health?.workouts ?? []).filter { $0.avgHr != nil }.map { ($0.id, $0) },
+                               uniquingKeysWith: { a, _ in a })
+        var heart: [String: [(Date, Double)]] = [:]
+        for w in workouts where known[w.uuid.uuidString] == nil && Self.sport(w.workoutActivityType) != nil {
+            let s = (try? await samples(HKQuantityType(.heartRate), from: w.startDate, to: w.endDate, as: HKQuantitySample.self)) ?? []
+            heart[w.uuid.uuidString] = s.map { ($0.startDate, $0.quantity.doubleValue(for: bpm)) }
+        }
+        let measuredMax = heart.values.flatMap { $0.map { $0.1 } }.max()
         let bounds = core.zoneBounds(measuredMaxHr: measuredMax.map { KotlinDouble(double: $0) }).map { $0.doubleValue }
         let local = DateFormatter()
         local.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
         local.locale = Locale(identifier: "en_US_POSIX")
 
-        let workouts: [HKWorkout] = try await samples(HKObjectType.workoutType(), from: from, to: to, as: HKWorkout.self)
         let converted: [Shared.Workout] = workouts.compactMap { w in
             guard let sport = Self.sport(w.workoutActivityType) else { return nil }
-            let inside = beats.filter { $0.0 >= w.startDate && $0.0 <= w.endDate }
+            if let old = known[w.uuid.uuidString] { return old }
+            let inside = heart[w.uuid.uuidString] ?? []
             // Tiempo en cada zona: cada pulso cuenta hasta el siguiente (como mucho 10 s, para no inventar huecos)
             var zones = [Double](repeating: 0, count: 7)
             for (a, b) in zip(inside, inside.dropFirst()) {

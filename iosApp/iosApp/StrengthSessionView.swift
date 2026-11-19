@@ -55,6 +55,7 @@ private func setSpoken(_ n: Int, _ kind: String?) -> String {
 
 struct StrengthSessionView: View {
     @EnvironmentObject var model: AppModel
+    @Environment(\.dynamicTypeSize) private var typeSize
     let date: String
     let close: () -> Void
     @State private var mode = "set"
@@ -81,10 +82,18 @@ struct StrengthSessionView: View {
                     HStack {
                         Button(action: close) { Glyph(name: "chevron_left", size: 24) }
                             .frame(minWidth: 44, minHeight: 44).accessibilityLabel("Cerrar la sesión")
-                        Text(screen.title).font(.ui(18, .heavy, relativeTo: .headline)).layoutPriority(1)
-                        Spacer(minLength: 8)
-                        Text("\(exercises.reduce(0) { $0 + $1.done.count })/\(exercises.reduce(0) { $0 + Int($1.sets) }) series")
-                            .font(.mono(13, relativeTo: .caption)).foregroundStyle(Palette.muted).lineLimit(1).minimumScaleFactor(0.5)
+                        let title = Text(screen.title).font(.ui(18, .heavy, relativeTo: .headline))
+                        let counter = Text("\(exercises.reduce(0) { $0 + $1.done.count })/\(exercises.reduce(0) { $0 + Int($1.sets) }) series")
+                            .font(.mono(13, relativeTo: .caption)).foregroundStyle(Palette.muted)
+                        // Con el texto de accesibilidad, el contador debajo del título: al lado se recortaba a «0/5 seri…»
+                        if typeSize.isAccessibilitySize {
+                            VStack(alignment: .leading, spacing: 2) { title; counter }
+                            Spacer(minLength: 0)
+                        } else {
+                            title.layoutPriority(1)
+                            Spacer(minLength: 8)
+                            counter.lineLimit(1).minimumScaleFactor(0.5)
+                        }
                     }
                     Segmented(options: [("set", "Serie"), ("session", "Sesión")], selected: mode) { mode = $0 }
                 }.padding(.horizontal, 18).padding(.top, 12)
