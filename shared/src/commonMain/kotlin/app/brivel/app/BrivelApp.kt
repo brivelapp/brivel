@@ -347,6 +347,9 @@ class BrivelApp(
 
     fun exerciseCard(name: String): ExerciseCard? = exerciseCard(name, data.customExercises)
 
+    /** La figura G de un ejercicio de la biblioteca o propio (FigureMoves.kt); null si no se conoce. */
+    fun exerciseFigure(name: String): FigureView? = exerciseCard(name)?.let { figureView(name, it.pattern, it.equipment) }
+
     fun swapOptions(name: String): List<ExerciseCard> = swapOptions(name, data.customExercises)
 
     @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app

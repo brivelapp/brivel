@@ -87,27 +87,6 @@ import kotlinx.coroutines.delay
 
 // Sesión de fuerza a pantalla completa: Serie (una cada vez, números grandes) y Sesión (toda la sesión en tabla)
 
-/** Figura del patrón de movimiento: cuerpo en el color del texto y, en verde, lo que trabaja. */
-@Composable
-fun ExerciseFigure(pattern: String, size: Dp) {
-    val figure = FIGURES[pattern] ?: return
-    val body = Palette.text
-    val work = Palette.ok
-    Canvas(Modifier.size(size)) {
-        val k = this.size.width / 48f
-        fun draw(d: String, color: Color, width: Float) = polylines(d).forEach { line ->
-            val path = Path().apply {
-                moveTo(line[0].first * k, line[0].second * k)
-                line.drop(1).forEach { (x, y) -> lineTo(x * k, y * k) }
-            }
-            drawPath(path, color, style = Stroke(width * k, cap = StrokeCap.Round, join = StrokeJoin.Round))
-        }
-        draw(figure.body, body, 2.2f)
-        draw(figure.work, work, 3f)
-        drawCircle(body, 3f * k, Offset(figure.headX * k, figure.headY * k), style = Stroke(2.2f * k))
-    }
-}
-
 private fun amount(e: StrengthExercise, reps: Int) = if (e.timed) "$reps″" else "$reps"
 private fun weightText(w: Double?) = w?.let { kg(it).removeSuffix(" kg") } ?: "Sin peso"
 private fun effort(rir: Int) = if (rir == 0) "Hasta no poder más" else "Termina con $rir en reserva"
@@ -287,7 +266,7 @@ private fun SetView(app: BrivelApp, e: StrengthExercise, setNo: Int, next: Stren
     }
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(Modifier.size(64.dp).clip(RoundedCornerShape(18.dp)).background(Palette.band), contentAlignment = Alignment.Center) {
-            ExerciseFigure(e.pattern, 52.dp)
+            ExerciseFigure(app, e.name, 56.dp)
         }
         Column(Modifier.weight(1f)) {
             Text(e.name, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 26.sp)

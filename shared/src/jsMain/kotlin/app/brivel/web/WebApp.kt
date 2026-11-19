@@ -237,6 +237,7 @@ class WebApp {
     // Biblioteca de ejercicios (Library.kt)
     fun libraryJson(query: String, pattern: String?, equipment: String?): String = json.encodeToString(app.library(query, pattern, equipment))
     fun exerciseCardJson(name: String): String? = app.exerciseCard(name)?.let { json.encodeToString(it) }
+    fun exerciseFigureJson(name: String): String? = app.exerciseFigure(name)?.let { json.encodeToString(it) }
     fun swapOptionsJson(name: String): String = json.encodeToString(app.swapOptions(name))
     fun patternLabelsJson(): String = json.encodeToString(PATTERN_LABEL)
     fun equipmentJson(): String = json.encodeToString(EQUIPMENT)
