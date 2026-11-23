@@ -95,11 +95,15 @@ function SessionCard({ core, item, done, children }: { core: WebApp; item: PlanI
         <span className="badge"><Icon src={SPORT_ICON[item.sport] ?? strength} label={label} /></span>
         <span className="sport">{item.chosen ? `${label} · elegida por ti` : label}</span>
         {done && <span className="hecha"><Icon src={check} size={18} />Hecha</span>}
-        <span className="mono big">{item.durationMin}</span><span className="mono muted">&nbsp;min</span>
+        <span className="mono big">{item.doneMin ?? item.durationMin}</span><span className="mono muted">&nbsp;min</span>
       </div>
       <h2>{item.title}</h2>
       {/* La cifra manda (2026-11-18): ritmo, vatios o pulso en grande; sin datos aún, cómo saber si vas bien */}
-      {item.target
+      {/* Hecha con una actividad: sus datos mandan; lo planificado queda debajo, en pequeño */}
+      {item.doneDetail
+        ? <div className="target"><span className="mono actual">{item.doneDetail}</span>
+            <span className="muted small-text">Planificado: {item.durationMin} min{item.target ? ` a ${item.target}` : ""}</span></div>
+        : item.target
         ? <div className="target"><span className="mono">{item.target}</span>{item.targetNote && <strong>{item.targetNote}</strong>}</div>
         : <p className="muted">{item.hint}</p>}
       {item.steps.length > 0 && (

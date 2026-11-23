@@ -543,7 +543,8 @@ val SPORT_NAMES = mapOf("walking" to "Caminata", "running" to "Carrera", "cyclin
 private const val MIN_SHARE = 0.5  // una actividad del reloj con menos de la mitad de lo planificado no cuenta [Inferencia]
 
 /** Algo hecho un día: del reloj (con minutos y hora) o marcado a mano. */
-data class Done(val sport: String, val source: String, val minutes: Int? = null, val start: String? = null)
+data class Done(val sport: String, val source: String, val minutes: Int? = null, val start: String? = null,
+                val detail: String? = null)  // km, ritmo y pulso de la actividad, para enseñarlos en lugar de lo planificado
 
 data class Match(val done: Done, val matched: String?, val why: String)
 
