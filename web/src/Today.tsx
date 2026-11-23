@@ -131,9 +131,44 @@ function SessionCard({ core, item, done, children }: { core: WebApp; item: PlanI
   )
 }
 
+const isDone = (day: DayView, item: PlanItem) => day.doneSports.includes(item.slot) || day.doneSports.includes(item.sport)
+
+/** Lo de una sesión en una línea: los ejercicios de la fuerza, o la cifra o la pista del cardio. */
+const summary = (item: PlanItem) =>
+  item.sport === "strength" ? item.exercises.map((e) => e.split(":")[0]).join(" · ") : item.doneDetail ?? item.target ?? item.hint
+
+/** La sesión de hoy, compacta: el detalle se abre con «Detalles ›» (en el ordenador, a la derecha). */
+function CompactSession({ core, day, item, act, openStrength, wide, selected, open }:
+  { core: WebApp; day: DayView; item: PlanItem; act: Act; openStrength: (date: string) => void; wide: boolean; selected: boolean; open: () => void }) {
+  const done = isDone(day, item)
+  const label = core.sportLabel(item.sport)
+  const strengthToday = item.sport === "strength" && day.date <= localToday()
+  return (
+    <section className={`module compact${done ? " done" : ""}${selected ? " selected" : ""}`} aria-label={item.title}>
+      <div className="row">
+        <span className="badge"><Icon src={SPORT_ICON[item.sport] ?? strength} label={label} /></span>
+        <span className="sport">{item.chosen ? `${label} · elegida por ti` : label}</span>
+        {done && <span className="hecha"><Icon src={check} size={18} />Hecha</span>}
+        <span className="mono big">{item.doneMin ?? item.durationMin}</span><span className="mono muted">&nbsp;min</span>
+      </div>
+      <h2>{item.title}</h2>
+      <p className="muted">{summary(item)}</p>
+      {/* En el ordenador las acciones van en el detalle de la derecha; en el móvil, aquí lo de todos los días */}
+      {!wide && strengthToday && (
+        <button className="primary" data-strength={day.date} onClick={() => openStrength(day.date)}>{done ? "Ver las series" : "Empezar"}</button>
+      )}
+      <div className="row">
+        {!wide && !done && <button className="text grow" onClick={() => act(() => core.markDone(day.date, item.sport))}>La he hecho</button>}
+        {wide && <span className="grow" />}
+        <button className="text" aria-expanded={wide ? selected : undefined} onClick={open}>Detalles ›</button>
+      </div>
+    </section>
+  )
+}
+
 /** Las sesiones de hoy con sus acciones: hecha, cambiar de deporte, apuntar fuerza, hoy no puedo (DayContent de Android). */
-export function DayContent({ core, day, act, openStrength, synced }:
-  { core: WebApp; day: DayView; act: Act; openStrength: (date: string) => void; synced?: (m: string | null) => void }) {
+export function DayContent({ core, day, act, openStrength, synced, only }:
+  { core: WebApp; day: DayView; act: Act; openStrength: (date: string) => void; synced?: (m: string | null) => void; only?: string }) {
   const [openSlot, setOpenSlot] = useState<string | null>(null)
   const [movingSlot, setMovingSlot] = useState<string | null>(null)  // eligiendo a qué día mover esa sesión
   const [sending, setSending] = useState(false)
@@ -152,7 +187,7 @@ export function DayContent({ core, day, act, openStrength, synced }:
       )}
       {!day.isToday && day.items.length === 0 && day.note && <p className="muted">{day.note}</p>}
       <div className="sessions">
-      {day.items.map((item) => {
+      {day.items.filter((item) => only == null || item.slot === only).map((item) => {
         const done = day.doneSports.includes(item.slot) || day.doneSports.includes(item.sport)
         const open = openSlot === item.slot
         const moving = movingSlot === item.slot
@@ -325,6 +360,20 @@ export function Today({ core, act, synced, openStrength, openTrain }:
   const screen: TodayScreen = JSON.parse(core.todayJson())
   const changeGoal = () => { if (confirm("¿Cambiar de objetivo? El plan se rehará al momento.")) act(() => core.abandonGoal()) }
   const [tone, stateIcon] = STATE[screen.tone]
+  const wide = useWide()
+  const [detail, setDetail] = useState<string | null>(null)  // la sesión abierta con «Detalles ›»
+  const items = screen.day.items
+  // En el ordenador el detalle va siempre a la derecha (decidido el 2026-11-23): de la elegida o, si no, de la primera
+  const selected = items.some((i) => i.slot === detail) ? detail : wide ? items[0]?.slot ?? null : null
+  if (!wide && selected) return (
+    <main>
+      <div className="row">
+        <button className="back" aria-label="Volver a Hoy" onClick={() => setDetail(null)}>‹</button>
+        <h1 className="grow">{items.find((i) => i.slot === selected)?.title}</h1>
+      </div>
+      <DayContent core={core} day={screen.day} act={act} openStrength={openStrength} synced={synced} only={selected} />
+    </main>
+  )
   return (
     <main className="wide">
       <header className="page-head">
@@ -355,12 +404,21 @@ export function Today({ core, act, synced, openStrength, openTrain }:
       </section>}
       {screen.noPlan && screen.day.items.length === 0 && <NoRoutineToday core={core} next={screen.nextRoutine} act={act} openStrength={openStrength} openTrain={openTrain} />}
       {screen.rateRun && <RateRun core={core} act={act} run={screen.rateRun} />}
-      <DayContent core={core} day={screen.day} act={act} openStrength={openStrength} synced={synced} />
+      {items.length === 0
+        ? <DayContent core={core} day={screen.day} act={act} openStrength={openStrength} synced={synced} />
+        : items.map((item) => (
+          <CompactSession key={item.slot} core={core} day={screen.day} item={item} act={act} openStrength={openStrength}
+            wide={wide} selected={wide && item.slot === selected} open={() => setDetail(item.slot)} />
+        ))}
+      {/* Widgets (Widgets.tsx), debajo de la sesión */}
+      <TodayWidgets core={core} act={act} screen={screen} readiness={<ReadinessCard core={core} act={act} ask={screen.askReadiness} />} />
       </div>
-      {/* Widgets (Widgets.tsx): en ordenador al lado, fijos al desplazar; en el móvil, debajo de la sesión */}
-      <aside className="col side">
-        <TodayWidgets core={core} act={act} screen={screen} readiness={<ReadinessCard core={core} act={act} ask={screen.askReadiness} />} />
-      </aside>
+      {/* En el ordenador, el detalle de la sesión elegida a la derecha, fijo al desplazar */}
+      {wide && selected && (
+        <aside className="col side" aria-label="Detalle de la sesión">
+          <DayContent core={core} day={screen.day} act={act} openStrength={openStrength} synced={synced} only={selected} />
+        </aside>
+      )}
       </div>
     </main>
   )

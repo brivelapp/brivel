@@ -168,6 +168,7 @@ test("el material del usuario se guarda y «solo con mi material» reduce la lis
 test("la sesión de fuerza de hoy dice cómo calentar y se puede empezar", async ({ page }) => {
   await signUp(page)
   await expect(page.getByText("Lunes 16 de noviembre")).toBeVisible()
+  await page.getByRole("button", { name: "Detalles ›" }).click()  // en el móvil, el detalle es otra pantalla
   await expect(page.getByText(/^Calentamiento \(10 min\): /)).toBeVisible()
   await page.getByRole("button", { name: "Empezar" }).click()
   await expect(page.getByText(/^0\/\d+ series$/)).toBeVisible()
@@ -231,7 +232,7 @@ test("entreno libre: se monta sobre la marcha, con calentamiento, discos y super
   await expect(page.getByRole("button", { name: "Empezar entreno vacío" })).toBeVisible()
   await nav.getByRole("button", { name: "Hoy" }).click()
   await expect(page.getByRole("heading", { name: "Entreno libre" })).toHaveCount(0)
-  await expect(page.getByText(/^Calentamiento \(10 min\): /)).toBeVisible()
+  await expect(page.getByRole("region", { name: "Fuerza" })).toContainText("Sentadilla copa")  // vuelve la del plan
 })
 
 test("la ficha de un ejercicio enseña su historial y sus marcas tras apuntar una serie", async ({ page }) => {

@@ -391,3 +391,6 @@ main.wide ~ .legal { padding-block: 8px 32px; }
 @media (max-width: 599px) {
   .widget-menu { position: fixed; top: auto; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); min-width: 0; }
 }
+/* La sesión de hoy compacta; en el ordenador, la que se ve a la derecha va remarcada */
+.module.compact h2 { font-size: 20px; }
+.module.compact.selected { box-shadow: inset 0 0 0 2px var(--ok); }
