@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -43,7 +42,7 @@ fun TrainTab(app: BrivelApp, version: Int, act: Act) {
                 Secondary("Entrena sin plan: elige los ejercicios sobre la marcha y apunta cada serie. Hoy sustituye a la fuerza de tu plan.")
                 PrimaryButton("Empezar entreno vacío", Modifier.fillMaxWidth()) { start(null) }
                 remember(version) { app.routines }.forEach { r ->
-                    OutlinedButton(onClick = { start(r.id) }, modifier = Modifier.fillMaxWidth()) { Text("Empezar «${r.name}» hoy") }
+                    TonalButton(onClick = { start(r.id) }, modifier = Modifier.fillMaxWidth()) { Text("Empezar «${r.name}» hoy") }
                 }
             }
         }

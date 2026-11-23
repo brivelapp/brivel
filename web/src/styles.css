@@ -101,8 +101,9 @@ button.metric { position: relative; padding-right: 26px; }
 fieldset { border: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 legend { font-size: 14px; margin-bottom: 6px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { min-height: 36px; padding: 0 14px; border-radius: 10px; background: none; color: var(--text); box-shadow: inset 0 0 0 1px var(--muted); }
-.chip[aria-pressed="true"] { background: var(--ok-soft); box-shadow: inset 0 0 0 2px var(--ok); font-weight: 700; }
+/* Como Chip de iOS y Android: cápsula gris; elegida, verde suave con borde verde */
+.chip { min-height: 40px; padding: 0 14px; border-radius: 999px; background: var(--chip); color: var(--text); font-size: 14px; font-weight: 600; }
+.chip[aria-pressed="true"] { background: var(--ok-soft); box-shadow: inset 0 0 0 1.5px var(--ok); }
 .small-badge { width: 32px; height: 32px; }
 /* Sesión de fuerza (Strength.tsx), como StrengthSession.kt */
 .strength { gap: 14px; }

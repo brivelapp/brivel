@@ -311,8 +311,8 @@ private fun SetView(app: BrivelApp, e: StrengthExercise, setNo: Int, next: Stren
     if (e.barbell) weight?.let { w -> app.plates(w)?.let { Secondary(it) } }
     // Tipo de serie: las de calentamiento y las descendentes se suman a las del plan y no cuentan para subir el peso
     ChipRow {
-        FilterChip(selected = kind == null, label = { Text("Normal") }, onClick = { kind = null })
-        SET_KINDS.forEach { (k, label) -> FilterChip(selected = kind == k, label = { Text(label) }, onClick = { kind = k }) }
+        Chip(selected = kind == null, label = { Text("Normal") }, onClick = { kind = null })
+        SET_KINDS.forEach { (k, label) -> Chip(selected = kind == k, label = { Text(label) }, onClick = { kind = k }) }
     }
     PrimaryButton(if (e.done.any { it.set == setNo }) "Guardar cambio" else "Serie hecha", Modifier.fillMaxWidth()) { done(weight, reps, kind) }
     previous?.takeIf { e.done.none { it.set == setNo } }?.let { Secondary("La última vez: ${setText(it, e.timed)}") }

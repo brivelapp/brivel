@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -56,7 +55,7 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {},
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(app.data.goal?.let { goalLabel(it) } ?: "Sin objetivo", fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Secondary("Puedes cambiarlo o abandonarlo cuando quieras; el plan se rehace al momento.")
-            OutlinedButton(onClick = { goalOpen = false; openGoal() }) { Text("Cambiar objetivo") }
+            TonalButton(onClick = { goalOpen = false; openGoal() }) { Text("Cambiar objetivo") }
             OtherRaces(app, act)
         }
     }
@@ -155,7 +154,7 @@ private fun NoRoutineToday(app: BrivelApp, next: String?, version: Int, act: Act
         } else {
             Text("Hoy no te toca rutina", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
             next?.let { Secondary("$it. Si te apetece entrenar hoy, elige una o empieza en blanco.") }
-            routines.forEach { r -> OutlinedButton(onClick = { start(r.id) }, modifier = Modifier.fillMaxWidth()) { Text("Hacer «${r.name}» hoy") } }
+            routines.forEach { r -> TonalButton(onClick = { start(r.id) }, modifier = Modifier.fillMaxWidth()) { Text("Hacer «${r.name}» hoy") } }
             SecondaryButton("Entreno libre", Modifier.fillMaxWidth()) { start(null) }
         }
     }
@@ -210,7 +209,7 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
             if (targets.isNotEmpty()) TextButton(onClick = { moving = !moving }) { LinkText(if (moving) "No moverla" else "Moverla a otro día") }
             if (moving) ChipRow {
                 targets.forEach { t ->
-                    OutlinedButton(onClick = { moving = false; act.run { app.moveSession(day.date, item.slot, t) } }) {
+                    TonalButton(onClick = { moving = false; act.run { app.moveSession(day.date, item.slot, t) } }) {
                         Text(dateLabel(t) + if (t == item.movedFrom) " (su día)" else "")
                     }
                 }

@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -77,7 +76,7 @@ fun ExerciseSheet(app: BrivelApp, name: String, original: String?, dismiss: () -
                 if (onSwap == null) ExerciseHistoryRows(app, name)
                 if (onSwap != null) {
                     SectionTitle("Cambiar por")
-                    original?.let { o -> OutlinedButton(onClick = { onSwap(o) }) { Text("Volver a $o") } }
+                    original?.let { o -> TonalButton(onClick = { onSwap(o) }) { Text("Volver a $o") } }
                     app.swapOptions(original ?: name).filter { it.name != name }.forEach { o ->
                         ExerciseRow(app, o, o.equipment.joinToString(", ")) { onSwap(o.name) }
                     }
@@ -125,7 +124,7 @@ fun ExercisePicker(app: BrivelApp, dismiss: () -> Unit, choose: (String) -> Unit
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 OutlinedTextField(query, { query = it }, label = { Text("Buscar") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                if (app.equipment.isNotEmpty()) FilterChip(selected = mine, label = { Text("Solo con mi material") }, onClick = { mine = !mine })
+                if (app.equipment.isNotEmpty()) Chip(selected = mine, label = { Text("Solo con mi material") }, onClick = { mine = !mine })
                 val found = remember(query, mine) { app.libraryByZone(query, null, null, mine) }
                 Secondary("${found.size} ejercicios" + if (found.size > PICK) ": escribe para acotar (se ven $PICK)" else "")
                 found.take(PICK).forEach { c -> ExerciseRow(app, c, c.patternLabel) { choose(c.name) } }
@@ -150,12 +149,12 @@ fun LibraryCard(app: BrivelApp) {
     Module {
         SectionTitle("Biblioteca de ejercicios")
         Secondary("Busca entre todos los ejercicios por zona del cuerpo o material.")
-        if (!open) OutlinedButton(onClick = { open = true }) { Text("Ver los ejercicios") }
+        if (!open) TonalButton(onClick = { open = true }) { Text("Ver los ejercicios") }
         else {
             Secondary("Tu material (el peso corporal siempre cuenta). Brivel solo te propone variantes que puedas hacer con él.")
             ChipRow {
                 EQUIPMENT.filter { it != "peso corporal" }.forEach { t ->
-                    FilterChip(selected = t in owned, label = { Text(t) }, onClick = {
+                    Chip(selected = t in owned, label = { Text(t) }, onClick = {
                         app.setEquipment(if (t in owned) owned - t else owned + t)
                         owned = app.equipment
                     })
@@ -164,19 +163,19 @@ fun LibraryCard(app: BrivelApp) {
             OutlinedTextField(query, { query = it; limit = PAGE }, label = { Text("Buscar") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             ChipRow {
                 ZONES.forEach { z ->
-                    FilterChip(selected = zone == z, label = { Text(z) }, onClick = { zone = if (zone == z) null else z; limit = PAGE })
+                    Chip(selected = zone == z, label = { Text(z) }, onClick = { zone = if (zone == z) null else z; limit = PAGE })
                 }
             }
             ChipRow {
-                if (owned.isNotEmpty()) FilterChip(selected = mine, label = { Text("Solo con mi material") }, onClick = { mine = !mine; limit = PAGE })
+                if (owned.isNotEmpty()) Chip(selected = mine, label = { Text("Solo con mi material") }, onClick = { mine = !mine; limit = PAGE })
                 EQUIPMENT.forEach { t ->
-                    FilterChip(selected = equipment == t, label = { Text(t) }, onClick = { equipment = if (equipment == t) null else t; limit = PAGE })
+                    Chip(selected = equipment == t, label = { Text(t) }, onClick = { equipment = if (equipment == t) null else t; limit = PAGE })
                 }
             }
             val list = remember(query, zone, equipment, mine, owned) { app.libraryByZone(query, zone, equipment, mine) }
             Secondary("${list.size} ejercicios")
             list.take(limit).forEach { c -> ExerciseRow(app, c, c.patternLabel) { shown = c.name } }
-            if (list.size > limit) OutlinedButton(onClick = { limit += PAGE }) { Text("Ver más") }
+            if (list.size > limit) TonalButton(onClick = { limit += PAGE }) { Text("Ver más") }
         }
     }
     shown?.let { ExerciseSheet(app, it, null, { shown = null }, null) }

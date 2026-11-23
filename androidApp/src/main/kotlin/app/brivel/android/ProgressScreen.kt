@@ -135,7 +135,7 @@ private fun Measures(app: BrivelApp, act: Act, screen: ProgressScreen) {
         Secondary("Apunta tu peso o tus perímetros con una cinta para ver cómo cambian. La de hoy sustituye a la que ya hubiera hoy.")
         screen.measures.forEachIndexed { i, m -> MetricRow(m, first = i == 0) }
         ChipRow {
-            MEASURES.forEach { (k, m) -> FilterChip(selected = kind == k, label = { Text(m.label) }, onClick = { kind = k }) }
+            MEASURES.forEach { (k, m) -> Chip(selected = kind == k, label = { Text(m.label) }, onClick = { kind = k }) }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedTextField(value, { value = it.filter { c -> c.isDigit() || c == ',' || c == '.' } },

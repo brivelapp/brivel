@@ -32,7 +32,6 @@ import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -189,7 +188,7 @@ fun ActivitiesCard(app: BrivelApp, act: Act, version: Int) {
             }
         }
         if (!all && rows.size > 5) TextButton(onClick = { all = true }) { LinkText("Ver las ${rows.size}") }
-        OutlinedButton(onClick = { picker.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) { Text("Importar un archivo FIT, GPX o TCX") }
+        TonalButton(onClick = { picker.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) { Text("Importar un archivo FIT, GPX o TCX") }
     }
 }
 
@@ -235,7 +234,7 @@ fun GearCard(app: BrivelApp, act: Act, version: Int) {
                 }
             }
         }
-        OutlinedButton(onClick = { adding = true }, modifier = Modifier.fillMaxWidth()) { Text("Añadir zapatillas o bici") }
+        TonalButton(onClick = { adding = true }, modifier = Modifier.fillMaxWidth()) { Text("Añadir zapatillas o bici") }
     }
     if (adding || editing != null) GearEditor(app, act, editing) { adding = false; editing = null }
     deleting?.let { g ->
@@ -283,7 +282,7 @@ private fun GearEditor(app: BrivelApp, act: Act, old: GearRow?, close: () -> Uni
             Text(if (old == null) "Añadir material" else "Cambiar material", fontSize = 22.sp, fontWeight = FontWeight.Bold)
             OutlinedTextField(name, { name = it }, label = { Text("Nombre") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             if (old == null) ChipRow {
-                GEAR_LABEL.forEach { (k, label) -> FilterChip(selected = sport == k, label = { Text(label) }, onClick = { sport = k }) }
+                GEAR_LABEL.forEach { (k, label) -> Chip(selected = sport == k, label = { Text(label) }, onClick = { sport = k }) }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Cuenta las actividades desde el ${dateLabel(since).substringAfter(' ')}", Modifier.weight(1f), fontSize = 14.sp)
