@@ -62,7 +62,7 @@ class WidgetsTest {
         val empty = a.todayWidgets().associateBy { it.key }
         assertNull(empty.getValue("hrv").value)
         assertEquals("Conecta tu reloj, Health Connect o Apple Salud", empty.getValue("hrv").empty)
-        assertEquals("Apúntalo en Progreso", empty.getValue("weight").empty)
+        assertEquals("Apúntalo en «Tus medidas», en Progreso", empty.getValue("weight").empty)
         assertEquals("Sin carrera en tu objetivo", empty.getValue("nextRace").empty)
         assertTrue(empty.getValue("badge").value != null)  // la medalla más cerca siempre hay
 

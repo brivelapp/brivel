@@ -35,6 +35,9 @@ async function openLibrary(page: Page) {
   return page.locator("section.module", { hasText: "Biblioteca de ejercicios" })
 }
 
+/** Progreso va plegado en tarjetas de una línea: abre la que se llama así. */
+const openFold = (page: Page, title: string) => page.locator("details.fold > summary", { hasText: title }).click()
+
 const count = async (library: ReturnType<Page["locator"]>) =>
   Number((await library.getByText(/^\d+ ejercicios$/).innerText()).split(" ")[0])
 
@@ -254,6 +257,7 @@ test("la ficha de un ejercicio enseña su historial y sus marcas tras apuntar un
 test("Progreso guarda las medidas corporales y rechaza las imposibles", async ({ page }) => {
   await signUp(page)
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Progreso" }).click()
+  await openFold(page, "Tus medidas")
   const measures = page.locator("section.module", { hasText: "Tus medidas" })
   await measures.getByRole("group", { name: "Medida" }).getByRole("button", { name: "Cintura" }).click()
   await measures.getByLabel("Valor (cm)").fill("82,5")
@@ -265,6 +269,8 @@ test("Progreso guarda las medidas corporales y rechaza las imposibles", async ({
   await expect(page.getByRole("status")).toHaveText("Cintura: entre 30 y 250 cm")
   await page.reload()
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Progreso" }).click()
+  await expect(page.getByRole("region", { name: "Peso" })).toBeVisible()  // los cuatro de arriba, de serie
+  await openFold(page, "Tus medidas")
   await expect(page.locator("section.module", { hasText: "Tus medidas" }).getByRole("button", { name: /Cintura.*82,5 cm/ })).toBeVisible()
 })
 
@@ -346,6 +352,7 @@ test("actividad propia: se importa un FIT, se apunta al material, sale su detall
 
   // Progreso: sin reloj, la actividad propia ya da datos, su curva de potencia y la primera medalla
   await nav.getByRole("button", { name: "Progreso" }).click()
+  for (const fold of ["Curvas de ritmo y potencia", "Medallas", "Actividades recientes"]) await openFold(page, fold)
   const curve = page.locator("section.module", { hasText: "Curva de potencia (bici)" })
   await expect(curve.getByRole("row", { name: /5 min.*210 W.*210 W/ })).toBeVisible()
   const badges = page.locator("section.module", { hasText: "Medallas" })

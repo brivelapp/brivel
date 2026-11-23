@@ -126,7 +126,7 @@ private fun slotViews(slots: List<WidgetSlot>, data: AppData, today: LocalDate):
             } ?: base.copy(empty = noWatch)
             "weight" -> (data.measurements.filter { it.kind == "weight" }.maxByOrNull { it.date }?.value ?: metric("weight")?.latest)
                 ?.let { base.copy(value = fmt(it, 1).replace('.', ','), unit = "kg") }
-                ?: base.copy(empty = "Apúntalo en Progreso")
+                ?: base.copy(empty = "Apúntalo en «Tus medidas», en Progreso")
             "form" -> metric("tsb")?.let { m -> base.copy(value = pyRound(m.latest ?: 0.0).toString(), detail = formText(m.latest ?: 0.0)) }
                 ?: base.copy(empty = "Vincula intervals.icu")
             "nextRace" -> nextRace(data, today)?.let { (name, days) ->
@@ -137,7 +137,7 @@ private fun slotViews(slots: List<WidgetSlot>, data: AppData, today: LocalDate):
             "vo2max" -> metric("vo2max")?.let { m -> base.copy(value = pyRound(m.latest ?: 0.0).toString(), detail = normal(m)) }
                 ?: base.copy(empty = noWatch)
             "waist" -> data.measurements.filter { it.kind == "waist" }.maxByOrNull { it.date }
-                ?.let { base.copy(value = fmt(it.value, 1).replace('.', ','), unit = "cm") } ?: base.copy(empty = "Apúntala en Progreso")
+                ?.let { base.copy(value = fmt(it.value, 1).replace('.', ','), unit = "cm") } ?: base.copy(empty = "Apúntala en «Tus medidas», en Progreso")
             "activity" -> progress.weeklyMinutes.lastOrNull()?.let { p -> base.copy(value = pyRound(p.value).toString(), unit = "min", detail = "de 150 esta semana") }
                 ?: base.copy(empty = noWatch)
             "medals" -> progress.badges?.let { b -> base.copy(value = "Nivel ${b.level}", detail = b.nextLevel) } ?: base

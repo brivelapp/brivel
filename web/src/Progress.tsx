@@ -1,7 +1,7 @@
 // Progreso, como ProgressScreen.kt: tu cuerpo frente a tu rango habitual, tu forma, la actividad semanal y lo último hecho
-import { useState } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import type { WebApp } from "brivel-shared"
-import type { Metric, Milestone, Point, ProgressScreen, RecentActivity } from "./types"
+import type { Metric, Milestone, Point, ProgressScreen, RecentActivity, WidgetChoice, WidgetView } from "./types"
 import { Icon, SPORT_ICON, type Act } from "./Today"
 import { ActivityDialog, BadgesCard, Curves } from "./Activities"
 import { Choice } from "./ProfileParts"
@@ -143,6 +143,55 @@ function Measures({ core, act, screen }: { core: WebApp; act: Act; screen: Progr
   )
 }
 
+/** Una parte de Progreso plegada en una línea, como «La más cerca»: se abre al tocarla. */
+function Fold({ title, line, children }: { title: string; line: string | null; children: ReactNode }) {
+  return (
+    <details className="module fold">
+      <summary><span className="grow"><strong>{title}</strong>{line && <><br /><span className="muted small-text">{line}</span></>}</span><span className="chev" aria-hidden>›</span></summary>
+      <div className="fold-body">{children}</div>
+    </details>
+  )
+}
+
+/** Los cuatro de arriba, que elige cada uno (decidido el 2026-11-23); «Editar» abre la lista para elegir otros cuatro. */
+function Tiles({ core, act }: { core: WebApp; act: Act }) {
+  const tiles: WidgetView[] = JSON.parse(core.progressTilesJson())
+  const [editing, setEditing] = useState<string[] | null>(null)
+  const ref = useRef<HTMLDialogElement>(null)
+  useEffect(() => { if (editing) ref.current?.showModal() }, [editing != null])
+  const choices: WidgetChoice[] = JSON.parse(core.tileChoicesJson())
+  const toggle = (k: string) => setEditing((e) => e!.includes(k) ? e!.filter((x) => x !== k) : e!.length < 4 ? [...e!, k] : e)
+  return (
+    <>
+      <div className="row"><span className="grow" /><button className="text" onClick={() => setEditing(tiles.map((t) => t.key))}>Editar</button></div>
+      <div className="widgets">
+        {tiles.map((t) => (
+          <section key={t.key} className="module widget" aria-label={t.title}>
+            <h3>{t.title}</h3>
+            {t.value == null ? <p className="muted small-text">{t.empty}</p> : (
+              <>
+                <p><span className="mono widget-value">{t.value}</span>{t.unit && <span className="mono muted">&nbsp;{t.unit}</span>}</p>
+                {t.detail && <p className="muted small-text">{t.detail}</p>}
+              </>
+            )}
+          </section>
+        ))}
+      </div>
+      {editing && (
+        <dialog className="sheet" ref={ref} onClose={() => setEditing(null)} aria-label="Elige 4">
+          <div className="row"><h2 className="grow">Elige 4</h2>
+            <button className="text" disabled={editing.length !== 4}
+              onClick={() => { act(() => core.setProgressTiles(JSON.stringify(editing))); setEditing(null) }}>Listo</button></div>
+          <p className="muted small-text">Los cuatro de arriba en Progreso. Lo que no elijas sigue debajo. {editing.length} de 4.</p>
+          <div className="chips" role="group" aria-label="Datos de arriba">
+            {choices.map((c) => <button key={c.key} className="chip" aria-pressed={editing.includes(c.key)} onClick={() => toggle(c.key)}>{c.title}</button>)}
+          </div>
+        </dialog>
+      )}
+    </>
+  )
+}
+
 export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; openProfile: () => void }) {
   const screen: ProgressScreen = JSON.parse(core.progressJson())
   const body = screen.metrics.filter((m) => BODY.includes(m.key))
@@ -153,26 +202,30 @@ export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; o
   return (
     <main className="wide">
       <header className="page-head"><div><p className="muted">Últimos 90 días</p><h1>Progreso</h1></div></header>
-      {!screen.linked ? (
-        <div className="profile-grid">
+      <Tiles core={core} act={act} />
+      {!screen.linked && (
         <section className="module">
-          <p className="muted">El navegador no puede leer Apple Salud ni Health Connect. Para ver aquí tu sueño, tu VFC o tu pulso en
-            reposo, actívalo en la app del móvil y sincroniza: Perfil → Ajustes → «Usar en otros dispositivos».</p>
-          <button className="primary" onClick={openProfile}>Ir a Ajustes</button>
+          <p className="muted">El navegador no puede leer Apple Salud ni Health Connect. Para tener aquí tu sueño, tu VFC o tu pulso en
+            reposo, actívalo en la app del móvil y sincroniza.</p>
+          <button className="secondary" onClick={openProfile}>Ir a Ajustes</button>
         </section>
-        <Measures core={core} act={act} screen={screen} />
-        {screen.badges && <BadgesCard badges={screen.badges} />}
-        <Milestones core={core} screen={screen} />
-        </div>
-      ) : (
-        <div className="profile-grid">
-          {body.length > 0 && (
+      )}
+      <div className="stack tight">
+        {screen.badges && (
+          <Fold title="Medallas" line={screen.badges.next[0] ? `La más cerca: ${screen.badges.next[0].title}` : screen.badges.nextLevel}>
+            <BadgesCard badges={screen.badges} />
+          </Fold>
+        )}
+        {screen.linked && body.length > 0 && (
+          <Fold title="Tu cuerpo" line={body.slice(0, 3).map((m) => m.label).join(", ") + (body.length > 3 ? "…" : "")}>
             <section className="module">
               <div className="row between"><h3>Tu cuerpo</h3><span className="muted small">último dato · banda = tu rango</span></div>
               {body.map((m) => <MetricRow key={m.key} m={m} />)}
             </section>
-          )}
-          {(screen.status || training.length > 0) && (
+          </Fold>
+        )}
+        {screen.linked && (screen.status || training.length > 0) && (
+          <Fold title="Forma" line={screen.status ? screen.status.label : training.map((m) => m.label).slice(0, 3).join(", ")}>
             <section className="module">
               {screen.status && (
                 <>
@@ -184,35 +237,50 @@ export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; o
               )}
               {training.map((m) => <MetricRow key={m.key} m={m} />)}
             </section>
-          )}
-          <section className="module">
-            <div className="row between"><h3>Actividad semanal</h3><span className="mono">{Math.round(last)} / 150 min</span></div>
-            <p className="muted small-text">La OMS recomienda al menos 150 minutos moderados (o 75 intensos) a la semana.</p>
-            <div className="week-bars" role="img" aria-label={`Minutos por semana; esta semana, ${Math.round(last)}`}>
-              <span className="target" style={{ bottom: `${(150 / top) * 100}%` }} />
-              {screen.weeklyMinutes.map((p) => <span key={p.date} className={p.value >= 150 ? "on" : ""} style={{ height: `${(p.value / top) * 100}%` }} />)}
-            </div>
-          </section>
-          {screen.predictions.length > 0 && (
+          </Fold>
+        )}
+        {screen.linked && (
+          <Fold title="Minutos por semana" line={`Esta semana, ${Math.round(last)} de 150`}>
+            <section className="module">
+              <div className="row between"><h3>Actividad semanal</h3><span className="mono">{Math.round(last)} / 150 min</span></div>
+              <p className="muted small-text">La OMS recomienda al menos 150 minutos moderados (o 75 intensos) a la semana.</p>
+              <div className="week-bars" role="img" aria-label={`Minutos por semana; esta semana, ${Math.round(last)}`}>
+                <span className="target" style={{ bottom: `${(150 / top) * 100}%` }} />
+                {screen.weeklyMinutes.map((p) => <span key={p.date} className={p.value >= 150 ? "on" : ""} style={{ height: `${(p.value / top) * 100}%` }} />)}
+              </div>
+            </section>
+          </Fold>
+        )}
+        {screen.predictions.length > 0 && (
+          <Fold title="Predicciones de carrera" line={screen.predictions.slice(0, 2).map((p) => `${p.distance} ${p.time}`).join(" · ")}>
             <section className="module">
               <h3>Tiempos previstos</h3>
               {screen.garminNote && <p className="muted small source">{screen.garminNote}</p>}
               {screen.predictions.map((p) => <p key={p.distance} className="row between"><span>{p.distance}</span><span className="mono">{p.time}</span></p>)}
               {screen.predictionSource && <p className="muted small-text">Calculado con {screen.predictionSource} (fórmula de Daniels).</p>}
             </section>
-          )}
-          {screen.recent.length > 0 && (
+          </Fold>
+        )}
+        {screen.recent.length > 0 && (
+          <Fold title="Actividades recientes" line={screen.recent[0].title}>
             <section className="module">
               <h3>Tus últimos entrenamientos</h3>
               {screen.recent.map((r, i) => <Recent key={i} r={r} core={core} act={act} />)}
             </section>
-          )}
-          <Curves curves={screen.curves} />
+          </Fold>
+        )}
+        {screen.curves.length > 0 && (
+          <Fold title="Curvas de ritmo y potencia" line={screen.curves.map((c) => c.title).join(" · ")}>
+            <Curves curves={screen.curves} />
+          </Fold>
+        )}
+        <Fold title="Tus medidas" line={screen.measures.length ? screen.measures.map((m) => m.label).join(", ") : "Apunta tu peso o tus perímetros"}>
           <Measures core={core} act={act} screen={screen} />
-          {screen.badges && <BadgesCard badges={screen.badges} />}
+        </Fold>
+        <Fold title="Récords y marcas" line={screen.strengthRecords[0]?.title ?? screen.milestones[0]?.title ?? "Saldrán al entrenar"}>
           <Milestones core={core} screen={screen} />
-        </div>
-      )}
+        </Fold>
+      </div>
     </main>
   )
 }

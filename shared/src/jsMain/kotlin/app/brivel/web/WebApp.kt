@@ -167,6 +167,10 @@ class WebApp {
     fun removeWidget(key: String) = app.removeWidget(key)
     fun setWidgetWide(key: String, wide: Boolean) = app.setWidgetWide(key, wide)
     fun moveWidget(key: String, to: Int) = app.moveWidget(key, to)
+    // Los cuatro de arriba en Progreso
+    fun progressTilesJson(): String = json.encodeToString(app.progressTiles())
+    fun tileChoicesJson(): String = json.encodeToString(app.tileChoices())
+    fun setProgressTiles(keysJson: String) = app.setProgressTiles(Json.decodeFromString<List<String>>(keysJson))
 
     // Calendario y Progreso, como en las apps
     fun monthJson(year: Int, month: Int): String = json.encodeToString(app.month(year, month))

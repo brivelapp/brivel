@@ -92,7 +92,7 @@ class WebTypesTest {
             json.encodeToString(app.exerciseHistory("Flexiones")), json.encodeToString(app.startWorkout(null)),
             json.encodeToString(NextSet(0, 1)),
             json.encodeToString(app.planOverview()), json.encodeToString(app.activities()), json.encodeToString(app.activity(own)),
-            json.encodeToString(app.gear()), json.encodeToString(app.todayWidgets()), json.encodeToString(app.widgetChoices()),
+            json.encodeToString(app.gear()), json.encodeToString(app.todayWidgets()), json.encodeToString(app.widgetChoices()), json.encodeToString(app.progressTiles()), json.encodeToString(app.tileChoices()),
             json.encodeToString(app.saveOwnSession(OwnSession("", "Series", "running", listOf(OwnStep("Rápido", 3.0, "Z4", 5, 2.0)), listOf("TUE"), since = ""))))
         val all = sent + screens.flatMap { keys(Json.parseToJsonElement(it)) }
         val types = fs.readFileSync(js("process.env.WEB_TYPES"), "utf8") as String
