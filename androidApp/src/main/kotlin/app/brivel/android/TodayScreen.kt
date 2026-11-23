@@ -28,7 +28,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -78,28 +77,11 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {},
         }
         // Tu cuerpo hoy en una frase: sale de la misma decisión que la sesión
         if (screen.stateTitle.isNotEmpty()) StateCard(screen.tone, screen.stateTitle, screen.stateDetail, screen.garminNote)
-        if (screen.askReadiness) ReadinessCard(act)
         screen.rateRun?.let { RateRun(app, act, it) }
         if (screen.noPlan && day.items.isEmpty()) NoRoutineToday(app, screen.nextRoutine, version, act, openTrain)
         DayContent(app, day, app.watchRoute != null, act, today = true)
-        Module {
-            TitleRow {
-                SectionTitle("Esta semana")
-                // Sin plan, la fuerza hecha frente a los 2 días de la OMS; con plan, los minutos de actividad
-                Text(if (screen.noPlan) "${screen.strengthDone} de 2 días de fuerza" else "${screen.weekMinutes} de 150 min",
-                    fontFamily = Mono, fontSize = 14.sp, color = Palette.muted)
-            }
-            WeekDots(screen.weekDots)
-            if (screen.noPlan) {
-                if (screen.strengthDone >= 2) Text("Cumples los 2 días de fuerza que recomienda la OMS", color = Palette.ok,
-                    fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            } else if (screen.meetsWho) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Glyph(R.drawable.ic_check, 18.dp, Palette.ok)
-                Text("Cumples la recomendación de la OMS para tu salud", color = Palette.ok, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            } else Secondary(screen.strengthLine)
-            screen.warnings.forEach { ReasonRow(Reason(it, null)) }
-            screen.info.forEach { Secondary(it) }
-        }
+        // Widgets (TodayWidgets.kt): las preguntas y la semana de serie, y los que se añadan
+        TodayWidgets(app, version, act, screen)
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -223,26 +205,4 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
     }
 }
 
-@Composable
-private fun ReadinessCard(act: Act) {
-    var sleep by remember { mutableIntStateOf(3) }
-    var energy by remember { mutableIntStateOf(3) }
-    var soreness by remember { mutableIntStateOf(3) }
-    Module {
-        SectionTitle("¿Cómo estás hoy?")
-        Secondary("Sin reloj vinculado, tus respuestas ajustan la sesión de hoy: si dormiste mal o estás cargado, será más suave.")
-        for ((label, value, set) in listOf(
-            Triple("Sueño", sleep) { v: Int -> sleep = v },
-            Triple("Energía", energy) { v: Int -> energy = v },
-            Triple("Agujetas o molestias", soreness) { v: Int -> soreness = v },
-        )) {
-            Text(label, fontSize = 14.sp)
-            Segmented(RATINGS, value.toString()) { set(it.toInt()) }
-        }
-        PrimaryButton("Ajustar hoy") { act.run { act.app.answerReadiness(sleep, energy, soreness) } }
-    }
-}
-
-// Del 1 al 5, con el mismo selector que el Perfil
-private val RATINGS = (1..5).map { n -> "$n" to when (n) { 1 -> "1 mal"; 5 -> "5 bien"; else -> "$n" } }
 
