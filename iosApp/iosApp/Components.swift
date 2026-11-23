@@ -347,7 +347,7 @@ struct SessionCard<Actions: View>: View {
                     Glyph(name: "check", size: 18, color: Palette.ok)
                     Text("Hecha").font(.ui(13, .bold, relativeTo: .footnote)).foregroundStyle(Palette.ok)
                 }
-                (Text("\(item.doneMin?.intValue ?? item.durationMin)").font(.mono(22, .semibold, relativeTo: .title2))
+                (Text("\(item.doneMin?.int32Value ?? item.durationMin)").font(.mono(22, .semibold, relativeTo: .title2))
                     + Text(" min").font(.mono(13, relativeTo: .footnote)).foregroundColor(Palette.muted))
             }
             Text(item.title).font(.cardTitle)
