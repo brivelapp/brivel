@@ -4,6 +4,7 @@ import type { DayView, PlanItem, Reason, TodayScreen, Tone } from "./types"
 import { clearKeys } from "./sync"
 import { sendToWatch } from "./garmin"
 import { Segmented } from "./ProfileParts"
+import { TodayWidgets } from "./Widgets"
 import running from "../../iosApp/iosApp/Assets.xcassets/sport_running.imageset/sport_running.svg"
 import cycling from "../../iosApp/iosApp/Assets.xcassets/sport_cycling.imageset/sport_cycling.svg"
 import swimming from "../../iosApp/iosApp/Assets.xcassets/sport_swimming.imageset/sport_swimming.svg"
@@ -64,13 +65,15 @@ function ReasonRow({ core, reason, tone = "caution" }: { core: WebApp; reason: R
 const RATINGS: [string, string][] = [1, 2, 3, 4, 5].map((n) => [String(n), n === 1 ? "1 mal" : n === 5 ? "5 bien" : String(n)])
 
 /** Sin reloj vinculado: sueño, energía y agujetas de 1 (mal) a 5 (bien) ajustan la sesión de hoy. */
-function ReadinessCard({ core, act }: { core: WebApp; act: Act }) {
+function ReadinessCard({ core, act, ask }: { core: WebApp; act: Act; ask: boolean }) {
   const [answers, setAnswers] = useState({ sleep: 3, energy: 3, soreness: 3 })
+  const [open, setOpen] = useState(false)
   const questions = [["sleep", "Sueño"], ["energy", "Energía"], ["soreness", "Agujetas o molestias"]] as const
+  if (!ask) return <p className="muted small-text">Hoy ya está ajustado con tus respuestas o con los datos de tu reloj.</p>
+  if (!open) return <button className="secondary" onClick={() => setOpen(true)}>Responder 3 preguntas</button>
   return (
-    <section className="module">
-      <h3>¿Cómo estás hoy?</h3>
-      <p className="muted">Sin reloj vinculado, tus respuestas ajustan la sesión de hoy: si dormiste mal o estás cargado, será más suave.</p>
+    <div className="stack">
+      <p className="muted small-text">Si dormiste mal o estás cargado, la sesión de hoy será más suave.</p>
       {questions.map(([key, label]) => (
         <div key={key} className="stack tight">
           <span>{label}</span>
@@ -81,7 +84,7 @@ function ReadinessCard({ core, act }: { core: WebApp; act: Act }) {
       <button className="primary" onClick={() => act(() => core.answerReadiness(answers.sleep, answers.energy, answers.soreness))}>
         Ajustar hoy
       </button>
-    </section>
+    </div>
   )
 }
 
@@ -319,7 +322,6 @@ function NoRoutineToday({ core, next, act, openStrength, openTrain }:
 /** Hoy: el estado, la sesión y la semana. La portada, la bienvenida y el pie van en App.tsx. */
 export function Today({ core, act, synced, openStrength, openTrain }:
   { core: WebApp; act: Act; synced: (m: string | null) => void; openStrength: (date: string) => void; openTrain: () => void }) {
-  const wide = useWide()
   const screen: TodayScreen = JSON.parse(core.todayJson())
   const changeGoal = () => { if (confirm("¿Cambiar de objetivo? El plan se rehará al momento.")) act(() => core.abandonGoal()) }
   const [tone, stateIcon] = STATE[screen.tone]
@@ -351,36 +353,13 @@ export function Today({ core, act, synced, openStrength, openTrain }:
           {screen.stateDetail.map((r, i) => <ReasonRow key={i} core={core} reason={r} tone={tone} />)}
         </div>
       </section>}
-      {screen.askReadiness && !wide && <ReadinessCard core={core} act={act} />}
       {screen.noPlan && screen.day.items.length === 0 && <NoRoutineToday core={core} next={screen.nextRoutine} act={act} openStrength={openStrength} openTrain={openTrain} />}
       {screen.rateRun && <RateRun core={core} act={act} run={screen.rateRun} />}
       <DayContent core={core} day={screen.day} act={act} openStrength={openStrength} synced={synced} />
       </div>
-      {/* En ordenador la semana va al lado, fija al desplazar; en el móvil, debajo como en las apps */}
+      {/* Widgets (Widgets.tsx): en ordenador al lado, fijos al desplazar; en el móvil, debajo de la sesión */}
       <aside className="col side">
-      {screen.askReadiness && wide && <ReadinessCard core={core} act={act} />}
-      <section className="module">
-        <div className="row">
-          <h3>Esta semana</h3>
-          {/* Sin plan, la fuerza hecha frente a los 2 días de la OMS; con plan, los minutos de actividad */}
-          <span className="mono muted">{screen.noPlan ? `${screen.strengthDone} de 2 días de fuerza` : `${screen.weekMinutes} de 150 min`}</span>
-        </div>
-        <ol className="week">
-          {screen.weekDots.map((d) => (
-            <li key={d.date} aria-label={`${d.letter}: ${d.done ? "hecho" : d.planned ? "planificado" : "libre"}`}>
-              <span className={`dot${d.done ? " done" : ""}${d.isToday ? " today" : ""}`}>{d.planned && !d.done && <i />}</span>
-              <span className="muted small" aria-hidden>{d.letter}</span>
-            </li>
-          ))}
-        </ol>
-        {screen.noPlan
-          ? (screen.strengthDone >= 2 ? <p className="ok-text"><Icon src={check} size={18} />Cumples los 2 días de fuerza que recomienda la OMS</p> : null)
-          : screen.meetsWho
-          ? <p className="ok-text"><Icon src={check} size={18} />Cumples la recomendación de la OMS para tu salud</p>
-          : <p className="muted">{screen.strengthLine}</p>}
-        {screen.warnings.map((w) => <ReasonRow key={w} core={core} reason={{ text: w, evidence: null }} />)}
-        {screen.info.map((t) => <p key={t} className="muted">{t}</p>)}
-      </section>
+        <TodayWidgets core={core} act={act} screen={screen} readiness={<ReadinessCard core={core} act={act} ask={screen.askReadiness} />} />
       </aside>
       </div>
     </main>

@@ -389,3 +389,28 @@ test("con una carrera de objetivo se añade una preparatoria, como en las apps",
   await expect(page.getByText("Media de Santa Pola")).toBeVisible()
   await expect(page.getByText("Domingo 24 de enero · importante")).toBeVisible()
 })
+
+test("Hoy a gusto: se añade un widget eligiendo su tamaño, cambia de tamaño desde su menú, se ordena y se quita", async ({ page }) => {
+  await signUp(page)
+  await page.getByRole("button", { name: "Añadir a Hoy" }).click()
+  const sheet = page.getByRole("dialog", { name: "Añadir a Hoy" })
+  await sheet.getByRole("button", { name: /^VFC/ }).click()
+  await sheet.getByRole("button", { name: /Medio · dos por fila/ }).click()
+  const hrv = page.getByRole("region", { name: "VFC" })
+  await expect(hrv).toContainText("Conecta tu reloj")
+  await expect(hrv).not.toHaveClass(/wide/)
+  await hrv.getByRole("button", { name: "Opciones de VFC" }).click()
+  await page.getByRole("menuitemradio", { name: /Ancho/ }).click()
+  await expect(hrv).toHaveClass(/wide/)
+  // Ordenar: sube por encima de la semana
+  await hrv.click({ button: "right" })
+  await page.getByRole("menuitem", { name: "Ordenar los widgets" }).click()
+  await page.getByRole("button", { name: "Subir VFC" }).click()
+  await page.getByRole("button", { name: "Listo" }).click()
+  await expect(page.locator(".widget h3")).toHaveText(["¿Cómo estás hoy?", "VFC", "Esta semana"])
+  await page.reload()
+  await expect(page.locator(".widget h3")).toHaveText(["¿Cómo estás hoy?", "VFC", "Esta semana"])  // se queda en este navegador
+  await page.getByRole("button", { name: "Opciones de VFC" }).click()
+  await page.getByRole("menuitem", { name: "Quitar de Hoy" }).click()
+  await expect(page.locator(".widget h3")).toHaveText(["¿Cómo estás hoy?", "Esta semana"])
+})

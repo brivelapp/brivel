@@ -160,6 +160,13 @@ class WebApp {
     }
 
     fun todayJson(): String = json.encodeToString(app.todayScreen())
+    // Widgets de Hoy (Widgets.kt): los de este navegador
+    fun todayWidgetsJson(): String = json.encodeToString(app.todayWidgets())
+    fun widgetChoicesJson(): String = json.encodeToString(app.widgetChoices())
+    fun addWidget(key: String, wide: Boolean) = app.addWidget(key, wide)
+    fun removeWidget(key: String) = app.removeWidget(key)
+    fun setWidgetWide(key: String, wide: Boolean) = app.setWidgetWide(key, wide)
+    fun moveWidget(key: String, to: Int) = app.moveWidget(key, to)
 
     // Calendario y Progreso, como en las apps
     fun monthJson(year: Int, month: Int): String = json.encodeToString(app.month(year, month))

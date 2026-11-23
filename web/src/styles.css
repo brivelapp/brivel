@@ -9,13 +9,13 @@
 
 :root {
   --bg: #F3F0E9; --surface: #FFFFFF; --chip: #ECE7DC; --text: #1B2420; --muted: #5D6762;
-  --ok: #1F7A5C; --on-ok: #FFFFFF; --ok-soft: #DCEFE5; --caution: #8C5A00; --caution-soft: #F6E7C8;
+  --ok: #1F7A5C; --on-ok: #FFFFFF; --ok-soft: #DCEFE5; --caution: #8C5A00; --caution-soft: #F6E7C8; --danger: #B3402A;
   --band: #CDE8DA; --z1: #4ECDC4; --z2: #45B7D1; --z3: #FFA500; --z4: #FF6B35; --z5: #FF4757; --z6: #C0392B; --on-zone: #0B1F22;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0F1412; --surface: #18201C; --chip: #243029; --text: #EEF2EE; --muted: #A3B0A8;
-    --ok: #5FD3A4; --on-ok: #0B1F16; --ok-soft: #16302A; --band: #1E4A3B; --caution: #F2B95A; --caution-soft: #3A2E17;
+    --ok: #5FD3A4; --on-ok: #0B1F16; --ok-soft: #16302A; --band: #1E4A3B; --caution: #F2B95A; --caution-soft: #3A2E17; --danger: #FF8A73;
   }
 }
 
@@ -363,3 +363,31 @@ main.wide ~ .legal { padding-block: 8px 32px; }
 .target .mono { font-size: 28px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
 .target .mono.actual { font-size: 20px; }
 .target strong { font-size: 15px; }
+/* Widgets de Hoy (Widgets.tsx): medios de dos en dos y anchos a toda la fila */
+.widgets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.widget { position: relative; min-width: 0; }
+.widget.wide { grid-column: 1 / -1; }
+.widget h3 { font-size: 15px; }
+.widget-value { font-size: 26px; font-weight: 600; }
+.widget.reordering { outline: 2px dashed var(--muted); outline-offset: -2px; }
+.icon-button { min-height: 36px; min-width: 36px; padding: 0; border-radius: 999px; background: var(--chip); color: var(--text); font-size: 18px; line-height: 1; }
+.icon-button:disabled { opacity: .35; }
+.widget-menu { position: absolute; z-index: 5; top: 48px; right: 8px; min-width: 210px; display: flex; flex-direction: column;
+  background: var(--surface); border-radius: 16px; box-shadow: 0 8px 28px rgba(0, 0, 0, .22), 0 0 0 1px var(--chip); overflow: hidden; }
+.widget-menu button { min-height: 44px; border-radius: 0; background: none; color: var(--text); text-align: left; padding: 0 14px;
+  display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.widget-menu button + button { border-top: 1px solid var(--chip); }
+.widget-menu button[aria-checked="true"] { color: var(--ok); }
+.widget-menu .menu-tick { margin-left: auto; }
+.widget-menu .danger { color: var(--danger); }
+.shape { display: inline-block; height: 12px; border: 2px solid currentColor; border-radius: 4px; flex: none; }
+.shape.half { width: 14px; }
+.shape.full { width: 30px; }
+.size-previews { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+.size-preview { min-height: 96px; border-radius: 18px; background: var(--bg); color: var(--text); display: flex; flex-direction: column;
+  align-items: flex-start; justify-content: space-between; padding: 12px; text-align: left; box-shadow: inset 0 0 0 1px var(--chip); }
+.size-preview:hover { box-shadow: inset 0 0 0 2px var(--ok); }
+/* En el móvil, el menú de un widget sube desde abajo, como una hoja: junto a un widget estrecho se salía por un lado */
+@media (max-width: 599px) {
+  .widget-menu { position: fixed; top: auto; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); min-width: 0; }
+}

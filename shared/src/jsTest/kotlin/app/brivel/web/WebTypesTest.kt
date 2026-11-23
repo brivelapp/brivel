@@ -84,12 +84,15 @@ class WebTypesTest {
         app.startRecording("running", t0)
         for (t in 0..400) app.recordPoint(t0 + t, 38.5 + t * 4 / 111195.0, -0.1 + t * 0.00001, 50.0 + t % 30, 8.0)
         val own = app.finishRecording()
+        // Hoy a gusto: un widget con dato (sueño de Salud) y otro sin él (peso sin apuntar)
+        app.addWidget("sleep", false)
+        app.addWidget("weight", true)
         val screens = listOf(json.encodeToString(app.month(2026, 10)), json.encodeToString(app.progress()),
             json.encodeToString(library()), json.encodeToString(app.routines),  // la biblioteca y las rutinas, en Entrenar
             json.encodeToString(app.exerciseHistory("Flexiones")), json.encodeToString(app.startWorkout(null)),
             json.encodeToString(NextSet(0, 1)),
             json.encodeToString(app.planOverview()), json.encodeToString(app.activities()), json.encodeToString(app.activity(own)),
-            json.encodeToString(app.gear()),
+            json.encodeToString(app.gear()), json.encodeToString(app.todayWidgets()), json.encodeToString(app.widgetChoices()),
             json.encodeToString(app.saveOwnSession(OwnSession("", "Series", "running", listOf(OwnStep("Rápido", 3.0, "Z4", 5, 2.0)), listOf("TUE"), since = ""))))
         val all = sent + screens.flatMap { keys(Json.parseToJsonElement(it)) }
         val types = fs.readFileSync(js("process.env.WEB_TYPES"), "utf8") as String

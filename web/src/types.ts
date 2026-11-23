@@ -64,3 +64,6 @@ export interface GearRow { id: string; name: string; sport: string; label: strin
   uses: { activity: string; text: string }[]; since: string; startKm: number; limitKm: number | null }
 export interface GearScreen { rows: GearRow[]; garminNote: string | null }
 export interface Milestone { title: string; value: string; date: string | null; source: string | null }
+// Widgets de Hoy (Widgets.kt): readiness y week se pintan con TodayScreen; los demás, con estos textos
+export interface WidgetView { key: string; title: string; wide: boolean; value: string | null; unit: string; detail: string | null; empty: string | null }
+export interface WidgetChoice { key: string; title: string; description: string; inUse: boolean }
