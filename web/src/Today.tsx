@@ -358,7 +358,6 @@ function NoRoutineToday({ core, next, act, openStrength, openTrain }:
 export function Today({ core, act, synced, openStrength, openTrain }:
   { core: WebApp; act: Act; synced: (m: string | null) => void; openStrength: (date: string) => void; openTrain: () => void }) {
   const screen: TodayScreen = JSON.parse(core.todayJson())
-  const changeGoal = () => { if (confirm("¿Cambiar de objetivo? El plan se rehará al momento.")) act(() => core.abandonGoal()) }
   const [tone, stateIcon] = STATE[screen.tone]
   const wide = useWide()
   const [detail, setDetail] = useState<string | null>(null)  // la sesión abierta con «Detalles ›»
@@ -381,7 +380,8 @@ export function Today({ core, act, synced, openStrength, openTrain }:
           <h1>Hoy</h1>
           <p className="muted">{screen.dateLabel}</p>
         </div>
-        {screen.goalLine && <p className="muted goal">{screen.goalLine} · <button className="link" onClick={changeGoal}>Cambiar objetivo</button></p>}
+        {/* Cambiar el objetivo vive en Perfil desde el 2026-11-23 (secciones): aquí, solo cuál es */}
+        {screen.goalLine && <p className="muted goal">{screen.goalLine}</p>}
         {screen.noPlan && <p className="goal"><button className="link" onClick={() => act(() => core.abandonGoal())}>Quiero un plan de Brivel</button></p>}
       </header>
       {!screen.goalFinished && <OtherRaces core={core} act={act} />}
