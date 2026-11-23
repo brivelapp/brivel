@@ -6,11 +6,25 @@ struct TodayView: View {
     let openGoal: () -> Void
     var openTrain: () -> Void = {}
     @State private var goalOpen = false
+    @State private var detail: String? = nil  // la sesión abierta con «Detalles ›»
 
     var body: some View {
         let _ = model.version
         let screen = model.core.todayScreen()
         let day = screen.day
+        if let opened = day.items.first(where: { $0.slot == detail }) {
+            // La sesión entera en su pantalla; el botón de volver deja Hoy como estaba
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 4) {
+                        Button { detail = nil } label: { Glyph(name: "chevron_left", size: 24) }
+                            .frame(minWidth: 44, minHeight: 44).accessibilityLabel("Volver a Hoy")
+                        Text(opened.title).font(.screenTitle)
+                    }
+                    DayContent(day: day, linked: model.core.watchRoute != nil, today: true, only: opened.slot)
+                }.padding(.horizontal, 18).padding(.vertical, 16)
+            }.background(Palette.bg)
+        } else {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 ScreenTitle(text: "Hoy", subtitle: screen.dateLabel)
@@ -32,7 +46,13 @@ struct TodayView: View {
                 }
                 if let run = screen.rateRun { RateRunCard(run: run) }
                 if screen.noPlan && day.items.isEmpty { NoRoutineToday(next: screen.nextRoutine, openTrain: openTrain) }
-                DayContent(day: day, linked: model.core.watchRoute != nil, today: true)
+                if day.items.isEmpty {
+                    DayContent(day: day, linked: model.core.watchRoute != nil, today: true)
+                } else {
+                    ForEach(Array(day.items.enumerated()), id: \.offset) { _, item in
+                        CompactSession(day: day, item: item) { detail = item.slot }
+                    }
+                }
                 // Widgets (TodayWidgets.swift): las preguntas y la semana de serie, y los que se añadan
                 TodayWidgets(screen: screen)
             }.padding(.horizontal, 18).padding(.vertical, 16)
@@ -47,6 +67,45 @@ struct TodayView: View {
                 }.padding(20)
             }.background(Palette.surface)
         }
+        }
+    }
+}
+
+/// La sesión de hoy, compacta: lo de cada día aquí y el resto en «Detalles ›» (como en Android y la web).
+private struct CompactSession: View {
+    @EnvironmentObject var model: AppModel
+    let day: DayView
+    let item: PlanItem
+    let open: () -> Void
+
+    var body: some View {
+        let done = day.doneSports.contains(item.slot) || day.doneSports.contains(item.sport)
+        Module(accent: done ? Palette.ok : nil) {
+            HStack(spacing: 10) {
+                SportBadge(sport: item.sport)
+                Text(item.chosen ? "\(sportLabel(item.sport)) · elegida por ti" : sportLabel(item.sport))
+                    .font(.ui(13, .semibold, relativeTo: .footnote)).foregroundStyle(Palette.muted)
+                Spacer()
+                if done { Text("Hecha").font(.ui(13, .bold, relativeTo: .footnote)).foregroundStyle(Palette.ok) }
+                (Text("\(item.doneMin?.int32Value ?? item.durationMin)").font(.mono(22, .semibold, relativeTo: .title2))
+                    + Text(" min").font(.mono(13, relativeTo: .footnote)).foregroundColor(Palette.muted))
+            }
+            Text(item.title).font(.cardTitle)
+            Secondary(item.isStrength
+                ? item.exercises.map { String($0.split(separator: ":").first ?? "") }.joined(separator: " · ")
+                : item.doneDetail ?? item.target ?? item.hint)
+            if item.isStrength {
+                Button { model.strengthDate = day.date } label: { Text(done ? "Ver las series" : "Empezar").frame(maxWidth: .infinity) }
+                    .buttonStyle(PrimaryStyle())
+            }
+            HStack {
+                if !done {
+                    Button("La he hecho") { model.run { try model.core.markDone(date: day.date, sport: item.sport) } }.buttonStyle(TextActionStyle())
+                }
+                Spacer()
+                Button("Detalles ›", action: open).buttonStyle(TextActionStyle())
+            }
+        }
     }
 }
 
@@ -56,6 +115,7 @@ struct DayContent: View {
     let day: DayView
     let linked: Bool
     let today: Bool
+    var only: String? = nil  // una sola sesión: la pantalla de «Detalles ›»
 
     var body: some View {
         let core = model.core
@@ -73,7 +133,7 @@ struct DayContent: View {
                     }
                 }
             }
-            ForEach(Array(day.items.enumerated()), id: \.offset) { _, item in
+            ForEach(Array(day.items.filter { only == nil || $0.slot == only }.enumerated()), id: \.offset) { _, item in
                 SessionItem(day: day, item: item, linked: linked, today: today)
             }
             ForEach(Array(day.matches.enumerated()), id: \.offset) { _, m in
