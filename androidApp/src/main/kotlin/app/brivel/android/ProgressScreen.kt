@@ -143,22 +143,6 @@ fun ProgressTab(app: BrivelApp, version: Int, act: Act, openProfile: () -> Unit)
     }
 }
 
-/** Una parte de Progreso en una línea, como «La más cerca»: al tocarla se abre debajo. */
-@Composable
-private fun Fold(title: String, line: String?, content: @Composable () -> Unit) {
-    var open by rememberSaveable(title) { mutableStateOf(false) }
-    Module(Modifier.clickable { open = !open }) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(title, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                line?.let { Secondary(it) }
-            }
-            RowChevron(open)
-        }
-    }
-    if (open) content()
-}
-
 /** Los cuatro de arriba; «Editar» abre la lista para elegir otros cuatro. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

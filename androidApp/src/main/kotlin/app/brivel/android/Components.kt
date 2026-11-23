@@ -1,5 +1,6 @@
 package app.brivel.android
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -357,3 +358,18 @@ fun ChipRow(content: @Composable () -> Unit) =
 @Composable
 fun Source(text: String) = Text(text, fontSize = 12.sp, color = Palette.muted)
 
+/** Una parte en una línea, como «La más cerca» de Progreso: al tocarla se abre debajo (Progreso y Entrenar). */
+@Composable
+fun Fold(title: String, line: String?, startOpen: Boolean = false, content: @Composable () -> Unit) {
+    var open by rememberSaveable(title, startOpen) { mutableStateOf(startOpen) }
+    Module(Modifier.clickable { open = !open }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(title, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                line?.let { Secondary(it) }
+            }
+            RowChevron(open)
+        }
+    }
+    if (open) content()
+}
