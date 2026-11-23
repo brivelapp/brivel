@@ -124,8 +124,8 @@ private fun SessionEditor(app: BrivelApp, act: Act, start: OwnSession, close: ()
 fun SessionsCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: Int) {
     var editing by remember { mutableStateOf<OwnSession?>(null) }
     Module {
-        SectionTitle("Tus sesiones")
-        Secondary("Monta tus propias sesiones de carrera, bici, natación o caminata, paso a paso. Van al calendario y al reloj como las del plan.")
+        PrimaryButton("Nueva sesión", Modifier.fillMaxWidth()) { editing = OwnSession("", "", "running", listOf(OwnStep("", 30.0, "Z2")), since = "") }
+        if (app.ownSessions.isEmpty()) Secondary("Aún no tienes ninguna. Móntala paso a paso y va al calendario y al reloj como las del plan.")
         app.ownSessions.forEach { s ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f).clickable { editing = s }.padding(vertical = 6.dp)) {
@@ -136,7 +136,6 @@ fun SessionsCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version
                     modifier = Modifier.semantics { contentDescription = "Hacer ${s.name} hoy" }) { LinkText("Hoy") }
             }
         }
-        TonalButton(onClick = { editing = OwnSession("", "", "running", listOf(OwnStep("", 30.0, "Z2")), since = "") }, Modifier.fillMaxWidth()) { Text("Nueva sesión") }
     }
     editing?.let { SessionEditor(app, act, it) { editing = null } }
 }

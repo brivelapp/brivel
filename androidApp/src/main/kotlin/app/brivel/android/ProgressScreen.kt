@@ -64,6 +64,11 @@ private val BODY = listOf("sleep", "sleepScore", "deepSleep", "remSleep", "hrv",
 fun ProgressTab(app: BrivelApp, version: Int, act: Act, openProfile: () -> Unit) {
     val screen = remember(version) { app.progress() }
     var openActivity by remember { mutableStateOf<String?>(null) }
+    var page by rememberSaveable { mutableStateOf<String?>(null) }  // Medallas y Tus medidas tienen su pantalla (2026-11-23)
+    when (page) {
+        "medals" -> screen.badges?.let { b -> return SubScreen("Medallas", { page = null }) { BadgesCard(b) } }
+        "measures" -> return SubScreen("Tus medidas", { page = null }) { Measures(app, act, screen) }
+    }
     openActivity?.let { ActivitySheet(app, act, it) { openActivity = null } }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -75,7 +80,7 @@ fun ProgressTab(app: BrivelApp, version: Int, act: Act, openProfile: () -> Unit)
                 "(los datos de tu reloj o tu báscula en este móvil) o tu cuenta de intervals.icu (gratis) en Perfil → Ajustes.")
             SecondaryButton("Ir a Ajustes", onClick = openProfile)
         }
-        screen.badges?.let { b -> Fold("Medallas", b.next.firstOrNull()?.let { "La más cerca: ${it.title}" } ?: b.nextLevel) { BadgesCard(b) } }
+        screen.badges?.let { b -> RowButton("Medallas", b.next.firstOrNull()?.let { "La más cerca: ${it.title}" } ?: b.nextLevel ?: "") { page = "medals" } }
         val body = screen.metrics.filter { it.key in BODY }
         if (screen.linked && body.isNotEmpty()) Fold("Tu cuerpo", body.take(3).joinToString(", ") { it.label } + if (body.size > 3) "…" else "") {
             Module {
@@ -133,12 +138,12 @@ fun ProgressTab(app: BrivelApp, version: Int, act: Act, openProfile: () -> Unit)
             }
         }
         if (screen.curves.isNotEmpty()) Fold("Curvas de ritmo y potencia", screen.curves.joinToString(" · ") { it.title }) { Curves(screen.curves) }
-        Fold("Tus medidas", if (screen.measures.isEmpty()) "Apunta tu peso o tus perímetros" else screen.measures.joinToString(", ") { it.label }) {
-            Measures(app, act, screen)
-        }
-        Fold("Récords y marcas", screen.strengthRecords.firstOrNull()?.title ?: screen.milestones.firstOrNull()?.title ?: "Saldrán al entrenar") {
-            Milestones(screen)
-        }
+        RowButton("Tus medidas", if (screen.measures.isEmpty()) "Apunta tu peso o tus perímetros" else screen.measures.joinToString(", ") { it.label }) { page = "measures" }
+        // Sin récords no se abre una pantalla vacía: la fila lo dice y no lleva flecha
+        if (screen.strengthRecords.isEmpty() && screen.milestones.isEmpty()) Module {
+            Text("Récords y marcas", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Secondary("Saldrán al entrenar")
+        } else Fold("Récords y marcas", screen.strengthRecords.firstOrNull()?.title ?: screen.milestones.firstOrNull()?.title) { Milestones(screen) }
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -195,23 +200,21 @@ private fun Measures(app: BrivelApp, act: Act, screen: ProgressScreen) {
     var kind by remember { mutableStateOf(MEASURES.keys.first()) }
     var value by remember { mutableStateOf("") }
     Module {
-        SectionTitle("Tus medidas")
-        Secondary("Apunta tu peso o tus perímetros con una cinta para ver cómo cambian. La de hoy sustituye a la que ya hubiera hoy.")
-        screen.measures.forEachIndexed { i, m -> MetricRow(m, first = i == 0) }
         ChipRow {
             MEASURES.forEach { (k, m) -> Chip(selected = kind == k, label = { Text(m.label) }, onClick = { kind = k }) }
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedTextField(value, { value = it.filter { c -> c.isDigit() || c == ',' || c == '.' } },
-                label = { Text("Valor (${MEASURES.getValue(kind).unit})") }, singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f))
-            SecondaryButton("Apuntar") {
-                act.run("Medida apuntada") {
-                    app.logMeasure(kind, value.replace(',', '.').toDoubleOrNull() ?: throw IllegalArgumentException("Escribe un número"))
-                    value = ""
-                }
+        OutlinedTextField(value, { value = it.filter { c -> c.isDigit() || c == ',' || c == '.' } },
+            label = { Text("Valor (${MEASURES.getValue(kind).unit})") }, singleLine = true,
+            textStyle = androidx.compose.material3.LocalTextStyle.current.copy(fontFamily = Mono, fontSize = 22.sp, fontWeight = FontWeight.SemiBold),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
+        PrimaryButton("Apuntar", Modifier.fillMaxWidth()) {
+            act.run("Medida apuntada") {
+                app.logMeasure(kind, value.replace(',', '.').toDoubleOrNull() ?: throw IllegalArgumentException("Escribe un número"))
+                value = ""
             }
         }
+        if (screen.measures.isNotEmpty()) SectionTitle("Últimas")
+        screen.measures.forEachIndexed { i, m -> MetricRow(m, first = i == 0) }
     }
 }
 

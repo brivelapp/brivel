@@ -1,5 +1,6 @@
 package app.brivel.android
 
+import app.brivel.app.toggleCardio
 import androidx.compose.foundation.layout.FlowRow
 import android.Manifest
 import androidx.compose.foundation.background
@@ -94,6 +95,26 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openGo
         draft = p
         act.run { app.saveProfile(p) }
     }
+    // Tu semana, Objetivo y el material tienen su pantalla (revisión de los desplegables, 2026-11-23)
+    var screen by rememberSaveable { mutableStateOf<String?>(null) }
+    if (!settings && screen != null) {
+        when (screen) {
+            "week" -> SubScreen("Tu semana", { screen = null }) {
+                WeekBars(draft.days) { save(draft.copy(days = it)) }
+                Secondary("Sin minutos, ese día es de descanso.")
+            }
+            "goal" -> SubScreen("Objetivo", { screen = null }) {
+                Module {
+                    Text(app.data.goal?.let { goalLabel(it) } ?: "Sin objetivo", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                    Secondary("El plan se rehace al momento si lo cambias.")
+                }
+                TonalButton(onClick = openGoal, Modifier.fillMaxWidth()) { Text("Cambiar objetivo") }
+                OtherRaces(app, act)
+            }
+            else -> SubScreen("Zapatillas y bicis", { screen = null }) { GearCard(app, act, version) }
+        }
+        return
+    }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (!settings) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -104,15 +125,16 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openGo
             // Por secciones (2026-11-23): una fila por dato con su valor; al tocarla se cambia ahí mismo y se guarda solo.
             // Sin plan, deportes, semana, fuerza y nivel no cambian nada: se preguntan si un día pide un plan
             if (app.data.goal?.kind != GoalKind.OWN) {
-                Fold("Deportes", draft.cardio.joinToString(", ") { CARDIO_LABEL[it] ?: it }.ifEmpty { "Solo caminar" }) {
-                    Module { SportPicker(draft.cardio) { save(draft.copy(cardio = it)) } }
+                // Revisión de los desplegables (2026-11-23): lo que se elige, aquí mismo con ✓; Tu semana, en su pantalla
+                Fold("Deportes", draft.cardio.mapNotNull { CARDIO_LABEL[it] }.joinToString(", ").ifEmpty { "Solo caminar" }) {
+                    CheckList(CARDIO_LABEL.map { (k, l) -> Triple(k, l, null) }, draft.cardio) { save(draft.copy(cardio = toggleCardio(draft.cardio, it))) }
                 }
-                Fold("Tu semana", weekLine(draft.days)) { Module { WeekBars(draft.days) { save(draft.copy(days = it)) } } }
+                RowButton("Tu semana", weekLine(draft.days)) { screen = "week" }
                 Fold("Fuerza", STRENGTH_CHOICES.firstOrNull { it.first == draft.strength }?.second) {
-                    Module { Segmented(STRENGTH_CHOICES.map { it.first to it.second }, draft.strength) { save(draft.copy(strength = it)) } }
+                    CheckList(STRENGTH_CHOICES.map { Triple(it.first, it.second, it.third) }, listOf(draft.strength)) { save(draft.copy(strength = it)) }
                 }
                 Fold("Tu nivel", LEVEL_CHOICES.firstOrNull { it.first == draft.level }?.second) {
-                    Module { Segmented(LEVEL_CHOICES.map { it.first to it.second }, draft.level) { save(draft.copy(level = it)) } }
+                    CheckList(LEVEL_CHOICES.map { Triple(it.first, it.second, it.third) }, listOf(draft.level)) { save(draft.copy(level = it)) }
                 }
             }
             Fold("Año de nacimiento", draft.birthYear?.toString() ?: "Sin poner") {
@@ -126,18 +148,8 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openGo
                 }
             }
             // «Cambiar objetivo» vive aquí desde el 2026-11-23 (antes, «Tu objetivo» en Hoy)
-            app.data.goal?.let { goal ->
-                Fold("Objetivo", goalLabel(goal)) {
-                    Module {
-                        Secondary("Puedes cambiarlo cuando quieras; el plan se rehace al momento.")
-                        TonalButton(onClick = openGoal, Modifier.fillMaxWidth()) { Text("Cambiar objetivo") }
-                        OtherRaces(app, act)
-                    }
-                }
-            }
-            Fold("Zapatillas y bicis", remember(version) { app.gear().rows.size }.let { n -> when (n) { 0 -> "Ninguna todavía"; 1 -> "1 en tu material"; else -> "$n en tu material" } }) {
-                GearCard(app, act, version)
-            }
+            app.data.goal?.let { goal -> RowButton("Objetivo", goalLabel(goal)) { screen = "goal" } }
+            RowButton("Zapatillas y bicis", remember(version) { app.gear().rows.size }.let { n -> when (n) { 0 -> "Ninguna todavía"; 1 -> "1 en tu material"; else -> "$n en tu material" } }) { screen = "gear" }
             Spacer(Modifier.height(24.dp))
             return@Column
         }

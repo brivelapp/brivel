@@ -125,10 +125,8 @@ fun RecordCard(app: BrivelApp, act: Act, version: Int) {
     }
     opened?.let { ActivitySheet(app, act, it) { opened = null } }
     Module {
-        SectionTitle("Grabar con el GPS")
         if (view == null) {
-            Secondary("Graba el recorrido, la distancia y el ritmo con el GPS de este móvil. La ubicación solo se usa mientras grabas y " +
-                "el recorrido se queda en este móvil: no se sube ni se sincroniza.")
+            Secondary("La ubicación solo se usa mientras grabas y el recorrido se queda en este móvil.")
             ChipRow {
                 RECORD_SPORTS.forEach { s -> Chip(selected = sport == s, label = { Text(SPORT_LABEL[s] ?: s) }, onClick = { sport = s }) }
             }

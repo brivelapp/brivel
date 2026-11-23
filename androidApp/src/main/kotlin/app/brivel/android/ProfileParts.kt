@@ -3,6 +3,14 @@ package app.brivel.android
 // Piezas del perfil (lienzo de Pulso, opción B, 2026-11-03), compartidas por el Perfil y la bienvenida: deportes sin
 // «Caminar» (siempre cuenta), la semana como barras que se suben y bajan con el dedo, fuerza, nivel y año de nacimiento.
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -89,60 +97,89 @@ fun SportPicker(cardio: List<String>, onChange: (List<String>) -> Unit) {
     }
 }
 
-/**
- * La semana, un día por fila: deslizar de 15 en 15 o escribir los minutos (de 0 a 5 h; sin minutos, ese día queda
- * libre). En horizontal, desplazar la pantalla no mueve nada, y escribir la cifra evita afinar con el dedo (con las
- * barras verticales costaba acertar en 45). `onCommit` llega al soltar el deslizador o con cada cifra escrita.
- */
-@OptIn(ExperimentalMaterial3Api::class)
+/** La semana con − y + de 15 en 15 minutos (decidido el 2026-11-23: solo botones, sin deslizador); el número se puede escribir. */
 @Composable
 fun WeekBars(days: Map<String, Int>, onCommit: (Map<String, Int>) -> Unit) {
     var live by remember(days) { mutableStateOf(days) }
-    fun put(d: String, m: Int) = (live + (d to m.coerceIn(0, MAX_DAY_MINUTES))).also { live = it }
-    val width = rememberTextWidth()
-    val nameStyle = LocalTextStyle.current.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold)
-    val fieldStyle = LocalTextStyle.current.copy(fontFamily = Mono, textAlign = TextAlign.End)
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
-        // Las medidas salen del texto con la letra de la persona: con 84 dp fijos, «Miércoles» se partía en dos
-        val nameWidth = DAYS.maxOf { width(WEEKDAY_LABEL[it]!!, nameStyle) }
-        val fieldWidth = maxOf(72.dp, width("300", fieldStyle) + 32.dp)  // el campo deja 16 dp a cada lado de la cifra
-        val unitWidth = width("min", LocalTextStyle.current.copy(fontSize = 14.sp))
-        // El deslizador necesita sitio para el dedo; si no queda, el nombre del día va encima de su fila
-        val stacked = maxWidth - nameWidth - fieldWidth - unitWidth - 24.dp < 96.dp
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-                Secondary(if (live.values.count { it > 0 } == 1) "1 día" else "${live.values.count { it > 0 }} días")
-                Text(weekTimeText(live), fontFamily = Mono, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Palette.ok)
-            }
-            DAYS.forEach { d ->
+    fun put(d: String, m: Int) { live = live + (d to m.coerceIn(0, MAX_DAY_MINUTES)); onCommit(live) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+            Secondary(if (live.values.count { it > 0 } == 1) "1 día" else "${live.values.count { it > 0 }} días")
+            Text(weekTimeText(live), fontFamily = Mono, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Palette.ok)
+        }
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Palette.surface)) {
+            DAYS.forEachIndexed { i, d ->
                 val m = live[d] ?: 0
                 val name = WEEKDAY_LABEL[d]!!
                 var text by remember(m) { mutableStateOf(if (m == 0) "" else "$m") }
-                if (stacked) Text(name, Modifier.padding(top = 8.dp), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = if (m == 0) Palette.muted else Palette.text)
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (!stacked) Text(name, Modifier.width(nameWidth), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = if (m == 0) Palette.muted else Palette.text)
-                    Slider(m.toFloat(), { put(d, (it / 15).roundToInt() * 15) }, Modifier.weight(1f).semantics {
-                        contentDescription = name
-                        stateDescription = if (m == 0) "libre" else "$m minutos"
-                    }, valueRange = 0f..MAX_DAY_MINUTES.toFloat(), steps = MAX_DAY_MINUTES / 15 - 1,
-                        onValueChangeFinished = { onCommit(live) },
-                        // Pista fina y punto pequeño con aro (muestra A, 2026-11-17), igual en web e iOS
-                        thumb = { Box(Modifier.size(20.dp).background(Palette.surface, CircleShape).border(3.dp, Palette.ok, CircleShape)) },
-                        track = { state -> SliderDefaults.Track(state, Modifier.height(6.dp), drawStopIndicator = null, thumbTrackGapSize = 0.dp,
-                            colors = SliderDefaults.colors(activeTrackColor = Palette.ok, inactiveTrackColor = Palette.chip,
-                                activeTickColor = Color.Transparent, inactiveTickColor = Color.Transparent)) })
-                    OutlinedTextField(text, { t ->
-                        text = t.filter { it.isDigit() }.take(3)
-                        onCommit(put(d, text.toIntOrNull() ?: 0))
-                    }, Modifier.width(fieldWidth).semantics { contentDescription = "Minutos el ${name.lowercase()}" },
-                        placeholder = { Text("—") }, singleLine = true,
-                        textStyle = fieldStyle,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                    Secondary("min")
+                if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Palette.chip))
+                Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 14.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(name, Modifier.weight(1f), fontWeight = if (m > 0) FontWeight.Bold else FontWeight.Normal, fontSize = 15.sp,
+                        color = if (m == 0) Palette.muted else Palette.text)
+                    StepButton("−", "Menos minutos el ${name.lowercase()}", m > 0) { put(d, m - 15) }
+                    BasicTextField(text, { v -> text = v.filter(Char::isDigit).take(3); put(d, text.toIntOrNull() ?: 0) },
+                        modifier = Modifier.width(56.dp).semantics { contentDescription = "Minutos el ${name.lowercase()}" },
+                        textStyle = LocalTextStyle.current.copy(fontFamily = Mono, fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center, color = Palette.text),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true,
+                        decorationBox = { inner -> Box(contentAlignment = Alignment.Center) { if (text.isEmpty()) Text("—", color = Palette.muted, fontFamily = Mono); inner() } })
+                    StepButton("+", "Más minutos el ${name.lowercase()}", m < MAX_DAY_MINUTES) { put(d, m + 15) }
                 }
             }
-            Secondary("Desliza o escribe los minutos de cada día, hasta 5 h. Sin minutos, ese día queda libre.")
         }
+    }
+}
+
+@Composable
+private fun StepButton(sign: String, description: String, enabled: Boolean, onClick: () -> Unit) =
+    Box(Modifier.size(40.dp).clip(CircleShape).background(Palette.chip.copy(alpha = if (enabled) 1f else 0.4f))
+        .clickable(enabled = enabled, onClick = onClick).semantics { contentDescription = description }, contentAlignment = Alignment.Center) {
+        Text(sign, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = if (enabled) Palette.text else Palette.muted)
+    }
+
+/** Lista de opciones con ✓ (una o varias): lo elegido se ve sin depender del color. */
+@Composable
+fun CheckList(options: List<Triple<String, String, String?>>, selected: Collection<String>, onToggle: (String) -> Unit) =
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Palette.surface)) {
+        options.forEachIndexed { i, (key, label, hint) ->
+            val on = key in selected
+            if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Palette.chip))
+            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).selectable(on, role = androidx.compose.ui.semantics.Role.Checkbox) { onToggle(key) }
+                .padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(label, fontSize = 15.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal)
+                    hint?.let { Secondary(it) }
+                }
+                if (on) Text("✓", color = Palette.ok, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+            }
+        }
+    }
+
+/** Una pantalla propia dentro de una pestaña: título una vez, arriba, con «‹» para volver (y el atrás del sistema). */
+@Composable
+fun SubScreen(title: String, back: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    androidx.activity.compose.BackHandler(onBack = back)
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = back, modifier = Modifier.semantics { contentDescription = "Volver" }) { Text("‹", fontSize = 26.sp, color = Palette.text) }
+            Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        }
+        content()
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** Una fila que abre su propia pantalla: título, valor y ›. */
+@Composable
+fun RowButton(title: String, value: String, onClick: () -> Unit) = Module(Modifier.clickable(onClick = onClick)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Secondary(value)
+        }
+        RowChevron()
     }
 }
 

@@ -169,8 +169,8 @@ fun RoutinesCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version
     var editing by remember { mutableStateOf<Routine?>(null) }
     var adding by remember { mutableStateOf(false) }
     Module {
-        SectionTitle("Tus rutinas")
-        Secondary("Crea tu propia rutina de fuerza y elige qué días la haces. Esos días sustituye a la fuerza del plan.")
+        PrimaryButton("Nueva rutina", Modifier.fillMaxWidth()) { editing = Routine("", "", emptyList(), emptyList(), since = "") }
+        if (app.routines.isEmpty()) Secondary("Aún no tienes ninguna. Los días que elijas, sustituye a la fuerza del plan.")
         app.routines.forEach { r ->
             Row(Modifier.fillMaxWidth().clickable { editing = r }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -180,9 +180,8 @@ fun RoutinesCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version
                 RowChevron()
             }
         }
-        TonalButton(onClick = { editing = Routine("", "", emptyList(), emptyList(), since = "") }, Modifier.fillMaxWidth()) { Text("Nueva rutina") }
-        SectionTitle("Tus ejercicios")
-        Secondary("Si falta alguno en la biblioteca, créalo y úsalo en tus rutinas.")
+        SectionTitle("Ejercicios propios")
+        if (app.customExercises.isEmpty()) Secondary("Si falta alguno en la biblioteca, créalo aquí.")
         app.customExercises.forEach { e ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(e.name, modifier = Modifier.weight(1f))

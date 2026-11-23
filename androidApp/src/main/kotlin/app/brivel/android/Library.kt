@@ -1,5 +1,6 @@
 package app.brivel.android
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -138,7 +139,6 @@ private const val PAGE = 60
 /** En Entrenar: todos los ejercicios, con búsqueda y filtros de zona y de material, y el material que tienes. */
 @Composable
 fun LibraryCard(app: BrivelApp) {
-    var open by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     var zone by remember { mutableStateOf<String?>(null) }
     var equipment by remember { mutableStateOf<String?>(null) }
@@ -147,27 +147,15 @@ fun LibraryCard(app: BrivelApp) {
     var limit by remember { mutableStateOf(PAGE) }
     var shown by remember { mutableStateOf<String?>(null) }
     Module {
-        SectionTitle("Biblioteca de ejercicios")
-        Secondary("Busca entre todos los ejercicios por zona del cuerpo o material.")
-        if (!open) TonalButton(onClick = { open = true }) { Text("Ver los ejercicios") }
-        else {
-            Secondary("Tu material (el peso corporal siempre cuenta). Brivel solo te propone variantes que puedas hacer con él.")
-            ChipRow {
-                EQUIPMENT.filter { it != "peso corporal" }.forEach { t ->
-                    Chip(selected = t in owned, label = { Text(t) }, onClick = {
-                        app.setEquipment(if (t in owned) owned - t else owned + t)
-                        owned = app.equipment
-                    })
-                }
-            }
             OutlinedTextField(query, { query = it; limit = PAGE }, label = { Text("Buscar") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            ChipRow {
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Chip(selected = zone == null, label = { Text("Todas") }, onClick = { zone = null; limit = PAGE })
                 ZONES.forEach { z ->
                     Chip(selected = zone == z, label = { Text(z) }, onClick = { zone = if (zone == z) null else z; limit = PAGE })
                 }
             }
-            ChipRow {
-                if (owned.isNotEmpty()) Chip(selected = mine, label = { Text("Solo con mi material") }, onClick = { mine = !mine; limit = PAGE })
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (owned.isNotEmpty()) Chip(selected = mine, label = { Text("Mi material") }, onClick = { mine = !mine; limit = PAGE })
                 EQUIPMENT.forEach { t ->
                     Chip(selected = equipment == t, label = { Text(t) }, onClick = { equipment = if (equipment == t) null else t; limit = PAGE })
                 }
@@ -176,6 +164,18 @@ fun LibraryCard(app: BrivelApp) {
             Secondary("${list.size} ejercicios")
             list.take(limit).forEach { c -> ExerciseRow(app, c, c.patternLabel) { shown = c.name } }
             if (list.size > limit) TonalButton(onClick = { limit += PAGE }) { Text("Ver más") }
+    }
+    // Lo que tienes: el plan solo te propone variantes que puedas hacer con ello (el peso corporal siempre cuenta)
+    Fold("Tu material", owned.joinToString(", ").ifEmpty { "Solo tu peso" }) {
+        Module {
+            ChipRow {
+                EQUIPMENT.filter { it != "peso corporal" }.forEach { t ->
+                    Chip(selected = t in owned, label = { Text(t) }, onClick = {
+                        app.setEquipment(if (t in owned) owned - t else owned + t)
+                        owned = app.equipment
+                    })
+                }
+            }
         }
     }
     shown?.let { ExerciseSheet(app, it, null, { shown = null }, null) }
