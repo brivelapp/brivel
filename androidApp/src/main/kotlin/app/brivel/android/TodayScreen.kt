@@ -42,6 +42,9 @@ import app.brivel.app.SPORT_LABEL
 import app.brivel.app.BrivelApp
 import app.brivel.app.dateLabel
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.activity.compose.BackHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +52,24 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {},
     val screen = remember(version) { app.todayScreen() }
     val day = screen.day
     var goalOpen by remember { mutableStateOf(false) }
+    // «Detalles ›» abre la sesión entera en su pantalla; atrás vuelve a Hoy
+    var detail by remember { mutableStateOf<String?>(null) }
+    val opened = day.items.firstOrNull { it.slot == detail }
+    if (opened != null) {
+        BackHandler { detail = null }
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = { detail = null }, modifier = Modifier.semantics { contentDescription = "Volver a Hoy" }) {
+                    Text("‹", fontSize = 26.sp, color = Palette.text)
+                }
+                Text(opened.title, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+            }
+            DayContent(app, day, app.watchRoute != null, act, today = true, only = opened.slot)
+            Spacer(Modifier.height(24.dp))
+        }
+        return
+    }
     if (goalOpen) ModalBottomSheet(onDismissRequest = { goalOpen = false }, containerColor = Palette.surface) {
         Column(Modifier.navigationBarsPadding().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -79,7 +100,8 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {},
         if (screen.stateTitle.isNotEmpty()) StateCard(screen.tone, screen.stateTitle, screen.stateDetail, screen.garminNote)
         screen.rateRun?.let { RateRun(app, act, it) }
         if (screen.noPlan && day.items.isEmpty()) NoRoutineToday(app, screen.nextRoutine, version, act, openTrain)
-        DayContent(app, day, app.watchRoute != null, act, today = true)
+        if (day.items.isEmpty()) DayContent(app, day, app.watchRoute != null, act, today = true)
+        else day.items.forEach { CompactSession(app, day, it, act) { detail = it.slot } }
         // Widgets (TodayWidgets.kt): las preguntas y la semana de serie, y los que se añadan
         TodayWidgets(app, version, act, screen)
         Spacer(Modifier.height(24.dp))
@@ -144,7 +166,7 @@ private fun NoRoutineToday(app: BrivelApp, next: String?, version: Int, act: Act
 
 /** Las sesiones de un día con sus acciones: hecha, cambiar de deporte, enviar al reloj, hoy no puedo. */
 @Composable
-fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: Boolean) {
+fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: Boolean, only: String? = null) {
     // En Hoy la tarjeta de estado ya dice que descansas: aquí solo lo que se puede hacer
     val changeable = app.canChangeDay(day.date)
     if (day.items.isEmpty() && (!today || changeable)) {
@@ -158,7 +180,7 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
             }
         }
     }
-    for (item in day.items) {
+    for (item in day.items.filter { only == null || it.slot == only }) {
         val done = item.slot in day.doneSports || item.sport in day.doneSports
         SessionCard(item, done) {
             var open by remember { mutableStateOf(false) }
@@ -205,4 +227,27 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
     }
 }
 
-
+/** La sesión de hoy, compacta: lo de cada día aquí y el resto en «Detalles ›» (como CompactSession de la web). */
+@Composable
+private fun CompactSession(app: BrivelApp, day: DayView, item: app.brivel.app.PlanItem, act: Act, open: () -> Unit) {
+    val done = item.slot in day.doneSports || item.sport in day.doneSports
+    Module(accent = if (done) Palette.ok else null) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SportBadge(item.sport)
+            Spacer(Modifier.width(10.dp))
+            Text(if (item.chosen) "${SPORT_LABEL[item.sport]} · elegida por ti" else SPORT_LABEL[item.sport] ?: "",
+                fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Palette.muted, modifier = Modifier.weight(1f))
+            if (done) Text("Hecha", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Palette.ok, modifier = Modifier.padding(end = 10.dp))
+            Text("${item.doneMin ?: item.durationMin}", fontFamily = Mono, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+            Text(" min", fontFamily = Mono, fontSize = 13.sp, color = Palette.muted)
+        }
+        Text(item.title, fontSize = 22.sp, lineHeight = 26.sp, fontWeight = FontWeight.ExtraBold)
+        Secondary(if (item.isStrength) item.exercises.joinToString(" · ") { it.substringBefore(":") } else item.doneDetail ?: item.target ?: item.hint)
+        if (item.isStrength) PrimaryButton(if (done) "Ver las series" else "Empezar", Modifier.fillMaxWidth()) { act.openStrength(day.date) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (!done) TextButton(onClick = { act.run { app.markDone(day.date, item.sport) } }) { LinkText("La he hecho") }
+            Spacer(Modifier.weight(1f))
+            TextButton(onClick = open) { LinkText("Detalles ›") }
+        }
+    }
+}
