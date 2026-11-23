@@ -6,7 +6,8 @@ import { SyncCard } from "./Sync"
 import { GarminCard } from "./Garmin"
 import { IntervalsCard } from "./Intervals"
 import { GearCard } from "./Activities"
-import { Fold, LEVEL_CHOICES, Segmented, SportPicker, STRENGTH_CHOICES, WeekBars, type Profile as ProfileData } from "./ProfileParts"
+import { CheckList, Fold, LEVEL_CHOICES, SPORT_NAME, STRENGTH_CHOICES, SubScreen, WeekBars, type Profile as ProfileData } from "./ProfileParts"
+import { OtherRaces } from "./Today"
 
 /** «3 días · 2 h 30 min»: los días con minutos y el total de la semana. */
 const weekLine = (days: Record<string, number>) => {
@@ -14,6 +15,16 @@ const weekLine = (days: Record<string, number>) => {
   const total = on.reduce((a, b) => a + b, 0)
   if (on.length === 0) return "Sin días puestos"
   return `${on.length} ${on.length === 1 ? "día" : "días"} · ${Math.floor(total / 60)} h${total % 60 ? ` ${total % 60} min` : ""}`
+}
+
+/** Una fila que abre su pantalla: título, valor y ›. */
+function Row({ title, value, onClick }: { title: string; value: string; onClick: () => void }) {
+  return (
+    <button className="module row-button" onClick={onClick}>
+      <span className="grow"><strong>{title}</strong><br /><span className="muted small-text">{value}</span></span>
+      <span className="chev" aria-hidden>›</span>
+    </button>
+  )
 }
 
 const gearLine = (core: WebApp) => {
@@ -27,6 +38,7 @@ export function Profile({ core, act, synced, settings, setSettings }:
   const save = (p: ProfileData) => act(() => core.saveProfileJson(JSON.stringify(p)))
   const [year, setYear] = useState<number | null>(profile.birthYear)
   const [page, setPage] = useState<string | null>(null)  // dentro de Ajustes: garmin, intervals, sync o notice
+  const [screen, setScreen] = useState<string | null>(null)  // pantalla propia de Perfil: week, goal o gear
 
   const exportData = () => {
     const a = document.createElement("a")
@@ -75,6 +87,25 @@ export function Profile({ core, act, synced, settings, setSettings }:
     )
   }
 
+  if (screen === "week") return (
+    <SubScreen title="Tu semana" back={() => setScreen(null)} backLabel="Volver a Perfil">
+      <WeekBars core={core} days={profile.days} onCommit={(days) => save({ ...profile, days })} />
+      <p className="muted small-text">Sin minutos, ese día es de descanso.</p>
+    </SubScreen>
+  )
+  if (screen === "goal") return (
+    <SubScreen title="Objetivo" back={() => setScreen(null)} backLabel="Volver a Perfil">
+      <section className="module"><h2>{core.goalLabel}</h2><p className="muted small-text">El plan se rehace al momento si lo cambias.</p></section>
+      <button className="secondary" onClick={() => { if (confirm("¿Cambiar de objetivo? El plan se rehará al momento.")) act(() => core.abandonGoal()) }}>Cambiar objetivo</button>
+      <OtherRaces core={core} act={act} />
+    </SubScreen>
+  )
+  if (screen === "gear") return (
+    <SubScreen title="Zapatillas y bicis" back={() => setScreen(null)} backLabel="Volver a Perfil">
+      <GearCard core={core} act={act} />
+    </SubScreen>
+  )
+
   return (
     <main className="wide">
       <div className="row between">
@@ -87,23 +118,20 @@ export function Profile({ core, act, synced, settings, setSettings }:
           </svg>
         </button>
       </div>
-      {/* Por secciones (2026-11-23): una fila por dato con su valor; al tocarla, se cambia ahí mismo y se guarda solo */}
+      {/* Por secciones (2026-11-23): Tu semana, Objetivo y el material, en su pantalla; lo demás se elige aquí mismo */}
       <div className="stack tight">
         {/* Sin plan, deportes, semana, fuerza y nivel no cambian nada: se preguntan si un día pide un plan */}
         {!core.noPlan && <>
-        <Fold title="Deportes" line={profile.cardio.length ? profile.cardio.map((c) => core.sportLabel(c)).join(", ") : "Solo caminar"}>
-          <SportPicker core={core} cardio={profile.cardio} onChange={(cardio) => save({ ...profile, cardio })} />
+        <Fold title="Deportes" line={profile.cardio.filter((c) => SPORT_NAME[c]).map((c) => SPORT_NAME[c]).join(", ") || "Solo caminar"}>
+          <CheckList label="Deportes" options={core.pickableCardio.map((c) => [c, SPORT_NAME[c]] as [string, string])} selected={profile.cardio}
+            onToggle={(c) => save({ ...profile, cardio: [...core.toggleCardio(profile.cardio, c)] })} />
         </Fold>
-        <Fold title="Tu semana" line={weekLine(profile.days)}>
-          <WeekBars core={core} days={profile.days} onCommit={(days) => save({ ...profile, days })} />
-        </Fold>
+        <Row title="Tu semana" value={weekLine(profile.days)} onClick={() => setScreen("week")} />
         <Fold title="Fuerza" line={STRENGTH_CHOICES.find(([k]) => k === profile.strength)?.[1] ?? null}>
-          <Segmented options={STRENGTH_CHOICES.map(([k, l]) => [k, l])} selected={profile.strength} label="Fuerza"
-            onSelect={(strength) => save({ ...profile, strength })} />
+          <CheckList label="Fuerza" options={STRENGTH_CHOICES} selected={[profile.strength]} onToggle={(strength) => save({ ...profile, strength })} />
         </Fold>
         <Fold title="Tu nivel" line={LEVEL_CHOICES.find(([k]) => k === profile.level)?.[1] ?? null}>
-          <Segmented options={LEVEL_CHOICES.map(([k, l]) => [k, l])} selected={profile.level} label="Nivel"
-            onSelect={(level) => save({ ...profile, level })} />
+          <CheckList label="Tu nivel" options={LEVEL_CHOICES} selected={[profile.level]} onToggle={(level) => save({ ...profile, level })} />
         </Fold>
         </>}
         <Fold title="Año de nacimiento" line={profile.birthYear ? String(profile.birthYear) : "Sin poner"}>
@@ -116,15 +144,8 @@ export function Profile({ core, act, synced, settings, setSettings }:
           </label>
           {year != null && year >= 1000 && !core.ageOk(year) && <p className="caution-text">Hace falta tener al menos {core.minAge} años.</p>}
         </Fold>
-        {core.goalLabel && (
-          <Fold title="Objetivo" line={core.goalLabel}>
-            <p className="muted small-text">Puedes cambiarlo cuando quieras; el plan se rehace al momento.</p>
-            <button className="secondary" onClick={() => { if (confirm("¿Cambiar de objetivo? El plan se rehará al momento.")) act(() => core.abandonGoal()) }}>Cambiar objetivo</button>
-          </Fold>
-        )}
-        <Fold title="Zapatillas y bicis" line={gearLine(core)}>
-          <GearCard core={core} act={act} />
-        </Fold>
+        {core.goalLabel && <Row title="Objetivo" value={core.goalLabel} onClick={() => setScreen("goal")} />}
+        <Row title="Zapatillas y bicis" value={gearLine(core)} onClick={() => setScreen("gear")} />
       </div>
     </main>
   )

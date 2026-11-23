@@ -15,7 +15,7 @@ async function signUp(page: Page) {
   await page.getByRole("button", { name: "Siguiente" }).click()
   await page.getByRole("button", { name: "Correr" }).click()
   await page.getByRole("button", { name: "Siguiente" }).click()
-  await expect(page.getByRole("slider", { name: "Lunes" })).toBeVisible()
+  await expect(page.getByRole("spinbutton", { name: "Minutos el lunes" })).toBeVisible()  // − y +, sin deslizador
   await page.getByRole("button", { name: "Siguiente" }).click()
   await page.getByRole("radio", { name: /Gimnasio/ }).click()
   await page.getByRole("button", { name: "Siguiente" }).click()
@@ -104,18 +104,22 @@ test("los datos siguen ahí al recargar la página", async ({ page }) => {
 test("en Perfil se escriben 45 minutos los siete días, y las conexiones están en Ajustes, tras la rueda", async ({ page }) => {
   await signUp(page)
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Perfil" }).click()
-  await openFold(page, "Tu semana")
+  await page.getByRole("button", { name: /^Tu semana/ }).click()  // su propia pantalla
   for (const day of ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]) {
     await page.getByRole("spinbutton", { name: `Minutos el ${day}` }).fill("45")
   }
   await expect(page.getByText("7 días", { exact: true })).toBeVisible()
   await expect(page.getByText("5 h 15 min", { exact: true })).toBeVisible()
-  await expect(page.locator("details.fold > summary", { hasText: "Tu semana" })).toContainText("7 días · 5 h 15 min")
+  await page.getByRole("button", { name: "Menos minutos el domingo" }).click()
+  await expect(page.getByRole("spinbutton", { name: "Minutos el domingo" })).toHaveValue("30")
+  await page.getByRole("button", { name: "Más minutos el domingo" }).click()
+  await page.getByRole("button", { name: "Volver a Perfil" }).click()
+  await expect(page.getByRole("button", { name: /^Tu semana/ })).toContainText("7 días · 5 h 15 min")
   await page.reload()
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Perfil" }).click()
-  await openFold(page, "Tu semana")
+  await page.getByRole("button", { name: /^Tu semana/ }).click()  // su propia pantalla
   await expect(page.getByRole("spinbutton", { name: "Minutos el domingo" })).toHaveValue("45")
-  await expect(page.getByRole("slider", { name: "Domingo" })).toHaveValue("45")
+  await page.getByRole("button", { name: "Volver a Perfil" }).click()
   await expect(page.getByRole("heading", { name: "Conexiones" })).toHaveCount(0)
   await page.getByRole("button", { name: "Ajustes" }).click()
   await expect(page.getByRole("heading", { name: "Conexiones" })).toBeVisible()
@@ -124,7 +128,7 @@ test("en Perfil se escriben 45 minutos los siete días, y las conexiones están 
   await expect(page.getByRole("checkbox", { name: "Renombrar mis actividades" })).toBeChecked()
   await page.getByRole("button", { name: "Volver a Ajustes" }).click()
   await page.getByRole("button", { name: "Volver a Perfil" }).click()
-  await expect(page.locator("details.fold > summary", { hasText: "Tu semana" })).toBeVisible()
+  await expect(page.getByRole("button", { name: /^Tu semana/ })).toBeVisible()
 })
 
 test("la biblioteca filtra por zona y búsqueda, y enseña la ficha con músculos y descripción", async ({ page }) => {
@@ -327,7 +331,7 @@ test("actividad propia: se importa un FIT, se apunta al material, sale su detall
   const nav = page.getByRole("navigation", { name: "Secciones" })
   // Antes, una bici en Perfil: la actividad se le apuntará a ella
   await nav.getByRole("button", { name: "Perfil" }).click()
-  await openFold(page, "Zapatillas y bicis")
+  await page.getByRole("button", { name: /^Zapatillas y bicis/ }).click()  // su propia pantalla
   const gear = page.locator("section.module", { hasText: "Zapatillas y bicis" })
   await gear.getByRole("button", { name: "Añadir zapatillas o bici" }).click()
   await gear.getByLabel("Nombre").fill("Bici de carretera")
@@ -374,7 +378,7 @@ test("actividad propia: se importa un FIT, se apunta al material, sale su detall
   // Perfil: los 4,8 km se sumaron a la bici, y siguen tras recargar
   await page.reload()
   await nav.getByRole("button", { name: "Perfil" }).click()
-  await openFold(page, "Zapatillas y bicis")
+  await page.getByRole("button", { name: /^Zapatillas y bicis/ }).click()  // su propia pantalla
   await expect(page.locator("section.module", { hasText: "Zapatillas y bicis" }).getByText("1005 km")).toBeVisible()
   expect(errors).toEqual([])
 })
@@ -397,6 +401,8 @@ test("con una carrera de objetivo se añade una preparatoria, como en las apps",
   await page.getByRole("button", { name: "Siguiente" }).click()
   await page.getByRole("checkbox", { name: /Lo he leído/ }).check()
   await page.getByRole("button", { name: "Ver mi plan" }).click()
+  await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Perfil" }).click()
+  await page.getByRole("button", { name: /^Objetivo/ }).click()  // las preparatorias, con el objetivo
   await page.getByText("Otras carreras antes de Maratón de Valencia").click()
   await page.getByRole("button", { name: "Añadir otra carrera" }).click()
   await page.getByLabel("Nombre de la carrera").fill("Media de Santa Pola")

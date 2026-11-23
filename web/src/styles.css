@@ -405,3 +405,16 @@ main.wide ~ .legal { padding-block: 8px 32px; }
 @media (prefers-reduced-motion: reduce) { .fold > summary .chev { transition: none; } }
 /* Con letra grande, las cabeceras de la tabla de series se parten en vez de salirse */
 th { overflow-wrap: anywhere; }
+/* La semana con − y + (sin deslizador desde el 2026-11-23) y las listas con ✓ */
+.week-row { grid-template-columns: minmax(0, 1fr) auto 4.5em auto; padding: 4px 12px; }
+.week-row + .week-row { border-top: 1px solid var(--chip); }
+.week-number { width: 100%; min-height: 40px; padding: 0 4px; text-align: center; border-radius: 10px; border: 1px solid transparent;
+  background: none; color: var(--text); font: 600 1rem "IBM Plex Mono", monospace; -moz-appearance: textfield; }
+.week-number::-webkit-inner-spin-button, .week-number::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.week-number:focus-visible { border-color: var(--ok); outline: none; }
+.check-mark { color: var(--ok); font-weight: 800; font-size: 1.125rem; }
+.settings-row[aria-pressed="true"] .settings-name { font-weight: 700; }
+/* Fila que abre su propia pantalla (Perfil, Entrenar, Progreso) */
+.row-button { flex-direction: row; align-items: center; gap: 10px; width: 100%; min-height: 0; text-align: left; color: var(--text); border-radius: 24px; padding: 16px 18px; }
+.row-button .chev { color: var(--muted); font-size: 1.375rem; line-height: 1; }
+.settings-row[aria-pressed="true"] .settings-name .small-text { font-weight: 400; }

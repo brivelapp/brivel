@@ -265,7 +265,7 @@ export function Footer({ core, act }: { core: WebApp; act: Act }) {
 interface Race { name: string; sport: string; date: string; priority: string; distanceKm: number | null; trail: boolean }
 
 /** Carreras preparatorias (B o C) antes de la principal: el plan afina unos días antes y recupera después. Como en las apps. */
-function OtherRaces({ core, act }: { core: WebApp; act: Act }) {
+export function OtherRaces({ core, act }: { core: WebApp; act: Act }) {
   const mainJson = core.mainRaceJson()
   const main: Race | null = mainJson ? JSON.parse(mainJson) : null
   const blank = (): Race => ({ name: "", sport: main?.sport ?? "running", date: "", priority: "C", distanceKm: null, trail: false })
@@ -384,7 +384,7 @@ export function Today({ core, act, synced, openStrength, openTrain }:
         {screen.goalLine && <p className="muted goal">{screen.goalLine}</p>}
         {screen.noPlan && <p className="goal"><button className="link" onClick={() => act(() => core.abandonGoal())}>Quiero un plan de Brivel</button></p>}
       </header>
-      {!screen.goalFinished && <OtherRaces core={core} act={act} />}
+      {/* Las carreras preparatorias, con el objetivo, en Perfil → Objetivo (2026-11-23) */}
       <div className="layout">
       <div className="col">
       {screen.goalFinished && (
