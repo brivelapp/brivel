@@ -72,9 +72,17 @@ import app.brivel.app.GoalKind
 import app.brivel.app.RaceInfo
 import app.brivel.app.dateLabel
 
+/** «3 días · 2 h 30 min»: los días con minutos y el total de la semana. */
+private fun weekLine(days: Map<String, Int>): String {
+    val on = days.values.filter { it > 0 }
+    if (on.isEmpty()) return "Sin días puestos"
+    val total = on.sum()
+    return "${on.size} ${if (on.size == 1) "día" else "días"} · ${total / 60} h" + if (total % 60 != 0) " ${total % 60} min" else ""
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openSettings: (Boolean) -> Unit) {
+fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openGoal: () -> Unit = {}, openSettings: (Boolean) -> Unit) {
     val context = LocalContext.current
     var draft by remember(version) { mutableStateOf(app.data.profile ?: UserProfile()) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -93,35 +101,43 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openSe
                 IconButton(onClick = { openSettings(true) }, modifier = Modifier.size(48.dp).clip(CircleShape).background(Palette.chip)
                     .semantics { contentDescription = "Ajustes" }) { Glyph(R.drawable.ic_settings, 22.dp) }
             }
+            // Por secciones (2026-11-23): una fila por dato con su valor; al tocarla se cambia ahí mismo y se guarda solo.
             // Sin plan, deportes, semana, fuerza y nivel no cambian nada: se preguntan si un día pide un plan
             if (app.data.goal?.kind != GoalKind.OWN) {
-                Module {
-                    SectionTitle("Tus deportes")
-                    SportPicker(draft.cardio) { save(draft.copy(cardio = it)) }
+                Fold("Deportes", draft.cardio.joinToString(", ") { CARDIO_LABEL[it] ?: it }.ifEmpty { "Solo caminar" }) {
+                    Module { SportPicker(draft.cardio) { save(draft.copy(cardio = it)) } }
                 }
-                Module {
-                    SectionTitle("Tu semana")
-                    WeekBars(draft.days) { save(draft.copy(days = it)) }
+                Fold("Tu semana", weekLine(draft.days)) { Module { WeekBars(draft.days) { save(draft.copy(days = it)) } } }
+                Fold("Fuerza", STRENGTH_CHOICES.firstOrNull { it.first == draft.strength }?.second) {
+                    Module { Segmented(STRENGTH_CHOICES.map { it.first to it.second }, draft.strength) { save(draft.copy(strength = it)) } }
                 }
-                Module {
-                    SectionTitle("Fuerza")
-                    Segmented(STRENGTH_CHOICES.map { it.first to it.second }, draft.strength) { save(draft.copy(strength = it)) }
-                }
-                Module {
-                    SectionTitle("Tu nivel")
-                    Segmented(LEVEL_CHOICES.map { it.first to it.second }, draft.level) { save(draft.copy(level = it)) }
+                Fold("Tu nivel", LEVEL_CHOICES.firstOrNull { it.first == draft.level }?.second) {
+                    Module { Segmented(LEVEL_CHOICES.map { it.first to it.second }, draft.level) { save(draft.copy(level = it)) } }
                 }
             }
-            Module {
-                var year by remember(version) { mutableStateOf(draft.birthYear) }
-                SectionTitle("Año de nacimiento")
-                BirthYearField(year, label = null) { y ->
-                    year = y
-                    if (y != null && ageAllowed(y, systemToday().year)) save(draft.copy(birthYear = y))
+            Fold("Año de nacimiento", draft.birthYear?.toString() ?: "Sin poner") {
+                Module {
+                    var year by remember(version) { mutableStateOf(draft.birthYear) }
+                    BirthYearField(year, label = "Para calcular tus zonas de pulso") { y ->
+                        year = y
+                        if (y != null && ageAllowed(y, systemToday().year)) save(draft.copy(birthYear = y))
+                    }
+                    if (year != null && year!! >= 1000 && !ageAllowed(year!!, systemToday().year)) Secondary("Hace falta tener al menos $MIN_AGE años.", Palette.caution)
                 }
-                if (year != null && year!! >= 1000 && !ageAllowed(year!!, systemToday().year)) Secondary("Hace falta tener al menos $MIN_AGE años.", Palette.caution)
             }
-            GearCard(app, act, version)
+            // «Cambiar objetivo» vive aquí desde el 2026-11-23 (antes, «Tu objetivo» en Hoy)
+            app.data.goal?.let { goal ->
+                Fold("Objetivo", goalLabel(goal)) {
+                    Module {
+                        Secondary("Puedes cambiarlo cuando quieras; el plan se rehace al momento.")
+                        TonalButton(onClick = openGoal, Modifier.fillMaxWidth()) { Text("Cambiar objetivo") }
+                        OtherRaces(app, act)
+                    }
+                }
+            }
+            Fold("Zapatillas y bicis", remember(version) { app.gear().rows.size }.let { n -> when (n) { 0 -> "Ninguna todavía"; 1 -> "1 en tu material"; else -> "$n en tu material" } }) {
+                GearCard(app, act, version)
+            }
             Spacer(Modifier.height(24.dp))
             return@Column
         }

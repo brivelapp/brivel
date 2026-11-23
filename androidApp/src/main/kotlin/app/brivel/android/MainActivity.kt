@@ -232,7 +232,7 @@ fun Root(app: BrivelApp, garminReturns: Int = 0, intervalsReturn: String? = null
                     1 -> CalendarTab(app, version, act)
                     2 -> TrainTab(app, version, act)
                     3 -> ProgressTab(app, version, act) { tab = 4; settings = true }
-                    else -> ProfileTab(app, version, act, settings) { settings = it }
+                    else -> ProfileTab(app, version, act, settings, openGoal = { act.run { app.abandonGoal() } }) { settings = it }
                 }
             } }
         }

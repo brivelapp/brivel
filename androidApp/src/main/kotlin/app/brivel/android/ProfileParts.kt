@@ -54,7 +54,7 @@ import app.brivel.app.toggleCardio
 import app.brivel.app.weekTimeText
 import kotlin.math.roundToInt
 
-private val SPORT_LABEL = mapOf("running" to "Correr", "cycling" to "Bici", "swimming_pool" to "Nadar")
+internal val CARDIO_LABEL = mapOf("running" to "Correr", "cycling" to "Bici", "swimming_pool" to "Nadar")  // las pastillas del Perfil
 val STRENGTH_CHOICES = listOf(
     Triple("gym", "Gimnasio", "Con máquinas, barras y mancuernas"),
     Triple("bodyweight", "En casa", "Con tu peso y poco material"),
@@ -82,7 +82,7 @@ fun SportPicker(cardio: List<String>, onChange: (List<String>) -> Unit) {
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Glyph(sportIcon(sport), size = 20.dp, tint = color)
-                    Text(SPORT_LABEL[sport]!!, color = color, fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold, fontSize = 15.sp)
+                    Text(CARDIO_LABEL[sport]!!, color = color, fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold, fontSize = 15.sp)
                 }
             }
         }

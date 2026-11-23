@@ -51,7 +51,6 @@ import androidx.activity.compose.BackHandler
 fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {}, openGoal: () -> Unit) {
     val screen = remember(version) { app.todayScreen() }
     val day = screen.day
-    var goalOpen by remember { mutableStateOf(false) }
     // «Detalles ›» abre la sesión entera en su pantalla; atrás vuelve a Hoy
     var detail by remember { mutableStateOf<String?>(null) }
     val opened = day.items.firstOrNull { it.slot == detail }
@@ -70,24 +69,13 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {},
         }
         return
     }
-    if (goalOpen) ModalBottomSheet(onDismissRequest = { goalOpen = false }, containerColor = Palette.surface) {
-        Column(Modifier.navigationBarsPadding().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(app.data.goal?.let { goalLabel(it) } ?: "Sin objetivo", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Secondary("Puedes cambiarlo o abandonarlo cuando quieras; el plan se rehace al momento.")
-            TonalButton(onClick = { goalOpen = false; openGoal() }) { Text("Cambiar objetivo") }
-            OtherRaces(app, act)
-        }
-    }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         ScreenTitle("Hoy", subtitle = screen.dateLabel)
-        screen.goalLine?.let {
-            Secondary(it)
-            TextButton(onClick = { goalOpen = true }) { LinkText("Tu objetivo") }
-        }
+        // Cambiar el objetivo vive en Perfil desde el 2026-11-23 (secciones): aquí, solo cuál es
+        screen.goalLine?.let { Secondary(it) }
         if (screen.noPlan) TextButton(onClick = openGoal) { LinkText("Quiero un plan de Brivel") }
         if (screen.goalFinished) {
             Module {
