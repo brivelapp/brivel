@@ -276,6 +276,17 @@ class BrivelAppTest {
     }
 
     @Test
+    fun `la fuerza de la semana cuenta lo hecho, no lo planificado`() {
+        assertEquals("Fuerza: 0 de 3 días (mínimo 2)", strengthLine(0, 3))
+        assertEquals("Fuerza: 1 de 1 día (mínimo 2)", strengthLine(1, 1))
+        assertEquals("Fuerza: 2 días hechos, mínimo cumplido", strengthLine(2, 3))
+        val a = app()
+        a.saveProfile(profile)
+        a.setGoal(GoalKind.FITNESS)
+        assertTrue(a.todayScreen().strengthLine.startsWith("Fuerza: 0 de "))  // un jueves sin nada hecho
+    }
+
+    @Test
     fun monthShowsWhatYouDidWithAMeaningfulTitle() {
         val store = MemoryStore()
         val a = app(store)

@@ -386,6 +386,7 @@ struct SessionCard<Actions: View>: View {
             ForEach(item.exercises, id: \.self) { Text($0).font(.body15) }
             actions
             Button(details ? "Menos detalles" : "Más detalles") { details.toggle() }.font(.ui(13, .bold, relativeTo: .footnote))
+                .buttonStyle(TextActionStyle())  // verde y subrayado, como en Android y la web: lo que se pulsa se distingue
             if details {
                 Secondary("Nombre técnico: \(item.technicalName)")
                 if let notes = item.notes { Secondary(notes) }

@@ -32,7 +32,7 @@ struct SettingsView: View {
                                 on: core.syncCode != nil && !core.syncNeedsConsent)
                 }
                 ShareLink("Exportar mis datos", item: core.exportJson()).foregroundStyle(Palette.text)
-                Button("Borrar todo", role: .destructive) { confirmDelete = true }
+                Button("Borrar todo", role: .destructive) { confirmDelete = true }.foregroundStyle(Palette.danger)  // la lista lo pintaba en negro
             }
             Section("Sobre Brivel") {
                 NavigationLink("Aviso de salud") {

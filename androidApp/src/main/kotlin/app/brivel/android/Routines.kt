@@ -180,7 +180,7 @@ fun RoutinesCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version
                 RowChevron()
             }
         }
-        TonalButton(onClick = { editing = Routine("", "", emptyList(), emptyList(), since = "") }) { Text("Nueva rutina") }
+        TonalButton(onClick = { editing = Routine("", "", emptyList(), emptyList(), since = "") }, Modifier.fillMaxWidth()) { Text("Nueva rutina") }
         SectionTitle("Tus ejercicios")
         Secondary("Si falta alguno en la biblioteca, créalo y úsalo en tus rutinas.")
         app.customExercises.forEach { e ->
@@ -189,7 +189,7 @@ fun RoutinesCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version
                 TextButton(onClick = { act.run("Ejercicio borrado") { app.deleteCustomExercise(e.name) } }) { LinkText("Borrar") }
             }
         }
-        TonalButton(onClick = { adding = true }) { Text("Nuevo ejercicio") }
+        TonalButton(onClick = { adding = true }, Modifier.fillMaxWidth()) { Text("Nuevo ejercicio") }
     }
     if (adding) NewExercise(app, act) { adding = false }
     editing?.let { RoutineEditor(app, act, it) { editing = null } }

@@ -377,7 +377,7 @@ export function Today({ core, act, synced, openStrength, openTrain }:
           ? (screen.strengthDone >= 2 ? <p className="ok-text"><Icon src={check} size={18} />Cumples los 2 días de fuerza que recomienda la OMS</p> : null)
           : screen.meetsWho
           ? <p className="ok-text"><Icon src={check} size={18} />Cumples la recomendación de la OMS para tu salud</p>
-          : <p className="muted">{screen.strengthDays >= 2 ? `Fuerza: ${screen.strengthDays} días, mínimo cumplido` : `Fuerza: ${screen.strengthDays} de 2 días`}</p>}
+          : <p className="muted">{screen.strengthLine}</p>}
         {screen.warnings.map((w) => <ReasonRow key={w} core={core} reason={{ text: w, evidence: null }} />)}
         {screen.info.map((t) => <p key={t} className="muted">{t}</p>)}
       </section>

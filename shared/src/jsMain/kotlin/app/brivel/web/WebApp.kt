@@ -264,6 +264,7 @@ class WebApp {
     fun changeWorkoutSets(name: String, delta: Int) = app.changeWorkoutSets(name, delta)
     fun linkWorkoutExercise(name: String, linked: Boolean) = app.linkWorkoutExercise(name, linked)
     fun discardWorkout() = app.discardWorkout()
+    fun closeStrength() = app.closeStrength()
 
     // Sesiones propias de resistencia (OwnSessions.kt): la web las manda y las recibe en JSON
     fun ownSessionsJson(): String = json.encodeToString(app.ownSessions)

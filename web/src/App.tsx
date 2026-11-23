@@ -26,7 +26,7 @@ export function App() {
   const [tab, setTab] = useState<Tab>(() => (location.hash === "#garmin" || location.pathname === "/intervals" ? "profile" : "today"))
   const [settings, setSettings] = useState(() => location.hash === "#garmin" || location.pathname === "/intervals")
   const [strengthDate, setStrengthDate] = useState<string | null>(null)  // sesión de fuerza abierta, a pantalla completa
-  const closeStrength = useCallback(() => setStrengthDate(null), [])
+  const closeStrength = useCallback(() => { core.closeStrength(); setStrengthDate(null) }, [core])
   // Al cerrar la sesión, el foco vuelve al botón que la abrió (para quien usa el teclado o un lector de pantalla)
   const lastStrength = useRef<string | null>(null)
   useEffect(() => {

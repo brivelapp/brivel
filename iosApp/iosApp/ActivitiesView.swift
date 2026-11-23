@@ -170,7 +170,7 @@ struct ActivitiesSection: View {
                 }.buttonStyle(.plain)
             }
             if !all && rows.count > 5 { Button("Ver las \(rows.count)") { all = true }.font(.ui(14, .bold)).buttonStyle(TextActionStyle()) }
-            Button("Importar un archivo FIT, GPX o TCX") { importing = true }.buttonStyle(SecondaryStyle())
+            Button { importing = true } label: { Text("Importar un archivo FIT, GPX o TCX").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
         }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.data]) { result in
             if case .success(let url) = result { load(url) }

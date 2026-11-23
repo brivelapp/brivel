@@ -136,7 +136,7 @@ fun SessionsCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version
                     modifier = Modifier.semantics { contentDescription = "Hacer ${s.name} hoy" }) { LinkText("Hoy") }
             }
         }
-        TonalButton(onClick = { editing = OwnSession("", "", "running", listOf(OwnStep("", 30.0, "Z2")), since = "") }) { Text("Nueva sesión") }
+        TonalButton(onClick = { editing = OwnSession("", "", "running", listOf(OwnStep("", 30.0, "Z2")), since = "") }, Modifier.fillMaxWidth()) { Text("Nueva sesión") }
     }
     editing?.let { SessionEditor(app, act, it) { editing = null } }
 }

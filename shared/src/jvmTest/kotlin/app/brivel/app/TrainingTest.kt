@@ -56,6 +56,19 @@ class TrainingTest {
         assertEquals(planned, a.strengthScreen(date)!!.exercises.map { it.name })  // vuelve el plan
     }
 
+    @Test fun leavingAnEmptyFreeWorkoutGivesTheDayBackToThePlan() {
+        val a = app()
+        val planned = a.strengthScreen(date)!!.exercises.map { it.name }
+        a.startWorkout(null)
+        a.closeStrength()  // abierto sin querer y cerrado sin añadir nada
+        assertNull(a.workoutToday)
+        assertEquals(planned, a.strengthScreen(date)!!.exercises.map { it.name })
+        a.startWorkout(null)
+        a.addWorkoutExercise(bench)
+        a.closeStrength()  // con un ejercicio, se queda
+        assertEquals(listOf(bench), a.workoutToday!!.exercises.map { it.name })
+    }
+
     @Test fun freeWorkoutFromARoutineOnADayItIsNotScheduled() {
         val a = app()
         val r = a.saveRoutine(Routine("", "Torso", listOf(RoutineExercise(bench, 4, 6, 10)), days = listOf("THU"), rir = 1, since = ""))

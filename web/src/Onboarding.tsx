@@ -25,7 +25,7 @@ function Question({ number, total = QUESTIONS, title, subtitle, onBack, next = "
       <div className="row">
         {onBack && <button className="back" aria-label="Atrás" onClick={onBack}>‹</button>}
         {number > 0 && (
-          <div className="progress" role="img" aria-label={`Paso ${number} de ${total}`}>
+          <div className="step-bar" role="img" aria-label={`Paso ${number} de ${total}`}>
             {Array.from({ length: total }, (_, i) => <span key={i} className={i < number ? "on" : ""} />)}
           </div>
         )}

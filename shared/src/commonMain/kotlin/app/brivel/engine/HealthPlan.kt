@@ -266,8 +266,11 @@ fun strengthSession(p: HealthProfile, patterns: List<String>, setsPerExercise: I
 
 /** El RIR (repeticiones en reserva) y la progresión doble, sin jerga. */
 fun effortNote(rir: Int, kit: String): String {
-    val spare = if (rir == 1) "1 repetición" else "$rir repeticiones"
-    val effort = if (rir != 0) "Termina cada serie cuando aún podrías hacer unas $spare más." else "Haz cada serie hasta no poder más."
+    val effort = when (rir) {
+        0 -> "Haz cada serie hasta no poder más."
+        1 -> "Termina cada serie cuando aún podrías hacer 1 repetición más."
+        else -> "Termina cada serie cuando aún podrías hacer unas $rir repeticiones más."
+    }
     val harder = if (kit == "bodyweight") "pasa a una versión más difícil del ejercicio" else "sube un poco el peso (2–10 %)"
     return "$effort Cuando llegues al máximo de repeticiones en todas las series, $harder y vuelve al mínimo de repeticiones."
 }

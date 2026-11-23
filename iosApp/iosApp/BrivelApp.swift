@@ -160,7 +160,7 @@ struct RootView: View {
         .refreshable { await model.refreshAll() }
         .fullScreenCover(isPresented: Binding(get: { model.strengthDate != nil }, set: { if !$0 { model.strengthDate = nil } })) {
             if let date = model.strengthDate {
-                StrengthSessionView(date: date) { model.strengthDate = nil }.readableWidth().environmentObject(model)
+                StrengthSessionView(date: date) { model.run { model.core.closeStrength() }; model.strengthDate = nil }.readableWidth().environmentObject(model)
             }
         }
         .onAppear {

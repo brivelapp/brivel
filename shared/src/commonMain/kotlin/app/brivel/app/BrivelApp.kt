@@ -275,6 +275,11 @@ class BrivelApp(
     }
 
     /** Descarta el entreno libre de hoy y las series apuntadas hoy en sus ejercicios: el día vuelve a su plan. */
+    /** Al salir de la sesión de fuerza: un entreno libre sin ejercicios se descarta, así abrirlo sin querer no quita la fuerza del plan. */
+    fun closeStrength() {
+        if (workoutToday?.exercises?.isEmpty() == true) discardWorkout()
+    }
+
     fun discardWorkout() {
         val w = workoutToday ?: return
         val names = w.exercises.map { it.name }.toSet()

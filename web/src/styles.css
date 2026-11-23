@@ -216,9 +216,10 @@ tr.done .tick { background: var(--ok); color: var(--on-ok); }
 .question { min-height: 100dvh; }
 .question-title { font-size: 30px; line-height: 1.15; }
 .back { width: 44px; min-height: 44px; padding: 0; border-radius: 50%; background: var(--surface); color: var(--text); font-size: 26px; line-height: 1; }
-.progress { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.progress span { height: 6px; border-radius: 3px; background: var(--chip); }
-.progress span.on { background: var(--ok); }
+/* Pasos del alta; con su propia clase, porque .progress es la barra del material (Activities.tsx) y la pisaba */
+.step-bar { flex: 1; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; }
+.step-bar span { height: 6px; border-radius: 3px; background: var(--chip); }
+.step-bar span.on { background: var(--ok); }
 .next { margin-top: auto; min-height: 54px; font-size: 17px; font-weight: 700; }
 .field input[type=date], .field input[type=search] { text-transform: none; letter-spacing: 0; font-family: inherit; }
 .field select { min-height: 48px; padding: 0 10px; border-radius: 12px; border: 1px solid var(--muted); background: var(--bg); color: var(--text); font: inherit; font-size: 16px; }

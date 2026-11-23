@@ -204,7 +204,7 @@ struct RoutinesSection: View {
                     }.contentShape(Rectangle())
                 }.buttonStyle(.plain)
             }
-            Button("Nueva rutina") { creating = true }.buttonStyle(SecondaryStyle())
+            Button { creating = true } label: { Text("Nueva rutina").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
             Text("Tus ejercicios").font(.section)
             Secondary("Si falta alguno en la biblioteca, créalo y úsalo en tus rutinas.")
             ForEach(model.core.customExercises, id: \.name) { e in
@@ -214,7 +214,7 @@ struct RoutinesSection: View {
                     Button("Borrar") { model.run("Ejercicio borrado") { try model.core.deleteCustomExercise(name: e.name) } }.buttonStyle(TextActionStyle())
                 }
             }
-            Button("Nuevo ejercicio") { adding = true }.buttonStyle(SecondaryStyle())
+            Button { adding = true } label: { Text("Nuevo ejercicio").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
         }
         .sheet(isPresented: $adding) { NewExercise() }
         .sheet(isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) { RoutineEditor(start: editing) }

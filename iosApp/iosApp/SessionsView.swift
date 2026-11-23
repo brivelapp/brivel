@@ -166,7 +166,7 @@ struct SessionsSection: View {
                         .font(.ui(14, .bold)).buttonStyle(TextActionStyle()).accessibilityLabel("Hacer \(s.name) hoy")
                 }
             }
-            Button("Nueva sesión") { creating = true }.buttonStyle(SecondaryStyle())
+            Button { creating = true } label: { Text("Nueva sesión").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
         }
         .sheet(isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) { SessionEditor(start: editing) }
         .sheet(isPresented: $creating) { SessionEditor(start: nil) }
