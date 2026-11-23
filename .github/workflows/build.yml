@@ -65,7 +65,8 @@ jobs:
           /usr/libexec/PlistBuddy -c "Print :UIBackgroundModes" "$PLIST" | grep -q location
           /usr/libexec/PlistBuddy -c "Print :NSLocationWhenInUseUsageDescription" "$PLIST"
           /usr/libexec/PlistBuddy -c "Print :NSHealthShareUsageDescription" "$PLIST"
-          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST" | grep -q "^0\.1\.0$"
+          # La versión visible es 0.<menor>.<compilación>, como en Android y la web
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST" | grep -qx "$(cat ../VERSION).${{ github.run_number }}"
       # Capturas en el simulador para revisar la interfaz de iOS sin un Mac
       - working-directory: iosApp
         run: |
