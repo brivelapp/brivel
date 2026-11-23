@@ -1,5 +1,5 @@
 // Piezas del perfil (lienzo de Pulso, opción B), las mismas que ProfileParts.kt y ProfileParts.swift de las apps
-import type { CSSProperties } from "react"
+import type { CSSProperties, ReactNode } from "react"
 import type { WebApp } from "brivel-shared"
 import { Icon, SPORT_ICON } from "./Today"
 
@@ -116,5 +116,15 @@ export function Choice<T extends string | number>({ label, options, value, onCha
         ))}
       </div>
     </fieldset>
+  )
+}
+
+/** Una parte plegada en una línea, como «La más cerca» de Progreso: se abre al tocarla (Progreso y Entrenar). */
+export function Fold({ title, line, children, open }: { title: string; line: string | null; children: ReactNode; open?: boolean }) {
+  return (
+    <details className="module fold" open={open}>
+      <summary><span className="grow"><strong>{title}</strong>{line && <><br /><span className="muted small-text">{line}</span></>}</span><span className="chev" aria-hidden>›</span></summary>
+      <div className="fold-body">{children}</div>
+    </details>
   )
 }

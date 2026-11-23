@@ -29,14 +29,16 @@ async function signUp(page: Page) {
   await expect(page.getByRole("navigation", { name: "Secciones" })).toBeVisible()
 }
 
+/** Progreso va plegado en tarjetas de una línea: abre la que se llama así. */
+const openFold = (page: Page, title: string) => page.locator("details.fold > summary", { hasText: title }).click()
+
 async function openLibrary(page: Page) {
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Entrenar" }).click()
+  await openFold(page, "Biblioteca de ejercicios")
   await page.getByRole("button", { name: "Ver los ejercicios" }).click()
   return page.locator("section.module", { hasText: "Biblioteca de ejercicios" })
 }
 
-/** Progreso va plegado en tarjetas de una línea: abre la que se llama así. */
-const openFold = (page: Page, title: string) => page.locator("details.fold > summary", { hasText: title }).click()
 
 const count = async (library: ReturnType<Page["locator"]>) =>
   Number((await library.getByText(/^\d+ ejercicios$/).innerText()).split(" ")[0])
@@ -193,7 +195,7 @@ test("entreno libre: se monta sobre la marcha, con calentamiento, discos y super
   await signUp(page)
   const nav = page.getByRole("navigation", { name: "Secciones" })
   await nav.getByRole("button", { name: "Entrenar" }).click()
-  await page.getByRole("button", { name: "Empezar entreno vacío" }).click()
+  await page.getByRole("button", { name: "Entrenar fuerza" }).click()
   await expect(page.getByRole("heading", { level: 1, name: "Entreno libre" })).toBeVisible()
   await expect(page.getByText(/Tu entreno está vacío/)).toBeVisible()
 
@@ -232,7 +234,7 @@ test("entreno libre: se monta sobre la marcha, con calentamiento, discos y super
   await expect(page.getByText("2 ejercicios")).toBeVisible()
   page.once("dialog", (d) => d.accept())
   await page.getByRole("button", { name: "Descartar el entreno" }).click()
-  await expect(page.getByRole("button", { name: "Empezar entreno vacío" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Entrenar fuerza" })).toBeVisible()
   await nav.getByRole("button", { name: "Hoy" }).click()
   await expect(page.getByRole("heading", { name: "Entreno libre" })).toHaveCount(0)
   await expect(page.getByRole("region", { name: "Fuerza" })).toContainText("Sentadilla copa")  // vuelve la del plan
@@ -278,6 +280,7 @@ test("sesión propia: se monta por pasos, se guarda, se pone hoy y sale en Hoy",
   await signUp(page)
   const nav = page.getByRole("navigation", { name: "Secciones" })
   await nav.getByRole("button", { name: "Entrenar" }).click()
+  await openFold(page, "Sesiones")
   const card = page.locator("section.module", { hasText: "Tus sesiones" })
   await card.getByRole("button", { name: "Nueva sesión" }).click()
   const editor = page.getByRole("dialog", { name: "Nueva sesión" })
@@ -333,6 +336,7 @@ test("actividad propia: se importa un FIT, se apunta al material, sale su detall
 
   // El archivo es sintético (e2e/fixtures): 10 min de bici a 210 W y 140 ppm, 4,8 km, escrito con otra librería
   await nav.getByRole("button", { name: "Entrenar" }).click()
+  await page.getByRole("button", { name: "Subir actividad" }).click()  // abre «Actividades», con el botón de importar
   const activities = page.locator("section.module", { hasText: "Tus actividades" })
   await activities.getByLabel("Archivo de actividad").setInputFiles("e2e/fixtures/salida.fit")
   await expect(page.getByRole("status")).toHaveText("Actividad importada")

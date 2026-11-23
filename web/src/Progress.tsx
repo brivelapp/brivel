@@ -1,10 +1,10 @@
 // Progreso, como ProgressScreen.kt: tu cuerpo frente a tu rango habitual, tu forma, la actividad semanal y lo último hecho
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { WebApp } from "brivel-shared"
 import type { Metric, Milestone, Point, ProgressScreen, RecentActivity, WidgetChoice, WidgetView } from "./types"
 import { Icon, SPORT_ICON, type Act } from "./Today"
 import { ActivityDialog, BadgesCard, Curves } from "./Activities"
-import { Choice } from "./ProfileParts"
+import { Choice, Fold } from "./ProfileParts"
 
 const BODY = ["sleep", "sleepScore", "deepSleep", "remSleep", "hrv", "restingHR", "spo2", "respiration", "stress", "weight", "bodyFat", "steps"]
 const fmt = (v: number | null) => v == null ? "—" : v >= 20 ? String(Math.round(v)) : String(Math.round(v * 10) / 10).replace(".", ",")
@@ -140,16 +140,6 @@ function Measures({ core, act, screen }: { core: WebApp; act: Act; screen: Progr
         <button className="secondary" onClick={() => { act(() => { core.logMeasure(kind, value); setValue("") }, "Medida apuntada") }}>Apuntar</button>
       </div>
     </section>
-  )
-}
-
-/** Una parte de Progreso plegada en una línea, como «La más cerca»: se abre al tocarla. */
-function Fold({ title, line, children }: { title: string; line: string | null; children: ReactNode }) {
-  return (
-    <details className="module fold">
-      <summary><span className="grow"><strong>{title}</strong>{line && <><br /><span className="muted small-text">{line}</span></>}</span><span className="chev" aria-hidden>›</span></summary>
-      <div className="fold-body">{children}</div>
-    </details>
   )
 }
 
