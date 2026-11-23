@@ -5,6 +5,15 @@ on:
   push:
   pull_request:
 
+# El token del CI solo lee el repo: ningún paso escribe en él (los artefactos no lo necesitan)
+permissions:
+  contents: read
+
+# Un push nuevo a la misma rama cancela el anterior, salvo en master
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   android:
     runs-on: ubuntu-latest

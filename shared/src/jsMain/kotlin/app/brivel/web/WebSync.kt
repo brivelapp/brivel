@@ -15,10 +15,8 @@ import app.brivel.sync.SyncKeys
 import app.brivel.sync.SyncTransport
 import app.brivel.sync.TOKEN_LABEL
 import app.brivel.sync.accountOf
-import kotlinx.browser.window
 import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array
-import org.w3c.fetch.RequestInit
 import org.w3c.fetch.Response
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
@@ -74,16 +72,26 @@ private class WebAead(private val key: dynamic) : Aead {
     }
 }
 
-/** /api/boveda con fetch, mismas respuestas que SyncClient (ktor) en las apps. */
-internal class WebTransport(private val url: String, private val bearer: String) : SyncTransport {
+/**
+ * /api/boveda con fetch, mismas respuestas que SyncClient (ktor) en las apps, también el tope de 20 s: sin él, una
+ * conexión colgada deja la sincronización esperando para siempre. `timeoutMillis`: solo tests.
+ */
+internal class WebTransport(private val url: String, private val bearer: String, private val timeoutMillis: Int = 20_000) : SyncTransport {
     private suspend fun send(method: String, body: ByteArray? = null, precondition: Pair<String, String>? = null): Response {
         val headers = json("Authorization" to "Bearer $bearer")
         if (precondition != null) headers[precondition.first] = precondition.second
         if (body != null) headers["Content-Type"] = "application/octet-stream"
         // Objeto plano: el RequestInit de Kotlin manda credentials: null y el navegador lo rechaza
-        val init = json("method" to method, "headers" to headers, "cache" to "no-store")
+        val init = json("method" to method, "headers" to headers, "cache" to "no-store",
+            "signal" to js("AbortSignal").timeout(timeoutMillis))
         if (body != null) init["body"] = body
-        val response = window.fetch(url, init.unsafeCast<RequestInit>()).await()
+        // globalThis y no window: así también corre en los tests de Node
+        val response = try {
+            js("globalThis").fetch(url, init).unsafeCast<Promise<Response>>().await()
+        } catch (e: Throwable) {
+            if (e.asDynamic().name != "TimeoutError") throw e
+            throw SyncException(0, "El servidor tarda demasiado en responder: prueba más tarde")
+        }
         if (response.ok || response.status.toInt() == 404 || response.status.toInt() == 409) return response
         val text = response.text().await()
         val message = runCatching { JSON.parse<dynamic>(text).error as? String }.getOrNull()

@@ -138,7 +138,11 @@ Revisado como lo haría un auditor de seguridad. Lo que se añade al diseño:
 9. **Sin CORS en `/api`:** la web es del mismo origen y las apps no lo necesitan; así otras webs no pueden usar la API
    desde el navegador.
 10. **Límite de peticiones** por IP en todas las rutas y por cuenta en `PUT`.
-11. **Lo que el diseño no protege (aceptado):** el servidor puede negarse a servir o borrar bloques (disponibilidad,
+11. **Web, revisión del 2026-11-23:** la página no se puede meter en un iframe de otra web (`frame-ancestors 'none'`
+    y `X-Frame-Options` en `web/public/_headers`, porque la CSP en `<meta>` no admite `frame-ancestors`), y cada
+    petición a `/api/boveda` se corta a los 20 s, como en las apps. La fecha y la versión de la política aceptadas solo
+    las guarda el núcleo (`brivel.syncConsent`): IndexedDB llevaba otra copia con la versión fija de la v2.
+12. **Lo que el diseño no protege (aceptado):** el servidor puede negarse a servir o borrar bloques (disponibilidad,
     no confidencialidad); un dispositivo nuevo no detecta una versión vieja; quien tenga el código tiene los datos.
 
 ## Orden de trabajo

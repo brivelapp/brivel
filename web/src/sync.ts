@@ -2,10 +2,9 @@
 // exportable: IndexedDB la guarda tal cual y ningún script puede leer sus bytes. El código no se guarda.
 import { WebSyncKeys } from "brivel-shared"
 
-/** Versión de la política de privacidad que se acepta al activar (CUMPLIMIENTO #6: fecha y versión). */
-export const POLICY_VERSION = "2026-11-02.2"
-
-interface Stored { key: CryptoKey; bearer: string; account: string; consentAt: string; policy: string }
+// La fecha y la versión de la política aceptadas (CUMPLIMIENTO #6) las guarda el núcleo en brivel.syncConsent, como en
+// las apps. Aquí iban también, con una versión fija que se quedó en la v2: los registros viejos aún las llevan
+interface Stored { key: CryptoKey; bearer: string; account: string }
 
 export function request<T>(mode: IDBTransactionMode, f: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -27,7 +26,7 @@ export async function loadKeys(): Promise<WebSyncKeys | null> {
 
 // Un objeto plano: la clase de Kotlin no sobrevive a la copia de IndexedDB
 export const saveKeys = (k: WebSyncKeys) => request("readwrite", (store) => store.put(
-  { key: k.key, bearer: k.bearer, account: k.account, consentAt: new Date().toISOString(), policy: POLICY_VERSION } satisfies Stored,
+  { key: k.key, bearer: k.bearer, account: k.account } satisfies Stored,
   "llaves",
 ))
 
