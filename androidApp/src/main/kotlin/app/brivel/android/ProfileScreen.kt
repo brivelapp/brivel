@@ -40,8 +40,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -224,7 +222,7 @@ internal fun OtherRaces(app: BrivelApp, act: Act) {
         }
     } else {
         Secondary("El plan afina unos días antes de cada una y te deja recuperar después. Elige importante (B) o de preparación (C).")
-        OutlinedButton(onClick = { adding = true }) { Text("Añadir otra carrera") }
+        TonalButton(onClick = { adding = true }) { Text("Añadir otra carrera") }
     }
 }
 
@@ -278,11 +276,11 @@ private fun HealthCard(app: BrivelApp, act: Act, version: Int) {  // version: re
             MoreInfo("¿Qué lee exactamente?", HEALTH_READS)
             ChipRow {
                 Button(onClick = { act.suspend("Datos actualizados") { reader.sync(app) } }) { Text("Actualizar ahora") }
-                OutlinedButton(onClick = { act.run { app.clearHealth() } }) { Text("Desconectar") }
+                TonalButton(onClick = { act.run { app.clearHealth() } }) { Text("Desconectar") }
             }
             if (missing.isNotEmpty()) {
                 Secondary("Brivel ya puede leer también las fases del sueño, el oxígeno en sangre, la respiración y la grasa corporal. Necesita tu permiso.")
-                OutlinedButton(onClick = { request.launch(missing) }) { Text("Dar permiso a los datos nuevos") }
+                TonalButton(onClick = { request.launch(missing) }) { Text("Dar permiso a los datos nuevos") }
             }
         } else if (reader.available) {
             Text("Brivel lee tu sueño, pulso y entrenos de Health Connect. Solo en este móvil.", fontSize = 15.sp)
@@ -306,7 +304,7 @@ private fun IntervalsCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER"
             app.data.cache?.let { StateLine("Al día", it.syncedAt) }
             ChipRow {
                 Button(onClick = { act.suspend("Datos actualizados") { app.sync() } }) { Text("Actualizar ahora") }
-                OutlinedButton(onClick = { act.suspend("intervals.icu desvinculado") { app.disconnectIntervals() } }) { Text("Desconectar") }
+                TonalButton(onClick = { act.suspend("intervals.icu desvinculado") { app.disconnectIntervals() } }) { Text("Desconectar") }
             }
         } else {
             Text("Gratis; recoge los datos de cualquier reloj.", fontSize = 15.sp)

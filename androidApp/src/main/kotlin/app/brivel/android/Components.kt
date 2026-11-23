@@ -4,6 +4,11 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.text.TextStyle
@@ -148,6 +153,26 @@ fun SecondaryButton(text: String, modifier: Modifier = Modifier, onClick: () -> 
     Button(onClick, modifier.heightIn(min = 50.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Palette.chip, contentColor = Palette.text)) {
         Text(text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+    }
+
+/** Botón secundario con contenido propio: la cápsula gris de iOS, en lugar del botón con borde de Material. */
+@Composable
+fun TonalButton(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) =
+    Button(onClick, modifier.heightIn(min = 50.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Palette.chip, contentColor = Palette.text), content = content)
+
+/**
+ * Opción que se elige, como `Chip` de iOS: cápsula gris; elegida, verde suave con borde verde. Mismos parámetros que
+ * `FilterChip` de Material, que llevaba esquinas, borde y una marca distintos de iOS y la web.
+ */
+@Composable
+fun Chip(selected: Boolean, onClick: () -> Unit, label: @Composable () -> Unit, modifier: Modifier = Modifier) =
+    Box(modifier.heightIn(min = 40.dp).clip(CircleShape).background(if (selected) Palette.okSoft else Palette.chip)
+        .border(1.5.dp, if (selected) Palette.ok else Color.Transparent, CircleShape)
+        .selectable(selected, role = Role.Checkbox, onClick = onClick).padding(horizontal = 14.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center) {
+        CompositionLocalProvider(LocalContentColor provides Palette.text,  // texto oscuro también elegida: contraste WCAG (2026-11-19)
+            LocalTextStyle provides LocalTextStyle.current.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)) { label() }
     }
 
 /** Cómo estás hoy: el color y el icono dicen bien, con cuidado o descanso; debajo, el porqué. */

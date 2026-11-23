@@ -13,7 +13,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,7 +58,7 @@ fun GarminCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: 
             }
             !asking -> {
                 Secondary(GARMIN_INTRO)
-                OutlinedButton(onClick = { asking = true }) { Text("Conectar Garmin Connect™") }
+                TonalButton(onClick = { asking = true }) { Text("Conectar Garmin Connect™") }
             }
             else -> {
                 Secondary(GARMIN_HOW)
@@ -73,7 +72,7 @@ fun GarminCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: 
                             asking = false
                         }
                     }) { Text("Ir a Garmin") }
-                    OutlinedButton(onClick = { asking = false }) { Text("Cancelar") }
+                    TonalButton(onClick = { asking = false }) { Text("Cancelar") }
                 }
             }
         }

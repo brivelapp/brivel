@@ -12,7 +12,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -86,7 +85,7 @@ fun SyncCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: In
                 }
                 ChipRow {
                     Button(onClick = { act.syncNow() }) { Text("Sincronizar ahora") }
-                    OutlinedButton(onClick = { showCode = !showCode }) { Text(if (showCode) "Ocultar código" else "Ver código") }
+                    TonalButton(onClick = { showCode = !showCode }) { Text(if (showCode) "Ocultar código" else "Ver código") }
                 }
                 TextButton(onClick = { act.run("Este móvil ya no sincroniza. La copia sigue en el servidor") { app.forgetSync() } }) {
                     LinkText("Dejar de sincronizar aquí")
@@ -98,7 +97,7 @@ fun SyncCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: In
                 Secondary(if (allowCreate) SYNC_INTRO else "Únete con su código y tendrás aquí los mismos datos.")
                 ChipRow {
                     if (allowCreate) Button(onClick = { view = SyncView.CREATE }) { Text("Activar") }
-                    OutlinedButton(onClick = { view = SyncView.JOIN }) { Text("Tengo un código") }
+                    TonalButton(onClick = { view = SyncView.JOIN }) { Text("Tengo un código") }
                 }
             }
             else -> {
@@ -125,7 +124,7 @@ fun SyncCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: In
                             showCode = true
                         }
                     }) { Text(if (joining) "Unirse" else "Activar") }
-                    OutlinedButton(onClick = { view = SyncView.IDLE }) { Text("Cancelar") }
+                    TonalButton(onClick = { view = SyncView.IDLE }) { Text("Cancelar") }
                 }
             }
         }

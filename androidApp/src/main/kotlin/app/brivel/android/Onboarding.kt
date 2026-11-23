@@ -28,7 +28,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -188,7 +187,7 @@ fun RaceForm(race: RaceInfo, onChange: (RaceInfo) -> Unit) {
             singleLine = true, modifier = Modifier.fillMaxWidth())
         ChipRow {
             RACE_SPORTS.forEach { (key, label) ->
-                FilterChip(selected = race.sport == key, label = { Text(label) }, onClick = { onChange(race.copy(sport = key)) })
+                Chip(selected = race.sport == key, label = { Text(label) }, onClick = { onChange(race.copy(sport = key)) })
             }
         }
         OutlinedTextField(race.date, { onChange(race.copy(date = it.trim())) }, label = { Text("Fecha (AAAA-MM-DD)") },
@@ -204,7 +203,7 @@ fun RaceForm(race: RaceInfo, onChange: (RaceInfo) -> Unit) {
         }
         ChipRow {
             listOf("A" to "Principal", "B" to "Importante", "C" to "Preparatoria").forEach { (p, label) ->
-                FilterChip(selected = race.priority == p, label = { Text(label) }, onClick = { onChange(race.copy(priority = p)) })
+                Chip(selected = race.priority == p, label = { Text(label) }, onClick = { onChange(race.copy(priority = p)) })
             }
         }
     }

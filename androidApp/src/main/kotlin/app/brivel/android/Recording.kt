@@ -24,8 +24,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -132,7 +130,7 @@ fun RecordCard(app: BrivelApp, act: Act, version: Int) {
             Secondary("Graba el recorrido, la distancia y el ritmo con el GPS de este móvil. La ubicación solo se usa mientras grabas y " +
                 "el recorrido se queda en este móvil: no se sube ni se sincroniza.")
             ChipRow {
-                RECORD_SPORTS.forEach { s -> FilterChip(selected = sport == s, label = { Text(SPORT_LABEL[s] ?: s) }, onClick = { sport = s }) }
+                RECORD_SPORTS.forEach { s -> Chip(selected = sport == s, label = { Text(SPORT_LABEL[s] ?: s) }, onClick = { sport = s }) }
             }
             PrimaryButton("Empezar a grabar", Modifier.fillMaxWidth()) {
                 if (RecordService.allowed(context)) begin()
@@ -151,7 +149,7 @@ fun RecordCard(app: BrivelApp, act: Act, version: Int) {
             if (!view.hasSignal) Secondary("Buscando la señal del GPS: sal a cielo abierto. La distancia empieza a contar con el primer punto.")
             else if (!RecordService.allowed(context)) Secondary("Brivel ya no tiene permiso de ubicación: actívalo en los ajustes del móvil para seguir grabando.", Palette.caution)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedButton(onClick = { act.run { if (view.paused) app.resumeRecording(now()) else app.pauseRecording(now()) } }, modifier = Modifier.weight(1f)) {
+                TonalButton(onClick = { act.run { if (view.paused) app.resumeRecording(now()) else app.pauseRecording(now()) } }, modifier = Modifier.weight(1f)) {
                     Text(if (view.paused) "Seguir" else "Pausar")
                 }
                 PrimaryButton("Terminar", Modifier.weight(1f)) {
