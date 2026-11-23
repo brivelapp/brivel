@@ -30,36 +30,11 @@ struct TodayView: View {
                 if !screen.stateTitle.isEmpty {
                     StateCard(tone: screen.tone, title: screen.stateTitle, detail: screen.stateDetail, source: screen.garminNote)
                 }
-                if screen.askReadiness { ReadinessCard() }
                 if let run = screen.rateRun { RateRunCard(run: run) }
                 if screen.noPlan && day.items.isEmpty { NoRoutineToday(next: screen.nextRoutine, openTrain: openTrain) }
                 DayContent(day: day, linked: model.core.watchRoute != nil, today: true)
-                Module {
-                    TitleRow {
-                        Text("Esta semana").font(.section)
-                    } trailing: {
-                        // Sin plan, la fuerza hecha frente a los 2 días de la OMS; con plan, los minutos de actividad
-                        Text(screen.noPlan ? "\(screen.strengthDone) de 2 días de fuerza" : "\(screen.weekMinutes) de 150 min")
-                            .font(.mono(14, relativeTo: .subheadline)).foregroundStyle(Palette.muted)
-                    }
-                    WeekDots(days: screen.weekDots)
-                    if screen.noPlan {
-                        if screen.strengthDone >= 2 {
-                            Text("Cumples los 2 días de fuerza que recomienda la OMS").font(.ui(14, .semibold, relativeTo: .subheadline))
-                                .foregroundStyle(Palette.ok)
-                        }
-                    } else if screen.meetsWho {
-                        HStack(spacing: 6) {
-                            Glyph(name: "check", size: 18, color: Palette.ok)
-                            Text("Cumples la recomendación de la OMS para tu salud").font(.ui(14, .semibold, relativeTo: .subheadline))
-                                .foregroundStyle(Palette.ok)
-                        }
-                    } else {
-                        Secondary(screen.strengthLine)
-                    }
-                    ForEach(screen.warnings, id: \.self) { ReasonRow(reason: Reason(text: $0, evidence: nil)) }
-                    ForEach(screen.info, id: \.self) { Secondary($0) }
-                }
+                // Widgets (TodayWidgets.swift): las preguntas y la semana de serie, y los que se añadan
+                TodayWidgets(screen: screen)
             }.padding(.horizontal, 18).padding(.vertical, 16)
         }.background(Palette.bg)
         .sheet(isPresented: $goalOpen) {
@@ -196,30 +171,6 @@ private struct SessionItem: View {
                     }.buttonStyle(SecondaryStyle())
                 }
             }
-        }
-    }
-}
-
-private let ratings = (1...5).map { n in ("\(n)", n == 1 ? "1 mal" : n == 5 ? "5 bien" : "\(n)") }
-
-private struct ReadinessCard: View {
-    @EnvironmentObject var model: AppModel
-    @State private var sleep = 3
-    @State private var energy = 3
-    @State private var soreness = 3
-
-    var body: some View {
-        Module {
-            Text("¿Cómo estás hoy?").font(.section)
-            Secondary("Sin reloj vinculado, tus respuestas ajustan la sesión de hoy: si dormiste mal o estás cargado, será más suave.")
-            // Del 1 al 5, con el mismo selector que el Perfil
-            ForEach([("Sueño", $sleep), ("Energía", $energy), ("Agujetas o molestias", $soreness)], id: \.0) { label, value in
-                Text(label).font(.small)
-                Segmented(options: ratings, selected: "\(value.wrappedValue)") { value.wrappedValue = Int($0) ?? 3 }
-            }
-            Button("Ajustar hoy") {
-                model.run { try model.core.answerReadiness(sleep: Int32(sleep), energy: Int32(energy), soreness: Int32(soreness)) }
-            }.buttonStyle(PrimaryStyle())
         }
     }
 }
