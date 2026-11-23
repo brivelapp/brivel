@@ -30,6 +30,7 @@ import kotlinx.datetime.todayIn
 import kotlinx.serialization.json.Json
 
 private const val DATA_KEY = "brivel.data"
+private const val WIDGETS_KEY = "brivel.widgets.today"  // los widgets de Hoy de este dispositivo (Widgets.kt)
 private const val API_KEY = "intervals.apiKey"  // cuentas vinculadas con clave antes de OAuth (2026-11-07)
 private const val INTERVALS_TOKEN = "intervals.token"  // token de OAuth, en el almacén seguro
 private const val INTERVALS_PKCE = "intervals.pkce"  // "state verificador" mientras se conecta
@@ -140,6 +141,25 @@ class BrivelApp(
     // ------------------------------------------------------------ apartados
 
     fun todayScreen(): TodayScreen = buildToday(data, today())
+
+    // ------------------------------------------------------------ widgets de Hoy (Widgets.kt)
+
+    /** Los de este dispositivo: se guardan aparte y no se sincronizan, porque cada pantalla tiene su sitio. */
+    val widgetSlots: List<WidgetSlot>
+        get() = store.read(WIDGETS_KEY)?.let { runCatching { json.decodeFromString<List<WidgetSlot>>(it) }.getOrNull() }
+            ?.let(::cleanSlots) ?: DEFAULT_WIDGETS
+
+    private fun saveWidgets(slots: List<WidgetSlot>) = store.write(WIDGETS_KEY, json.encodeToString(slots))
+
+    fun todayWidgets(): List<WidgetView> = widgetViews(widgetSlots, data, today())
+    fun widgetChoices(): List<WidgetChoice> = WIDGETS.map { (key, title, text) -> WidgetChoice(key, title, text, widgetSlots.any { it.key == key }) }
+
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun addWidget(key: String, wide: Boolean) = saveWidgets(addSlot(widgetSlots, key, wide))
+    fun removeWidget(key: String) = saveWidgets(widgetSlots.filterNot { it.key == key })
+    fun setWidgetWide(key: String, wide: Boolean) = saveWidgets(widgetSlots.map { if (it.key == key) it.copy(wide = wide) else it })
+    /** Lo pone en la posición `to` (0 es el primero, justo debajo de la sesión de hoy). */
+    fun moveWidget(key: String, to: Int) = saveWidgets(moveSlot(widgetSlots, key, to))
     fun month(year: Int, month: Int): MonthScreen = buildMonth(data, today(), year, month)
     fun progress(): ProgressScreen = buildProgress(data, today())
     /** El plan entero, semana a semana (PlanOverview.kt); null sin objetivo. */
@@ -1085,6 +1105,7 @@ class BrivelApp(
         data.activities.forEach { store.write(DETAIL_KEY + it.id, null) }
         keep(null)
         store.write(DATA_KEY, null)
+        store.write(WIDGETS_KEY, null)
         forgetSync()
         data = AppData()
     }
