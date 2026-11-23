@@ -11,7 +11,7 @@ struct TrainView: View {
         model.run { model.strengthDate = try model.core.startWorkout(routineId: routineId).date }
     }
 
-    @State private var recording = 0  // «Grabar con GPS» abre su parte
+    @State private var page: String? = nil  // cada parte, su pantalla (2026-11-23)
 
     private func count(_ n: Int, _ one: String, _ many: String) -> String { n == 0 ? "Ninguna todavía" : n == 1 ? "1 \(one)" : "\(n) \(many)" }
 
@@ -21,6 +21,25 @@ struct TrainView: View {
 
     var body: some View {
         let _ = model.version
+        switch page {
+        case "record": SubScreen(title: "Grabar con GPS", back: { page = nil }) { RecordSection() }
+        case "sessions": SubScreen(title: "Sesiones", back: { page = nil }) { SessionsSection() }
+        case "routines":
+            SubScreen(title: "Rutinas de fuerza", back: { page = nil }) {
+                if model.core.workoutToday == nil {
+                    ForEach(model.core.routines, id: \.id) { r in
+                        Button { start(r.id) } label: { Text("Empezar «\(r.name)» hoy").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
+                    }
+                }
+                RoutinesSection()
+            }
+        case "activities": SubScreen(title: "Actividades", back: { page = nil }) { ActivitiesSection() }
+        case "library": SubScreen(title: "Biblioteca de ejercicios", back: { page = nil }) { LibrarySection() }
+        default: trainList
+        }
+    }
+
+    @ViewBuilder private var trainList: some View {
         let workout = model.core.workoutToday
         let routines = model.core.routines
         ScrollView {
@@ -31,7 +50,7 @@ struct TrainView: View {
                     Button { if let workout { model.strengthDate = workout.date } else { start(nil) } } label: {
                         Text(workout != nil ? "Seguir con la fuerza" : "Entrenar fuerza").frame(maxWidth: .infinity)
                     }.buttonStyle(PrimaryStyle())
-                    Button { recording += 1 } label: { Text("Grabar con GPS").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
+                    Button { page = "record" } label: { Text("Grabar con GPS").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
                 }
                 if let workout {
                     Module {
@@ -41,20 +60,12 @@ struct TrainView: View {
                     }
                 }
                 groupTitle("Lo tuyo")
-                Fold(title: "Grabar con GPS", line: "Carrera, bici o caminata, desde el iPhone", startOpen: recording > 0) { RecordSection() }
-                    .id("grabar-\(recording)")
-                Fold(title: "Sesiones", line: count(model.core.ownSessions.count, "sesión", "sesiones") + " · carrera, bici, natación") { SessionsSection() }
-                Fold(title: "Rutinas de fuerza", line: count(routines.count, "rutina", "rutinas") + " · sustituyen a la del plan") {
-                    if workout == nil {
-                        ForEach(routines, id: \.id) { r in
-                            Button { start(r.id) } label: { Text("Empezar «\(r.name)» hoy").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
-                        }
-                    }
-                    RoutinesSection()
-                }
-                Fold(title: "Actividades", line: count(model.core.activities().count, "actividad", "actividades") + " · subir FIT, GPX o TCX") { ActivitiesSection() }
+                RowButton(title: "Grabar con GPS", value: "Carrera, bici o caminata, desde el iPhone") { page = "record" }
+                RowButton(title: "Sesiones", value: count(model.core.ownSessions.count, "sesión", "sesiones") + " · carrera, bici, natación") { page = "sessions" }
+                RowButton(title: "Rutinas de fuerza", value: count(routines.count, "rutina", "rutinas") + " · sustituyen a la del plan") { page = "routines" }
+                RowButton(title: "Actividades", value: count(model.core.activities().count, "actividad", "actividades") + " · subir FIT, GPX o TCX") { page = "activities" }
                 groupTitle("Consultar")
-                Fold(title: "Biblioteca de ejercicios", line: "Busca por zona del cuerpo o material") { LibrarySection() }
+                RowButton(title: "Biblioteca de ejercicios", value: "Busca por zona del cuerpo o material") { page = "library" }
             }.padding(.horizontal, 18).padding(.vertical, 16)
         }
         .background(Palette.bg)

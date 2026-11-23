@@ -148,8 +148,8 @@ struct SessionsSection: View {
 
     var body: some View {
         Module {
-            Text("Tus sesiones").font(.section)
-            Secondary("Monta tus propias sesiones de carrera, bici, natación o caminata, paso a paso. Van al calendario y al reloj como las del plan.")
+            Button { creating = true } label: { Text("Nueva sesión").frame(maxWidth: .infinity) }.buttonStyle(PrimaryStyle())
+            if model.core.ownSessions.isEmpty { Secondary("Aún no tienes ninguna. Móntala paso a paso y va al calendario y al reloj como las del plan.") }
             ForEach(model.core.ownSessions, id: \.id) { s in
                 HStack {
                     Button { editing = s } label: {
@@ -162,7 +162,6 @@ struct SessionsSection: View {
                         .font(.ui(14, .bold)).buttonStyle(TextActionStyle()).accessibilityLabel("Hacer \(s.name) hoy")
                 }
             }
-            Button { creating = true } label: { Text("Nueva sesión").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
         }
         .sheet(isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) { SessionEditor(start: editing) }
         .sheet(isPresented: $creating) { SessionEditor(start: nil) }

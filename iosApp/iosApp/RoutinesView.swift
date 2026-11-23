@@ -188,8 +188,8 @@ struct RoutinesSection: View {
 
     var body: some View {
         Module {
-            Text("Tus rutinas").font(.section)
-            Secondary("Crea tu propia rutina de fuerza y elige qué días la haces. Esos días sustituye a la fuerza del plan.")
+            Button { creating = true } label: { Text("Nueva rutina").frame(maxWidth: .infinity) }.buttonStyle(PrimaryStyle())
+            if model.core.routines.isEmpty { Secondary("Aún no tienes ninguna. Los días que elijas, sustituye a la fuerza del plan.") }
             ForEach(model.core.routines, id: \.id) { r in
                 Button { editing = r } label: {
                     HStack {
@@ -202,9 +202,8 @@ struct RoutinesSection: View {
                     }.contentShape(Rectangle())
                 }.buttonStyle(.plain)
             }
-            Button { creating = true } label: { Text("Nueva rutina").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
-            Text("Tus ejercicios").font(.section)
-            Secondary("Si falta alguno en la biblioteca, créalo y úsalo en tus rutinas.")
+            Text("Ejercicios propios").font(.section)
+            if model.core.customExercises.isEmpty { Secondary("Si falta alguno en la biblioteca, créalo aquí.") }
             ForEach(model.core.customExercises, id: \.name) { e in
                 HStack {
                     Text(e.name)

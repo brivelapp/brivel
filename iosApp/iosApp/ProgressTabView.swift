@@ -7,10 +7,20 @@ private let bodyKeys = ["sleep", "sleepScore", "deepSleep", "remSleep", "hrv", "
 struct ProgressTabView: View {
     @EnvironmentObject var model: AppModel
     let openProfile: () -> Void
+    @State private var page: String? = nil  // Medallas y Tus medidas tienen su pantalla (2026-11-23)
 
     var body: some View {
         let _ = model.version
         let screen = model.core.progress()
+        switch page {
+        case "medals":
+            if let badges = screen.badges { SubScreen(title: "Medallas", back: { page = nil }) { BadgesSection(badges: badges) } }
+        case "measures": SubScreen(title: "Tus medidas", back: { page = nil }) { MeasuresSection(screen: screen) }
+        default: progressList(screen)
+        }
+    }
+
+    @ViewBuilder private func progressList(_ screen: ProgressScreen) -> some View {
         let bodyMetrics = screen.metrics.filter { bodyKeys.contains($0.key) }
         let training = screen.metrics.filter { !bodyKeys.contains($0.key) }
         let last = screen.weeklyMinutes.last?.value ?? 0
@@ -26,7 +36,7 @@ struct ProgressTabView: View {
                     }
                 }
                 if let badges = screen.badges {
-                    Fold(title: "Medallas", line: badges.next.first.map { "La más cerca: \($0.title)" } ?? badges.nextLevel) { BadgesSection(badges: badges) }
+                    RowButton(title: "Medallas", value: badges.next.first.map { "La más cerca: \($0.title)" } ?? badges.nextLevel ?? "") { page = "medals" }
                 }
                 if screen.linked && !bodyMetrics.isEmpty {
                     Fold(title: "Tu cuerpo", line: bodyMetrics.prefix(3).map { $0.label }.joined(separator: ", ") + (bodyMetrics.count > 3 ? "…" : "")) {
@@ -100,11 +110,15 @@ struct ProgressTabView: View {
                 if !screen.curves.isEmpty {
                     Fold(title: "Curvas de ritmo y potencia", line: screen.curves.map { $0.title }.joined(separator: " · ")) { CurvesSection(curves: screen.curves) }
                 }
-                Fold(title: "Tus medidas", line: screen.measures.isEmpty ? "Apunta tu peso o tus perímetros" : screen.measures.map { $0.label }.joined(separator: ", ")) {
-                    MeasuresSection(screen: screen)
-                }
-                Fold(title: "Récords y marcas", line: screen.strengthRecords.first?.title ?? screen.milestones.first?.title ?? "Saldrán al entrenar") {
-                    MilestonesSection(screen: screen)
+                RowButton(title: "Tus medidas", value: screen.measures.isEmpty ? "Apunta tu peso o tus perímetros" : screen.measures.map { $0.label }.joined(separator: ", ")) { page = "measures" }
+                // Sin récords no se abre una pantalla vacía: la fila lo dice y no lleva flecha
+                if screen.strengthRecords.isEmpty && screen.milestones.isEmpty {
+                    Module {
+                        Text("Récords y marcas").font(.section)
+                        Secondary("Saldrán al entrenar")
+                    }
+                } else {
+                    Fold(title: "Récords y marcas", line: screen.strengthRecords.first?.title ?? screen.milestones.first?.title) { MilestonesSection(screen: screen) }
                 }
             }.padding(.horizontal, 18).padding(.vertical, 16)
         }.background(Palette.bg)
@@ -192,20 +206,18 @@ private struct MeasuresSection: View {
 
     var body: some View {
         Module {
-            Text("Tus medidas").font(.section)
-            Secondary("Apunta tu peso o tus perímetros con una cinta para ver cómo cambian. La de hoy sustituye a la que ya hubiera hoy.")
-            ForEach(Array(screen.measures.enumerated()), id: \.offset) { i, m in MetricRow(metric: m, first: i == 0) }
             ChipChoice(title: "Medida", options: TrainingKt.MEASURE_KINDS.map { ($0, TrainingKt.MEASURES[$0]?.label ?? $0) }, selection: $kind)
-            HStack(spacing: 10) {
-                TextField("Valor (\(TrainingKt.MEASURES[kind]?.unit ?? ""))", text: $value).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
-                Button("Apuntar") {
-                    guard let v = Double(value.replacingOccurrences(of: ",", with: ".")) else { model.message = "Escribe un número"; return }
-                    model.run("Medida apuntada") {
-                        try model.core.logMeasure(kind: kind, value: v)
-                        value = ""
-                    }
-                }.buttonStyle(SecondaryStyle())
-            }
+            TextField("Valor (\(TrainingKt.MEASURES[kind]?.unit ?? ""))", text: $value).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
+                .font(.mono(22, .semibold))
+            Button {
+                guard let v = Double(value.replacingOccurrences(of: ",", with: ".")) else { model.message = "Escribe un número"; return }
+                model.run("Medida apuntada") {
+                    try model.core.logMeasure(kind: kind, value: v)
+                    value = ""
+                }
+            } label: { Text("Apuntar").frame(maxWidth: .infinity) }.buttonStyle(PrimaryStyle())
+            if !screen.measures.isEmpty { Text("Últimas").font(.section) }
+            ForEach(Array(screen.measures.enumerated()), id: \.offset) { i, m in MetricRow(metric: m, first: i == 0) }
         }
     }
 }

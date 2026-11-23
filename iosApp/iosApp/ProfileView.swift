@@ -101,6 +101,7 @@ struct ProfileView: View {
     @State private var loaded = false
     @Binding var settings: Bool  // la rueda del Perfil abre Ajustes
     var openGoal: () -> Void = {}
+    @State private var screen: String? = nil  // Tu semana, Objetivo y el material tienen su pantalla (2026-11-23)
 
     /// «3 días · 2 h 30 min»: los días con minutos y el total de la semana.
     private func weekLine(_ days: [String: Int]) -> String {
@@ -117,6 +118,29 @@ struct ProfileView: View {
 
     var body: some View {
         let _ = model.version
+        switch screen {
+        case "week":
+            SubScreen(title: "Tu semana", back: { screen = nil }) {
+                WeekBars(days: draft.days) { draft.days = $0; save() }
+                Secondary("Sin minutos, ese día es de descanso.")
+            }
+        case "goal":
+            SubScreen(title: "Objetivo", back: { screen = nil }) {
+                Module {
+                    Text(model.core.data.goal.map { TextsKt.goalLabel(goal: $0) } ?? "Sin objetivo").font(.cardTitle)
+                    Secondary("El plan se rehace al momento si lo cambias.")
+                }
+                Button { openGoal() } label: { Text("Cambiar objetivo").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
+                OtherRacesView()
+            }
+        case "gear":
+            SubScreen(title: "Zapatillas y bicis", back: { screen = nil }) { GearSection() }
+        default:
+            profileList
+        }
+    }
+
+    private var profileList: some View {
         NavigationStack {
         ScrollViewReader { proxy in
         ScrollView {
@@ -135,17 +159,19 @@ struct ProfileView: View {
                     // Por secciones (2026-11-23): una fila por dato con su valor; al tocarla se cambia ahí mismo
                     let ciFuerza = UserDefaults.standard.string(forKey: "scrollTo") == "fuerza"  // capturas del CI
                     if model.core.data.goal?.kind != .own {
-                        Fold(title: "Deportes", line: draft.cardio.isEmpty ? "Solo caminar" : draft.cardio.map { sportLabel($0) }.joined(separator: ", ")) {
-                            Module { SportPicker(cardio: draft.cardio) { draft.cardio = $0; save() } }
+                        // Revisión de los desplegables (2026-11-23): lo que se elige, aquí mismo con ✓; Tu semana, en su pantalla
+                        let cardio = draft.cardio.filter { TextsKt.PICKABLE_CARDIO.contains($0) }
+                        Fold(title: "Deportes", line: cardio.isEmpty ? "Solo caminar" : cardio.map { sportLabel($0) }.joined(separator: ", ")) {
+                            CheckList(options: TextsKt.PICKABLE_CARDIO.map { ($0, sportLabel($0), nil) }, selected: draft.cardio) {
+                                draft.cardio = TextsKt.toggleCardio(cardio: draft.cardio, sport: $0); save()
+                            }
                         }
-                        Fold(title: "Tu semana", line: weekLine(draft.days)) {
-                            Module { WeekBars(days: draft.days) { draft.days = $0; save() } }
-                        }
+                        RowButton(title: "Tu semana", value: weekLine(draft.days)) { screen = "week" }
                         Fold(title: "Fuerza", line: strengthChoices.first { $0.0 == draft.strength }?.1, startOpen: ciFuerza) {
-                            Module { Segmented(options: strengthChoices.map { ($0.0, $0.1) }, selected: draft.strength) { draft.strength = $0; save() } }
+                            CheckList(options: strengthChoices.map { ($0.0, $0.1, $0.2) }, selected: [draft.strength]) { draft.strength = $0; save() }
                         }.id("fuerza")
                         Fold(title: "Tu nivel", line: levelChoices.first { $0.0 == draft.level }?.1, startOpen: ciFuerza) {
-                            Module { Segmented(options: levelChoices.map { ($0.0, $0.1) }, selected: draft.level) { draft.level = $0; save() } }
+                            CheckList(options: levelChoices.map { ($0.0, $0.1, $0.2) }, selected: [draft.level]) { draft.level = $0; save() }
                         }
                     }
                     Fold(title: "Año de nacimiento", line: draft.birthYear.map(String.init) ?? "Sin poner") {
@@ -162,16 +188,10 @@ struct ProfileView: View {
                     }
                     // «Cambiar objetivo» vive aquí desde el 2026-11-23 (antes, «Tu objetivo» en Hoy)
                     if let goal = model.core.data.goal {
-                        Fold(title: "Objetivo", line: TextsKt.goalLabel(goal: goal)) {
-                            Module {
-                                Secondary("Puedes cambiarlo cuando quieras; el plan se rehace al momento.")
-                                Button { openGoal() } label: { Text("Cambiar objetivo").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
-                                OtherRacesView()
-                            }
-                        }
+                        RowButton(title: "Objetivo", value: TextsKt.goalLabel(goal: goal)) { screen = "goal" }
                     }
                     let gear = model.core.gear().rows.count
-                    Fold(title: "Zapatillas y bicis", line: gear == 0 ? "Ninguna todavía" : gear == 1 ? "1 en tu material" : "\(gear) en tu material") { GearSection() }
+                    RowButton(title: "Zapatillas y bicis", value: gear == 0 ? "Ninguna todavía" : gear == 1 ? "1 en tu material" : "\(gear) en tu material") { screen = "gear" }
             }.padding(16)
         }
         // `-scrollTo fuerza` al lanzar: las capturas del CI ven la fuerza y el nivel sin poder desplazar

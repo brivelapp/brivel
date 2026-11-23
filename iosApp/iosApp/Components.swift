@@ -513,3 +513,70 @@ struct Fold<Content: View>: View {
         if open { content }
     }
 }
+
+/// Lista de opciones con ✓ (una o varias): lo elegido se ve sin depender del color.
+struct CheckList: View {
+    let options: [(String, String, String?)]
+    let selected: [String]
+    let onToggle: (String) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(options.enumerated()), id: \.offset) { i, o in
+                if i > 0 { Divider() }
+                let on = selected.contains(o.0)
+                Button { onToggle(o.0) } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(o.1).font(.ui(15, on ? .bold : .regular)).foregroundStyle(Palette.text)
+                            if let hint = o.2 { Secondary(hint) }
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                        if on { Text("✓").font(.ui(18, .heavy)).foregroundStyle(Palette.ok) }
+                    }.padding(.horizontal, 16).frame(minHeight: 52).contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .background(Palette.surface).clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+}
+
+/// Una pantalla propia dentro de una pestaña: título una vez, arriba, con «‹» para volver.
+struct SubScreen<Content: View>: View {
+    let title: String
+    let back: () -> Void
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 4) {
+                    Button(action: back) { Glyph(name: "chevron_left", size: 24) }
+                        .frame(minWidth: 44, minHeight: 44).accessibilityLabel("Volver")
+                    Text(title).font(.screenTitle)
+                }
+                content
+            }.padding(.horizontal, 18).padding(.vertical, 16)
+        }.background(Palette.bg)
+    }
+}
+
+/// Una fila que abre su propia pantalla: título, valor y ›.
+struct RowButton: View {
+    let title: String
+    let value: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Module {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(.section).foregroundStyle(Palette.text)
+                        Secondary(value)
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                    RowChevron()
+                }
+            }
+        }.buttonStyle(.plain)
+    }
+}
