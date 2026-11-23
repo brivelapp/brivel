@@ -17,6 +17,15 @@
       "versions": [
         {
           "version": "0.1.0",
+          "buildVersion": "220",
+          "date": "2026-11-23T15:06:00Z",
+          "localizedDescription": "Brivel por secciones: Hoy con widgets y la sesión en una tarjeta con «Detalles ›»; Progreso con los cuatro datos que elijas; Entrenar con «Entrenar fuerza» y «Grabar con GPS»; Perfil en filas. Una sesión hecha enseña los datos de la actividad. Formato de datos 12.",
+          "downloadURL": "https://github.com/brivelapp/brivel/releases/download/prueba-2026-11-23-1/Brivel.ipa",
+          "size": 5605685,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "0.1.0",
           "buildVersion": "184",
           "date": "2026-11-18T21:58:12Z",
           "localizedDescription": "Sin plan («Ya tengo mi rutina»), objetivos «Cardio y salud» y «Fuerza y músculo», ritmos en min/km, vatios o pulso, tests de campo y, para quien empieza, el ritmo aprendido de sus carreras fáciles. Formato de datos 12.",
