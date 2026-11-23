@@ -52,7 +52,7 @@ fun AppData.latestTest(sport: String, kind: String): FieldTest? =
  * Los tests de Brivel mandan sobre lo que traiga intervals.icu: son de la persona y más recientes [Inferencia]. El ritmo
  * aprendido de las carreras fáciles solo da lo suave; con el ritmo umbral, manda este.
  */
-internal fun Profile?.withTests(data: AppData, easyPace: Double? = null): Profile? {
+internal fun Profile?.withTests(data: AppData, easyPace: Pair<Double, Double>? = null): Profile? {
     val run = data.latestTest("running", "threshold")
     val ftp = data.latestTest("cycling", "ftp")
     val bike = data.latestTest("cycling", "lthr")
@@ -62,7 +62,7 @@ internal fun Profile?.withTests(data: AppData, easyPace: Double? = null): Profil
     run?.hr?.let { lthr["running"] = it }
     bike?.hr?.let { lthr["cycling"] = it }
     return p.copy(lthrBySport = lthr, runPace = run?.paceSecKm ?: p.runPace, ftp = ftp?.watts?.let { 0.95 * it } ?: p.ftp,
-        easyPace = easyPace,
+        easyPace = easyPace?.first, easyPaceSlow = easyPace?.second,
         needsTest = p.needsTest - setOfNotNull("running".takeIf { run != null || easyPace != null }, "cycling".takeIf { ftp != null || bike != null }))
 }
 
@@ -92,14 +92,15 @@ internal fun JsonObject.runId(): String? = (this["id"] as? JsonPrimitive)?.conte
 internal fun JsonObject.runPace(): Double = this["moving_time"].num()!! / (this["distance"].num()!! / 1000)
 
 /**
- * Quien empieza no hace test: tras cada carrera dice cómo le fue y, con 3 fáciles en las últimas 10 semanas, su ritmo
- * suave es la mediana de las 3 últimas (s/km); null hasta entonces. Se descartan ritmos imposibles (saltos del GPS).
- * [Inferencia: 3 carreras y 10 semanas]
+ * Quien empieza no hace test: tras cada carrera dice cómo le fue y, con 3 fáciles en las últimas 10 semanas, lo suave
+ * va del ritmo más rápido al más lento de esas 3 (s/km); null hasta entonces. Se descartan ritmos imposibles (saltos del
+ * GPS). «Fácil» es «ligero» en la escala de Borg, y el umbral láctico cae ahí (RPE 10,8 ± 1,8 de 20 en 2.560 personas):
+ * lo que se siente fácil va por debajo [Verificado: Scherr et al. 2013, resumen. Inferencia: 3 carreras y 10 semanas]
  */
-internal fun AppData.learnedEasyPace(activities: List<JsonObject>, today: LocalDate): Double? {
+internal fun AppData.learnedEasyPace(activities: List<JsonObject>, today: LocalDate): Pair<Double, Double>? {
     val paces = recentRuns(activities, today).filter { efforts[it.runId()] == "easy" }.map { it.runPace() }
         .filter { it in 150.0..1200.0 }.take(EASY_RUNS)
-    return if (paces.size < EASY_RUNS) null else paces.sorted()[EASY_RUNS / 2]
+    return if (paces.size < EASY_RUNS) null else paces.min() to paces.max()
 }
 
 /**

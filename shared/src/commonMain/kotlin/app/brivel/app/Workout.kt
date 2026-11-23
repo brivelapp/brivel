@@ -21,7 +21,7 @@ val EXERCISES: Map<String, ExerciseInfo> = mapOf(
     "Zancada atrás" to ExerciseInfo("zancada"),
     "Zancada búlgara con mancuernas" to ExerciseInfo("zancada"),
     "Sentadilla búlgara (progresión a sentadilla a una pierna)" to ExerciseInfo("zancada"),
-    "Subida a cajón alto" to ExerciseInfo("zancada"),
+    "Subida a cajón" to ExerciseInfo("zancada"),
     "Elevación de gemelo de pie y sentado" to ExerciseInfo("gemelo"),
     "Gemelo a una pierna en escalón" to ExerciseInfo("gemelo"),
     "Saltos al cajón" to ExerciseInfo("salto"),

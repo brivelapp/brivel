@@ -39,6 +39,7 @@ import app.brivel.engine.hrvStatus
 import app.brivel.engine.weekWithHistory
 import app.brivel.engine.weekday
 import app.brivel.intervals.dayState
+import app.brivel.intervals.num
 import app.brivel.intervals.fillPhysiology
 import app.brivel.intervals.watchSessions
 import kotlinx.datetime.LocalDate
@@ -174,6 +175,19 @@ class Planner(private val data: AppData, private val today: LocalDate) {
         listOfNotNull(running?.let { "running" to it }, cycling?.let { "cycling" to it }).toMap()
     }
 
+    /**
+     * Base de fuerza para los saltos de caída: 1RM estimado de sentadilla (últimos 6 meses) de 1,5 veces su peso o más,
+     * con el peso apuntado o el de la báscula [Práctica: NSCA, manual CSCS cap. 18]. Sin datos, no.
+     */
+    private val strengthBase: Boolean by lazy {
+        val weight = data.measurements.filter { it.kind == "weight" }.maxByOrNull { it.date }?.value
+            ?: cache?.wellness?.lastOrNull { it["weight"].num() != null }?.get("weight").num() ?: return@lazy false
+        val from = today.plusDays(-182).toString()
+        val squat = data.sets.filter { it.date >= from && exerciseInfo(it.exercise, data.customExercises)?.pattern == "sentadilla" }
+            .mapNotNull { s -> s.weightKg?.let { e1rm(it, s.reps) } }.maxOrNull()
+        squat != null && squat >= 1.5 * weight
+    }
+
     /** Estado de hoy (carga, HRV, sueño) si hay datos de intervals.icu. */
     val state: DayState? = cache?.let { runCatching { dayState(it.wellness, it.activities, today) }.getOrNull() }
 
@@ -222,7 +236,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             age = profile.birthYear?.let { today.year - it },
             intensityCap = intensityCap,
             lthr = ph?.lthr, maxHr = ph?.maxHr, css = ph?.css, lthrBySport = ph?.lthrBySport ?: emptyMap(),
-            runPace = ph?.runPace, ftp = ph?.ftp, easyPace = ph?.easyPace,
+            runPace = ph?.runPace, ftp = ph?.ftp, easyPace = ph?.easyPace, easyPaceSlow = ph?.easyPaceSlow,
         )
     }
 
@@ -288,7 +302,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
         val physio = (cache?.let { fillPhysiology(base, it.athlete) } ?: base).withTests(data)!!
         // Natación: el test de CSS si no se sabe; carrera y bici, los de neededTests
         val swim = "S-TEST-CSS".takeIf { "swimming_pool" in physio.activeSports && (physio.css == null || physio.css == 0.0) }
-        return physio.copy(testIds = neededTests + listOfNotNull(swim?.let { "swimming_pool" to it }))
+        return physio.copy(testIds = neededTests + listOfNotNull(swim?.let { "swimming_pool" to it }), strengthBase = strengthBase)
     }
 
     /** El perfil de carrera de ese día con los cambios de su semana ("hoy no puedo", "este día tengo X min"). */

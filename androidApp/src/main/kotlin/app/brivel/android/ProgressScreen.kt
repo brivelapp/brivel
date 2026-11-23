@@ -47,7 +47,6 @@ import app.brivel.app.BrivelApp
 import app.brivel.app.MEASURES
 import app.brivel.app.dateLabel
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.KeyboardType
 import kotlin.math.roundToInt

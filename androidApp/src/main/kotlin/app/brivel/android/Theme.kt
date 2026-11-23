@@ -31,7 +31,7 @@ val DarkColors = Colors(
 val LightColors = Colors(
     bg = Color(0xFFF3F0E9), surface = Color(0xFFFFFFFF), chip = Color(0xFFECE7DC), text = Color(0xFF1B2420), muted = Color(0xFF5D6762),
     ok = Color(0xFF1F7A5C), onOk = Color(0xFFFFFFFF), okSoft = Color(0xFFDCEFE5), band = Color(0xFFCDE8DA),
-    caution = Color(0xFF9A6400), cautionSoft = Color(0xFFF6E7C8), danger = Color(0xFFB3402A),
+    caution = Color(0xFF8C5A00), cautionSoft = Color(0xFFF6E7C8), danger = Color(0xFFB3402A),
 )
 
 val LocalColors = staticCompositionLocalOf { DarkColors }

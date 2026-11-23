@@ -9,7 +9,7 @@
 
 :root {
   --bg: #F3F0E9; --surface: #FFFFFF; --chip: #ECE7DC; --text: #1B2420; --muted: #5D6762;
-  --ok: #1F7A5C; --on-ok: #FFFFFF; --ok-soft: #DCEFE5; --caution: #9A6400; --caution-soft: #F6E7C8;
+  --ok: #1F7A5C; --on-ok: #FFFFFF; --ok-soft: #DCEFE5; --caution: #8C5A00; --caution-soft: #F6E7C8;
   --band: #CDE8DA; --z1: #4ECDC4; --z2: #45B7D1; --z3: #FFA500; --z4: #FF6B35; --z5: #FF4757; --z6: #C0392B; --on-zone: #0B1F22;
 }
 @media (prefers-color-scheme: dark) {
@@ -244,8 +244,18 @@ tr.done .tick { background: var(--ok); color: var(--on-ok); }
 /* Cinco pestañas: en el móvil ocupan todo el ancho y cada una mide lo que su texto; a 360 px, letra y márgenes menores */
 @media (max-width: 520px) { .tabs { width: 100%; } .tabs button { flex: 1 1 auto; padding: 0 8px; font-size: 14px; } }
 @media (max-width: 400px) { .tabs button { padding: 0 5px; font-size: 13px; } }
+/* Pantallas muy estrechas o con zoom (2026-11-19: a 260 px, 390 con el 150 %): las pestañas pasan a dos filas, los puntos
+   de la semana encogen y las filas de título y dato se parten en vez de ensanchar la página */
+@media (max-width: 340px) {
+  .tabs { flex-wrap: wrap; border-radius: 22px; }
+  .week li { flex: 1 1 0; min-width: 0; }
+  .dot { width: 100%; max-width: 34px; height: auto; aspect-ratio: 1; }
+  .row.between { flex-wrap: wrap; }
+  .week-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .week-row input[type="range"] { grid-column: 1 / -1; grid-row: 2; }
+}
 .tabs button[aria-current=page] { background: var(--ok); color: var(--on-ok); font-weight: 700; }
-.profile-grid { display: grid; gap: 14px; align-items: start; }
+.profile-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }  /* sin el minmax, la columna no baja del ancho mínimo del contenido */
 .sheet { border: 0; border-radius: 28px; padding: 22px; width: min(480px, calc(100% - 32px)); background: var(--surface); color: var(--text); }
 .sheet::backdrop { background: rgb(0 0 0 / 0.45); }
 .sheet[open] { display: flex; flex-direction: column; gap: 16px; }

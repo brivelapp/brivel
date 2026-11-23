@@ -149,7 +149,7 @@ val ROTATION: Map<String, List<String>> = mapOf(
     // Plan de carrera, peso corporal
     "Sentadilla búlgara (progresión a sentadilla a una pierna)" to listOf("Sentadilla dividida", "Zancada adelante", "Zancada caminando"),
     "Peso muerto rumano a una pierna" to listOf("Peso muerto a una pierna con peso corporal", "Buenos días con peso corporal"),
-    "Subida a cajón alto" to listOf("Subida a banco", "Subida lateral a banco", "Bajada controlada del cajón (step down)"),
+    "Subida a cajón" to listOf("Subida a banco", "Subida lateral a banco", "Bajada controlada del cajón (step down)"),
     "Gemelo a una pierna en escalón" to listOf("Gemelo a una pierna de pie", "Gemelo de pie con peso corporal", "Gemelo a una pierna con rodilla doblada"),
     "Puente de glúteo a una pierna" to listOf("Puente de glúteo con marcha", "Puente de glúteo con extensión de pierna"),
     "Saltos de tobillo seguidos (pogo)" to listOf("Saltos sobre una línea", "Saltos de esquiador"),

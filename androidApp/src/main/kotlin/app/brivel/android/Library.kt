@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -39,11 +38,11 @@ import kotlin.math.roundToInt
 // Biblioteca de ejercicios (Library.kt del núcleo), como web/src/Library.tsx
 
 @Composable
-private fun ExerciseRow(card: ExerciseCard, detail: String, onClick: () -> Unit) {
+private fun ExerciseRow(app: BrivelApp, card: ExerciseCard, detail: String, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Palette.band), contentAlignment = Alignment.Center) {
-            ExerciseFigure(card.figure, 36.dp)
+            ExerciseFigure(app, card.name, 40.dp)
         }
         Column(Modifier.weight(1f)) {
             Text(card.name, fontWeight = FontWeight.Bold)
@@ -66,10 +65,11 @@ fun ExerciseSheet(app: BrivelApp, name: String, original: String?, dismiss: () -
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(Modifier.size(64.dp).clip(RoundedCornerShape(18.dp)).background(Palette.band), contentAlignment = Alignment.Center) {
-                        ExerciseFigure(card.figure, 52.dp)
+                        ExerciseFigure(app, card.name, 56.dp)
                     }
                     Secondary(listOf(card.patternLabel, card.equipment.joinToString(", "), if (card.timed) "por tiempo" else "por repeticiones").filter { it.isNotEmpty() }.joinToString(" · "))
                 }
+                ExerciseFigureFull(app, card.name)
                 if (card.muscles.isNotEmpty()) Secondary("Zona: ${card.zone} · Músculos: ${card.muscles.joinToString(", ")}")
                 if (card.description.isNotEmpty()) Text(card.description, fontSize = 15.sp)
                 card.cues.forEach { Text("• $it", fontSize = 15.sp) }
@@ -79,7 +79,7 @@ fun ExerciseSheet(app: BrivelApp, name: String, original: String?, dismiss: () -
                     SectionTitle("Cambiar por")
                     original?.let { o -> OutlinedButton(onClick = { onSwap(o) }) { Text("Volver a $o") } }
                     app.swapOptions(original ?: name).filter { it.name != name }.forEach { o ->
-                        ExerciseRow(o, o.equipment.joinToString(", ")) { onSwap(o.name) }
+                        ExerciseRow(app, o, o.equipment.joinToString(", ")) { onSwap(o.name) }
                     }
                     Secondary("El cambio vale desde esta sesión; las anteriores siguen con el que hiciste.")
                 }
@@ -128,7 +128,7 @@ fun ExercisePicker(app: BrivelApp, dismiss: () -> Unit, choose: (String) -> Unit
                 if (app.equipment.isNotEmpty()) FilterChip(selected = mine, label = { Text("Solo con mi material") }, onClick = { mine = !mine })
                 val found = remember(query, mine) { app.libraryByZone(query, null, null, mine) }
                 Secondary("${found.size} ejercicios" + if (found.size > PICK) ": escribe para acotar (se ven $PICK)" else "")
-                found.take(PICK).forEach { c -> ExerciseRow(c, c.patternLabel) { choose(c.name) } }
+                found.take(PICK).forEach { c -> ExerciseRow(app, c, c.patternLabel) { choose(c.name) } }
             }
         },
         confirmButton = { TextButton(onClick = dismiss) { Text("Cancelar") } })
@@ -175,7 +175,7 @@ fun LibraryCard(app: BrivelApp) {
             }
             val list = remember(query, zone, equipment, mine, owned) { app.libraryByZone(query, zone, equipment, mine) }
             Secondary("${list.size} ejercicios")
-            list.take(limit).forEach { c -> ExerciseRow(c, c.patternLabel) { shown = c.name } }
+            list.take(limit).forEach { c -> ExerciseRow(app, c, c.patternLabel) { shown = c.name } }
             if (list.size > limit) OutlinedButton(onClick = { limit += PAGE }) { Text("Ver más") }
         }
     }

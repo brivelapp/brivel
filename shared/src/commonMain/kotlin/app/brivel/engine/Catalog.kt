@@ -435,8 +435,10 @@ val STRENGTH_DOSE: Map<String, Triple<String, Int, Int>> = mapOf(
 
 val LOWER: Map<String, List<String>> = mapOf(
     "gym" to listOf("Sentadilla con barra", "Peso muerto rumano", "Zancada b\u00falgara con mancuernas", "Elevaci\u00f3n de gemelo de pie y sentado", "Empuje de cadera con barra (hip thrust)"),
-    "bodyweight" to listOf("Sentadilla b\u00falgara (progresi\u00f3n a sentadilla a una pierna)", "Peso muerto rumano a una pierna", "Subida a caj\u00f3n alto", "Gemelo a una pierna en escal\u00f3n", "Puente de gl\u00fateo a una pierna"),
+    "bodyweight" to listOf("Sentadilla b\u00falgara (progresi\u00f3n a sentadilla a una pierna)", "Peso muerto rumano a una pierna", "Subida a caj\u00f3n", "Gemelo a una pierna en escal\u00f3n", "Puente de gl\u00fateo a una pierna"),
 )
+
+const val DROP_JUMPS = "Saltos de ca\u00edda desde poca altura (drop jumps)"
 
 val PLYO: Map<String, List<String>> = mapOf(
     "gym" to listOf("Saltos al caj\u00f3n", "Saltos de ca\u00edda desde poca altura (drop jumps)"),
