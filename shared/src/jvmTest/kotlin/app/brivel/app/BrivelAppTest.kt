@@ -249,6 +249,33 @@ class BrivelAppTest {
     }
 
     @Test
+    fun `una sesion hecha ensena los datos de la actividad y no los planificados`() {
+        val store = MemoryStore()
+        val a = app(store)
+        a.saveProfile(profile)
+        a.setGoal(GoalKind.FITNESS)
+        val planned = a.day(today.toString()).items.first { !it.isStrength }
+        // Más larga que la planificada, con distancia y pulso, y además marcada a mano
+        val longer = buildJsonObject {
+            put("id", "act-hoy"); put("type", if (planned.sport == "cycling") "Ride" else "Run")
+            put("start_date_local", "${today}T08:00:00"); put("moving_time", (planned.durationMin + 20) * 60)
+            put("distance", 15000); put("average_heartrate", 142)
+        }
+        val c = cache()
+        store.write("brivel.data", Json.encodeToString(AppData.serializer(), a.data.copy(cache = c.copy(activities = c.activities + longer))))
+        val b = app(store)
+        b.markDone(today.toString(), planned.sport)
+        for (item in listOf(b.day(today.toString()).items, b.todayScreen().day.items, b.month(2026, 10).weeks.flatten()
+            .first { it.date == today.toString() }.planned).map { items -> items.first { it.slot == planned.slot } }) {
+            assertEquals(planned.durationMin + 20, item.doneMin)
+            assertTrue(item.doneDetail!!.startsWith("15,0 km · "), item.doneDetail)
+            assertTrue(item.doneDetail!!.endsWith("142 ppm"), item.doneDetail)
+        }
+        // Lo que aún no se ha hecho sigue con lo planificado
+        assertTrue(b.day(today.plusDays(2).toString()).items.all { it.doneMin == null && it.doneDetail == null })
+    }
+
+    @Test
     fun monthShowsWhatYouDidWithAMeaningfulTitle() {
         val store = MemoryStore()
         val a = app(store)

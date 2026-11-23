@@ -347,12 +347,20 @@ struct SessionCard<Actions: View>: View {
                     Glyph(name: "check", size: 18, color: Palette.ok)
                     Text("Hecha").font(.ui(13, .bold, relativeTo: .footnote)).foregroundStyle(Palette.ok)
                 }
-                (Text("\(item.durationMin)").font(.mono(22, .semibold, relativeTo: .title2))
+                (Text("\(item.doneMin?.int32Value ?? item.durationMin)").font(.mono(22, .semibold, relativeTo: .title2))
                     + Text(" min").font(.mono(13, relativeTo: .footnote)).foregroundColor(Palette.muted))
             }
             Text(item.title).font(.cardTitle)
             // La cifra manda (2026-11-18): ritmo, vatios o pulso en grande; sin datos aún, cómo saber si vas bien
-            if let target = item.target {
+            if let actual = item.doneDetail {
+                // Hecha con una actividad: sus datos mandan; lo planificado queda debajo, en pequeño
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(actual).font(.mono(20, .semibold, relativeTo: .title3))
+                    Secondary("Planificado: \(item.durationMin) min" + (item.target.map { " a \($0)" } ?? ""))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.vertical, 12)
+                .background(Palette.bg).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            } else if let target = item.target {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(target).font(.mono(28, .semibold, relativeTo: .title)).lineLimit(1).minimumScaleFactor(0.6)
                     if let note = item.targetNote { Text(note).font(.ui(15, .bold, relativeTo: .subheadline)) }

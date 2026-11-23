@@ -210,13 +210,19 @@ fun SessionCard(item: PlanItem, done: Boolean, actions: @Composable ColumnScope.
                 Text("Hecha", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Palette.ok)
                 Spacer(Modifier.width(10.dp))
             }
-            Text("${item.durationMin}", fontFamily = Mono, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+            Text("${item.doneMin ?: item.durationMin}", fontFamily = Mono, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
             Text(" min", fontFamily = Mono, fontSize = 13.sp, color = Palette.muted)
         }
         Text(item.title, fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.ExtraBold)
         // La cifra manda (2026-11-18): ritmo, vatios o pulso en grande; sin datos aún, cómo saber si vas bien
         val target = item.target
-        if (target != null) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Palette.bg)
+        val actual = item.doneDetail
+        if (actual != null) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Palette.bg)
+            .padding(horizontal = 16.dp, vertical = 12.dp)) {
+            // Hecha con una actividad: sus datos mandan; lo planificado queda debajo, en pequeño
+            Text(actual, fontFamily = Mono, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+            Secondary("Planificado: ${item.durationMin} min" + (target?.let { " a $it" } ?: ""))
+        } else if (target != null) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Palette.bg)
             .padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text(target, fontFamily = Mono, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
             item.targetNote?.let { Text(it, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
