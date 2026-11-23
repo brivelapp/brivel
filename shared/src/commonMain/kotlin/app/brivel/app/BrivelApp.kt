@@ -31,6 +31,7 @@ import kotlinx.serialization.json.Json
 
 private const val DATA_KEY = "brivel.data"
 private const val WIDGETS_KEY = "brivel.widgets.today"  // los widgets de Hoy de este dispositivo (Widgets.kt)
+private const val TILES_KEY = "brivel.tiles.progress"  // los cuatro de arriba en Progreso, de este dispositivo
 private const val API_KEY = "intervals.apiKey"  // cuentas vinculadas con clave antes de OAuth (2026-11-07)
 private const val INTERVALS_TOKEN = "intervals.token"  // token de OAuth, en el almacén seguro
 private const val INTERVALS_PKCE = "intervals.pkce"  // "state verificador" mientras se conecta
@@ -160,6 +161,20 @@ class BrivelApp(
     fun setWidgetWide(key: String, wide: Boolean) = saveWidgets(widgetSlots.map { if (it.key == key) it.copy(wide = wide) else it })
     /** Lo pone en la posición `to` (0 es el primero, justo debajo de la sesión de hoy). */
     fun moveWidget(key: String, to: Int) = saveWidgets(moveSlot(widgetSlots, key, to))
+
+    /** Los cuatro de arriba en Progreso, de este dispositivo como los de Hoy. */
+    val progressTileKeys: List<String>
+        get() = store.read(TILES_KEY)?.let { runCatching { json.decodeFromString<List<String>>(it) }.getOrNull() }
+            ?.let(::cleanTiles) ?: DEFAULT_TILES
+
+    fun progressTiles(): List<WidgetView> = tileViews(progressTileKeys, data, today())
+    fun tileChoices(): List<WidgetChoice> = PROGRESS_TILES.map { (key, title, text) -> WidgetChoice(key, title, text, key in progressTileKeys) }
+
+    @Throws(Exception::class)  // Swift recibe el error en vez de cerrarse la app
+    fun setProgressTiles(keys: List<String>) {
+        require(keys.distinct().size == TILE_COUNT && keys.all { k -> PROGRESS_TILES.any { it.first == k } }) { "Elige $TILE_COUNT" }
+        store.write(TILES_KEY, json.encodeToString(keys))
+    }
     fun month(year: Int, month: Int): MonthScreen = buildMonth(data, today(), year, month)
     fun progress(): ProgressScreen = buildProgress(data, today())
     /** El plan entero, semana a semana (PlanOverview.kt); null sin objetivo. */
@@ -1106,6 +1121,7 @@ class BrivelApp(
         keep(null)
         store.write(DATA_KEY, null)
         store.write(WIDGETS_KEY, null)
+        store.write(TILES_KEY, null)
         forgetSync()
         data = AppData()
     }

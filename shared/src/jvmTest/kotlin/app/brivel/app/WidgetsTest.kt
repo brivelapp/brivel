@@ -87,6 +87,22 @@ class WidgetsTest {
         assertEquals("cargado: entrenando fuerte", w.getValue("form").detail)
     }
 
+    @Test fun `Progreso lleva arriba los cuatro que elige cada uno`() {
+        val store = MemoryStore()
+        val a = app(store)
+        assertEquals(DEFAULT_TILES, a.progressTiles().map { it.key })
+        assertEquals("Nivel 1", a.progressTiles().single { it.key == "medals" }.value)
+        assertFailsWith<IllegalArgumentException> { a.setProgressTiles(listOf("hrv", "vo2max", "steps")) }  // tienen que ser 4
+        assertFailsWith<IllegalArgumentException> { a.setProgressTiles(listOf("hrv", "hrv", "steps", "form")) }
+        assertFailsWith<IllegalArgumentException> { a.setProgressTiles(listOf("hrv", "vo2max", "steps", "tiempo")) }
+        a.setProgressTiles(listOf("hrv", "vo2max", "waist", "form"))
+        assertEquals(listOf("hrv", "vo2max", "waist", "form"), app(store).progressTiles().map { it.key })
+        assertEquals(4, a.tileChoices().count { it.inUse })
+        a.logMeasure("waist", 82.0)
+        assertEquals("82,0" to "cm", a.progressTiles().single { it.key == "waist" }.let { it.value to it.unit })
+        assertEquals(DEFAULT_TILES, cleanTiles(listOf("viejo", "sleep")))  // lo guardado por una versión vieja
+    }
+
     @Test fun `la próxima carrera cuenta los días que faltan`() {
         val a = BrivelApp(MemoryStore(), MemoryStore(), { today })
         a.saveProfile(profile)

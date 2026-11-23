@@ -47,6 +47,32 @@ val WIDGETS: List<Triple<String, String, String>> = listOf(
 )
 private val WIDGET_KEYS = WIDGETS.map { it.first }.toSet()
 
+/**
+ * Progreso: los cuatro de arriba los elige cada uno (decidido el 2026-11-23); el resto de Progreso va debajo en
+ * tarjetas. Mismos textos que los widgets de Hoy, más los que solo tienen sentido aquí.
+ */
+val PROGRESS_TILES: List<Triple<String, String, String>> = listOf(
+    Triple("sleep", "Sueño", "Horas de anoche frente a tu normal"),
+    Triple("activity", "Actividad", "Minutos de cardio esta semana"),
+    Triple("weight", "Peso", "El último que apuntaste o que dio tu báscula"),
+    Triple("medals", "Medallas", "Tu nivel y lo que falta para el siguiente"),
+    Triple("hrv", "VFC", "Tu variabilidad cardiaca frente a tu normal"),
+    Triple("restingHR", "Pulso en reposo", "Frente a tu normal"),
+    Triple("vo2max", "VO2max", "El que estima tu reloj"),
+    Triple("steps", "Pasos de ayer", "Los de un día completo"),
+    Triple("form", "Forma", "Forma física menos fatiga, de intervals.icu"),
+    Triple("waist", "Cintura", "La última que apuntaste"),
+)
+const val TILE_COUNT = 4
+val DEFAULT_TILES = PROGRESS_TILES.take(TILE_COUNT).map { it.first }
+private val TITLES = (WIDGETS + PROGRESS_TILES).associate { it.first to it.second }
+
+/** Los cuatro de Progreso: cuatro claves distintas del catálogo; si no, los de serie. */
+internal fun cleanTiles(keys: List<String>): List<String> {
+    val valid = keys.filter { k -> PROGRESS_TILES.any { it.first == k } }.distinct()
+    return if (valid.size == TILE_COUNT) valid else DEFAULT_TILES
+}
+
 /** Lo que trae Hoy de serie: las preguntas y la semana, como estaba antes de los widgets. */
 val DEFAULT_WIDGETS = listOf(WidgetSlot("readiness", true), WidgetSlot("week", true))
 
@@ -66,7 +92,13 @@ internal fun moveSlot(slots: List<WidgetSlot>, key: String, to: Int): List<Widge
 }
 
 /** Los widgets de Hoy con sus datos de hoy. */
-internal fun widgetViews(slots: List<WidgetSlot>, data: AppData, today: LocalDate): List<WidgetView> {
+internal fun widgetViews(slots: List<WidgetSlot>, data: AppData, today: LocalDate): List<WidgetView> =
+    slotViews(cleanSlots(slots), data, today)
+
+internal fun tileViews(keys: List<String>, data: AppData, today: LocalDate): List<WidgetView> =
+    slotViews(cleanTiles(keys).map { WidgetSlot(it, false) }, data, today)
+
+private fun slotViews(slots: List<WidgetSlot>, data: AppData, today: LocalDate): List<WidgetView> {
     val progress by lazy { buildProgress(data, today) }
     fun metric(key: String) = progress.metrics.firstOrNull { it.key == key }
     // «en tu normal» si cae en la media ± 1 DT de los últimos 60 días; si no, por encima o por debajo
@@ -77,8 +109,8 @@ internal fun widgetViews(slots: List<WidgetSlot>, data: AppData, today: LocalDat
         return when { v < low -> "por debajo de tu normal"; v > high -> "por encima de tu normal"; else -> "en tu normal" }
     }
     val noWatch = "Conecta tu reloj, Health Connect o Apple Salud"
-    return cleanSlots(slots).map { s ->
-        val title = WIDGETS.first { it.first == s.key }.second
+    return slots.map { s ->
+        val title = TITLES.getValue(s.key)
         val base = WidgetView(s.key, title, s.wide)
         when (s.key) {
             "sleep" -> metric("sleep")?.let { m ->
@@ -102,6 +134,13 @@ internal fun widgetViews(slots: List<WidgetSlot>, data: AppData, today: LocalDat
             } ?: base.copy(empty = "Sin carrera en tu objetivo")
             "badge" -> progress.badges?.next?.firstOrNull()?.let { b -> base.copy(value = b.title, detail = b.progress ?: b.text) }
                 ?: base.copy(empty = "Ya las tienes todas")
+            "vo2max" -> metric("vo2max")?.let { m -> base.copy(value = pyRound(m.latest ?: 0.0).toString(), detail = normal(m)) }
+                ?: base.copy(empty = noWatch)
+            "waist" -> data.measurements.filter { it.kind == "waist" }.maxByOrNull { it.date }
+                ?.let { base.copy(value = fmt(it.value, 1).replace('.', ','), unit = "cm") } ?: base.copy(empty = "Apúntala en Progreso")
+            "activity" -> progress.weeklyMinutes.lastOrNull()?.let { p -> base.copy(value = pyRound(p.value).toString(), unit = "min", detail = "de 150 esta semana") }
+                ?: base.copy(empty = noWatch)
+            "medals" -> progress.badges?.let { b -> base.copy(value = "Nivel ${b.level}", detail = b.nextLevel) } ?: base
             else -> base  // readiness y week: los pinta cada app
         }
     }
