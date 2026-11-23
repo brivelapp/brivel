@@ -1,5 +1,11 @@
 package app.brivel.android
 
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -62,66 +68,140 @@ fun ProgressTab(app: BrivelApp, version: Int, act: Act, openProfile: () -> Unit)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ScreenTitle("Progreso", subtitle = "Últimos 90 días")
-        if (!screen.linked) {
-            Module {
-                Secondary("Para ver tu sueño, tu VFC, tu pulso en reposo o tu VO2max, conecta Health Connect " +
-                    "(los datos de tu reloj o tu báscula en este móvil) o tu cuenta de intervals.icu (gratis) en Perfil → Ajustes.")
-                PrimaryButton("Ir a Ajustes", onClick = openProfile)
-            }
-            Measures(app, act, screen)
-            screen.badges?.let { BadgesCard(it) }
-            Milestones(screen)
-            return@Column
+        // Arriba, los cuatro que elige cada uno (decidido el 2026-11-23); debajo, cada parte plegada en una línea
+        ProgressTiles(app, version, act)
+        if (!screen.linked) Module {
+            Secondary("Para ver tu sueño, tu VFC, tu pulso en reposo o tu VO2max, conecta Health Connect " +
+                "(los datos de tu reloj o tu báscula en este móvil) o tu cuenta de intervals.icu (gratis) en Perfil → Ajustes.")
+            SecondaryButton("Ir a Ajustes", onClick = openProfile)
         }
+        screen.badges?.let { b -> Fold("Medallas", b.next.firstOrNull()?.let { "La más cerca: ${it.title}" } ?: b.nextLevel) { BadgesCard(b) } }
         val body = screen.metrics.filter { it.key in BODY }
-        if (body.isNotEmpty()) Module {
-            TitleRow {
-                SectionTitle("Tu cuerpo")
-                Text("último dato · banda = tu rango", fontSize = 12.sp, color = Palette.muted)
+        if (screen.linked && body.isNotEmpty()) Fold("Tu cuerpo", body.take(3).joinToString(", ") { it.label } + if (body.size > 3) "…" else "") {
+            Module {
+                TitleRow {
+                    SectionTitle("Tu cuerpo")
+                    Text("último dato · banda = tu rango", fontSize = 12.sp, color = Palette.muted)
+                }
+                body.forEachIndexed { i, m -> MetricRow(m, first = i == 0) }
             }
-            body.forEachIndexed { i, m -> MetricRow(m, first = i == 0) }
         }
         val training = screen.metrics.filter { it.key !in BODY }
-        if (screen.status != null || training.isNotEmpty()) Module {
-            screen.status?.let { st ->
-                val warn = st.label == "Sobrecarga" || st.label == "Perdiendo forma"
-                SectionTitle("Forma: ${st.label.lowercase()}")
-                screen.garminNote?.let { Source(it) }
-                screen.metrics.firstOrNull { it.key == "ctl" }?.let { Sparkline(it.points, null, null, if (warn) Palette.caution else Palette.ok) }
-                Secondary(st.text)
+        if (screen.linked && (screen.status != null || training.isNotEmpty())) Fold("Forma", screen.status?.label ?: training.take(3).joinToString(", ") { it.label }) {
+            Module {
+                screen.status?.let { st ->
+                    val warn = st.label == "Sobrecarga" || st.label == "Perdiendo forma"
+                    SectionTitle("Forma: ${st.label.lowercase()}")
+                    screen.garminNote?.let { Source(it) }
+                    screen.metrics.firstOrNull { it.key == "ctl" }?.let { Sparkline(it.points, null, null, if (warn) Palette.caution else Palette.ok) }
+                    Secondary(st.text)
+                }
+                training.forEachIndexed { i, m -> MetricRow(m, first = i == 0 && screen.status == null) }
             }
-            training.forEachIndexed { i, m -> MetricRow(m, first = i == 0 && screen.status == null) }
         }
-        Module {
+        if (screen.linked) {
             val last = screen.weeklyMinutes.lastOrNull()?.value ?: 0.0
-            TitleRow {
-                SectionTitle("Actividad semanal")
-                Text("${last.roundToInt()} / 150 min", fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-            }
-            ProgressLine((last / 150).toFloat())
-            Secondary("La OMS recomienda al menos 150 minutos moderados (o 75 intensos) a la semana.")
-            Bars(screen.weeklyMinutes, target = 150.0)
-        }
-        if (screen.predictions.isNotEmpty()) Module {
-            SectionTitle("Tiempos previstos")
-            screen.garminNote?.let { Source(it) }
-            screen.predictions.forEach { p ->
-                Row {
-                    Text(p.distance, fontSize = 15.sp, modifier = Modifier.weight(1f))
-                    Text(p.time, fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Fold("Minutos por semana", "Esta semana, ${last.roundToInt()} de 150") {
+                Module {
+                    TitleRow {
+                        SectionTitle("Actividad semanal")
+                        Text("${last.roundToInt()} / 150 min", fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    ProgressLine((last / 150).toFloat())
+                    Secondary("La OMS recomienda al menos 150 minutos moderados (o 75 intensos) a la semana.")
+                    Bars(screen.weeklyMinutes, target = 150.0)
                 }
             }
-            screen.predictionSource?.let { Secondary("Calculado con $it (fórmula de Daniels).") }
         }
-        if (screen.recent.isNotEmpty()) Module {
-            SectionTitle("Tus últimos entrenamientos")
-            screen.recent.forEach { r -> RecentRow(r) { openActivity = it } }
+        if (screen.predictions.isNotEmpty()) Fold("Predicciones de carrera", screen.predictions.take(2).joinToString(" · ") { "${it.distance} ${it.time}" }) {
+            Module {
+                SectionTitle("Tiempos previstos")
+                screen.garminNote?.let { Source(it) }
+                screen.predictions.forEach { p ->
+                    Row {
+                        Text(p.distance, fontSize = 15.sp, modifier = Modifier.weight(1f))
+                        Text(p.time, fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                screen.predictionSource?.let { Secondary("Calculado con $it (fórmula de Daniels).") }
+            }
         }
-        Curves(screen.curves)
-        Measures(app, act, screen)
-        screen.badges?.let { BadgesCard(it) }
-        Milestones(screen)
+        if (screen.recent.isNotEmpty()) Fold("Actividades recientes", screen.recent.first().title) {
+            Module {
+                SectionTitle("Tus últimos entrenamientos")
+                screen.recent.forEach { r -> RecentRow(r) { openActivity = it } }
+            }
+        }
+        if (screen.curves.isNotEmpty()) Fold("Curvas de ritmo y potencia", screen.curves.joinToString(" · ") { it.title }) { Curves(screen.curves) }
+        Fold("Tus medidas", if (screen.measures.isEmpty()) "Apunta tu peso o tus perímetros" else screen.measures.joinToString(", ") { it.label }) {
+            Measures(app, act, screen)
+        }
+        Fold("Récords y marcas", screen.strengthRecords.firstOrNull()?.title ?: screen.milestones.firstOrNull()?.title ?: "Saldrán al entrenar") {
+            Milestones(screen)
+        }
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** Una parte de Progreso en una línea, como «La más cerca»: al tocarla se abre debajo. */
+@Composable
+private fun Fold(title: String, line: String?, content: @Composable () -> Unit) {
+    var open by rememberSaveable(title) { mutableStateOf(false) }
+    Module(Modifier.clickable { open = !open }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(title, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                line?.let { Secondary(it) }
+            }
+            RowChevron(open)
+        }
+    }
+    if (open) content()
+}
+
+/** Los cuatro de arriba; «Editar» abre la lista para elegir otros cuatro. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProgressTiles(app: BrivelApp, version: Int, act: Act) {
+    val tiles = remember(version) { app.progressTiles() }
+    var editing by remember { mutableStateOf<List<String>?>(null) }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        TextButton(onClick = { editing = tiles.map { it.key } }) { LinkText("Editar") }
+    }
+    val pairs = LocalDensity.current.fontScale < 1.5f
+    tiles.chunked(if (pairs) 2 else 1).forEach { row ->
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            row.forEach { t ->
+                Module(Modifier.weight(1f).fillMaxHeight()) {
+                    Text(t.title, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    if (t.value == null) Secondary(t.empty ?: "") else {
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(t.value!!, fontFamily = Mono, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+                            if (t.unit.isNotEmpty()) Text(" ${t.unit}", fontFamily = Mono, fontSize = 13.sp, color = Palette.muted)
+                        }
+                        t.detail?.let { Secondary(it) }
+                    }
+                }
+            }
+        }
+    }
+    editing?.let { chosen ->
+        ModalBottomSheet(onDismissRequest = { editing = null }, containerColor = Palette.surface) {
+            Column(Modifier.navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Elige 4", fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    TextButton(enabled = chosen.size == 4, onClick = { editing = null; act.run { app.setProgressTiles(chosen) } }) { LinkText("Listo") }
+                }
+                Secondary("Los cuatro de arriba en Progreso. Lo que no elijas sigue debajo. ${chosen.size} de 4.")
+                ChipRow {
+                    app.tileChoices().forEach { c ->
+                        Chip(selected = c.key in chosen, onClick = {
+                            editing = if (c.key in chosen) chosen - c.key else if (chosen.size < 4) chosen + c.key else chosen
+                        }, label = { Text(c.title) })
+                    }
+                }
+            }
+        }
     }
 }
 

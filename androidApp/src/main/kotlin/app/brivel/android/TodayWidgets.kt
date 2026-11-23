@@ -4,6 +4,8 @@ package app.brivel.android
 // medios (dos por fila) o anchos. Mantener pulsado o «⋯» abren su menú: Medio, Ancho, Ordenar los widgets y Quitar de
 // Hoy (opción B). «Añadir a Hoy» enseña los dos tamaños antes de ponerlo (opción C). El orden es de este móvil.
 
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -70,9 +72,9 @@ fun TodayWidgets(app: BrivelApp, version: Int, act: Act, screen: TodayScreen) {
         val next = widgets.getOrNull(i + 1)
         if (!w.wide && pairs && next != null && !next.wide) {
             val first = i
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.weight(1f)) { WidgetCard(app, act, screen, w, first, widgets.size, reordering) { reordering = true } }
-                Box(Modifier.weight(1f)) { WidgetCard(app, act, screen, next, first + 1, widgets.size, reordering) { reordering = true } }
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.weight(1f).fillMaxHeight()) { WidgetCard(app, act, screen, w, first, widgets.size, reordering) { reordering = true } }
+                Box(Modifier.weight(1f).fillMaxHeight()) { WidgetCard(app, act, screen, next, first + 1, widgets.size, reordering) { reordering = true } }
             }
             i += 2
         } else {
@@ -92,8 +94,8 @@ fun TodayWidgets(app: BrivelApp, version: Int, act: Act, screen: TodayScreen) {
 private fun WidgetCard(app: BrivelApp, act: Act, screen: TodayScreen, w: WidgetView, index: Int, count: Int,
                        reordering: Boolean, startReorder: () -> Unit) {
     var menu by remember { mutableStateOf(false) }
-    Box {
-        Module(Modifier
+    Box(Modifier.fillMaxHeight()) {
+        Module(Modifier.fillMaxHeight()
             .then(if (reordering) Modifier.border(2.dp, Palette.muted, RoundedCornerShape(24.dp)) else Modifier)
             .combinedClickable(onClick = {}, onLongClick = { menu = true }, onLongClickLabel = "Opciones de ${w.title}")
             .semantics { contentDescription = w.title }) {
