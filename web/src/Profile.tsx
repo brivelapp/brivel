@@ -69,6 +69,7 @@ export function Profile({ core, act, synced, settings, setSettings }:
           <SettingsGroup title="Sobre Brivel">
             <SettingsRow name="Aviso de salud" onClick={() => setPage("notice")} />
           </SettingsGroup>
+          <p className="muted small-text">Brivel {__APP_VERSION__}</p>
         </div>}
       </main>
     )

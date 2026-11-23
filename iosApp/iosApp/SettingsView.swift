@@ -39,6 +39,8 @@ struct SettingsView: View {
                     ScrollPage(title: "Aviso de salud") { Module { Secondary(TextsKt.HEALTH_NOTICE) } }
                 }
                 NavigationLink("Privacidad, términos y código") { AboutPage() }
+            } footer: {
+                Text("Brivel \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")").font(.small)
             }
         }
         .font(.body15)

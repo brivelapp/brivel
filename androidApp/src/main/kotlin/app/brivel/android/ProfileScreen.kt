@@ -200,6 +200,7 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openGo
                     SettingsRow("Aviso de salud") { page = "notice" }
                     SettingsRow("Privacidad, términos y código") { page = "about" }
                 }
+                Secondary("Brivel " + context.packageManager.getPackageInfo(context.packageName, 0).versionName)
             }
         }
         Spacer(Modifier.height(24.dp))
