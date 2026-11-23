@@ -100,6 +100,15 @@ struct ProfileView: View {
     @State private var draft = ProfileDraft(nil)
     @State private var loaded = false
     @Binding var settings: Bool  // la rueda del Perfil abre Ajustes
+    var openGoal: () -> Void = {}
+
+    /// «3 días · 2 h 30 min»: los días con minutos y el total de la semana.
+    private func weekLine(_ days: [String: Int]) -> String {
+        let on = days.values.filter { $0 > 0 }
+        if on.isEmpty { return "Sin días puestos" }
+        let total = on.reduce(0, +)
+        return "\(on.count) \(on.count == 1 ? "día" : "días") · \(total / 60) h" + (total % 60 == 0 ? "" : " \(total % 60) min")
+    }
 
     private func save() {
         let p = draft.core
@@ -123,35 +132,46 @@ struct ProfileView: View {
                     }
                     // Se guarda solo: cada cambio rehace el plan al momento (lienzo de Pulso, opción B). Sin plan, deportes,
                     // semana, fuerza y nivel no cambian nada: se preguntan si un día pide un plan
+                    // Por secciones (2026-11-23): una fila por dato con su valor; al tocarla se cambia ahí mismo
+                    let ciFuerza = UserDefaults.standard.string(forKey: "scrollTo") == "fuerza"  // capturas del CI
                     if model.core.data.goal?.kind != .own {
-                    Module {
-                        Text("Tus deportes").font(.section)
-                        SportPicker(cardio: draft.cardio) { draft.cardio = $0; save() }
-                    }
-                    Module {
-                        Text("Tu semana").font(.section)
-                        WeekBars(days: draft.days) { draft.days = $0; save() }
-                    }
-                    Module {
-                        Text("Fuerza").font(.section)
-                        Segmented(options: strengthChoices.map { ($0.0, $0.1) }, selected: draft.strength) { draft.strength = $0; save() }
-                    }.id("fuerza")
-                    Module {
-                        Text("Tu nivel").font(.section)
-                        Segmented(options: levelChoices.map { ($0.0, $0.1) }, selected: draft.level) { draft.level = $0; save() }
-                    }
-                    }
-                    Module {
-                        Text("Año de nacimiento").font(.section)
-                        TextField("1990", text: Binding(get: { draft.birthYear.map(String.init) ?? "" }, set: { v in
-                            draft.birthYear = Int(v.filter(\.isNumber).prefix(4))
-                            if ageOk(draft.birthYear) { save() }
-                        })).keyboardType(.numberPad).textFieldStyle(.roundedBorder)
-                        if (draft.birthYear ?? 0) >= 1000 && !ageOk(draft.birthYear) {
-                            Secondary("Hace falta tener al menos \(TextsKt.MIN_AGE) años.", color: Palette.caution)
+                        Fold(title: "Deportes", line: draft.cardio.isEmpty ? "Solo caminar" : draft.cardio.map { sportLabel($0) }.joined(separator: ", ")) {
+                            Module { SportPicker(cardio: draft.cardio) { draft.cardio = $0; save() } }
+                        }
+                        Fold(title: "Tu semana", line: weekLine(draft.days)) {
+                            Module { WeekBars(days: draft.days) { draft.days = $0; save() } }
+                        }
+                        Fold(title: "Fuerza", line: strengthChoices.first { $0.0 == draft.strength }?.1, startOpen: ciFuerza) {
+                            Module { Segmented(options: strengthChoices.map { ($0.0, $0.1) }, selected: draft.strength) { draft.strength = $0; save() } }
+                        }.id("fuerza")
+                        Fold(title: "Tu nivel", line: levelChoices.first { $0.0 == draft.level }?.1, startOpen: ciFuerza) {
+                            Module { Segmented(options: levelChoices.map { ($0.0, $0.1) }, selected: draft.level) { draft.level = $0; save() } }
                         }
                     }
-                    GearSection()
+                    Fold(title: "Año de nacimiento", line: draft.birthYear.map(String.init) ?? "Sin poner") {
+                        Module {
+                            Secondary("Para calcular tus zonas de pulso")
+                            TextField("1990", text: Binding(get: { draft.birthYear.map(String.init) ?? "" }, set: { v in
+                                draft.birthYear = Int(v.filter(\.isNumber).prefix(4))
+                                if ageOk(draft.birthYear) { save() }
+                            })).keyboardType(.numberPad).textFieldStyle(.roundedBorder)
+                            if (draft.birthYear ?? 0) >= 1000 && !ageOk(draft.birthYear) {
+                                Secondary("Hace falta tener al menos \(TextsKt.MIN_AGE) años.", color: Palette.caution)
+                            }
+                        }
+                    }
+                    // «Cambiar objetivo» vive aquí desde el 2026-11-23 (antes, «Tu objetivo» en Hoy)
+                    if let goal = model.core.data.goal {
+                        Fold(title: "Objetivo", line: TextsKt.goalLabel(goal: goal)) {
+                            Module {
+                                Secondary("Puedes cambiarlo cuando quieras; el plan se rehace al momento.")
+                                Button { openGoal() } label: { Text("Cambiar objetivo").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
+                                OtherRacesView()
+                            }
+                        }
+                    }
+                    let gear = model.core.gear().rows.count
+                    Fold(title: "Zapatillas y bicis", line: gear == 0 ? "Ninguna todavía" : gear == 1 ? "1 en tu material" : "\(gear) en tu material") { GearSection() }
             }.padding(16)
         }
         // `-scrollTo fuerza` al lanzar: las capturas del CI ven la fuerza y el nivel sin poder desplazar

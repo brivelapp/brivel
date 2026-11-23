@@ -148,7 +148,7 @@ struct RootView: View {
                         .tabItem { Label { Text("Entrenar") } icon: { Image("sport_strength").renderingMode(.template) } }.tag(2)
                     ProgressTabView(openProfile: { tab = 4; settings = true }).readableWidth()
                         .tabItem { Label { Text("Progreso") } icon: { Image("tab_progress").renderingMode(.template) } }.tag(3)
-                    ProfileView(settings: $settings).readableWidth()
+                    ProfileView(settings: $settings, openGoal: { model.run { model.core.abandonGoal() } }).readableWidth()
                         .tabItem { Label { Text("Perfil") } icon: { Image("tab_profile").renderingMode(.template) } }.tag(4)
                 }
             }

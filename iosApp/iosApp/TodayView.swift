@@ -5,7 +5,6 @@ struct TodayView: View {
     @EnvironmentObject var model: AppModel
     let openGoal: () -> Void
     var openTrain: () -> Void = {}
-    @State private var goalOpen = false
     @State private var detail: String? = nil  // la sesión abierta con «Detalles ›»
 
     var body: some View {
@@ -28,10 +27,8 @@ struct TodayView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 ScreenTitle(text: "Hoy", subtitle: screen.dateLabel)
-                if let goal = screen.goalLine {
-                    Secondary(goal)
-                    Button("Tu objetivo") { goalOpen = true }.buttonStyle(TextActionStyle())
-                }
+                // Cambiar el objetivo vive en Perfil desde el 2026-11-23 (secciones): aquí, solo cuál es
+                if let goal = screen.goalLine { Secondary(goal) }
                 if screen.noPlan { Button("Quiero un plan de Brivel", action: openGoal).buttonStyle(TextActionStyle()) }
                 if screen.goalFinished {
                     Module {
@@ -57,16 +54,6 @@ struct TodayView: View {
                 TodayWidgets(screen: screen)
             }.padding(.horizontal, 18).padding(.vertical, 16)
         }.background(Palette.bg)
-        .sheet(isPresented: $goalOpen) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(model.core.data.goal.map { TextsKt.goalLabel(goal: $0) } ?? "Sin objetivo").font(.screenTitle)
-                    Secondary("Puedes cambiarlo o abandonarlo cuando quieras; el plan se rehace al momento.")
-                    Button("Cambiar objetivo") { goalOpen = false; openGoal() }.buttonStyle(SecondaryStyle())
-                    OtherRacesView()
-                }.padding(20)
-            }.background(Palette.surface)
-        }
         }
     }
 }
