@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import type { WebApp } from "brivel-shared"
 import { Icon, SPORT_ICON, type Act } from "./Today"
+import { Choice } from "./ProfileParts"
 import type { ActivityRow, ActivityScreen, BadgeView, BadgesScreen, Curve, GearRow, GearScreen, XY } from "./types"
 
 /** Una línea del núcleo (puntos dentro de un cuadrado de lado 1) como SVG; `height`: alto del dibujo sobre 100 de ancho. */
@@ -145,11 +146,7 @@ export function GearCard({ core, act }: { core: WebApp; act: Act }) {
         <>
           <label className="field">Nombre<input className="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
           {form.id == null && (
-            <label className="field">Qué es
-              <select value={form.sport} onChange={(e) => setForm({ ...form, sport: e.target.value })}>
-                {sports.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-              </select>
-            </label>
+            <Choice label="Qué es" options={sports} value={form.sport} onChange={(sport) => setForm({ ...form, sport })} />
           )}
           <label className="field">Cuenta las actividades desde<input type="date" value={form.since} max={today()} onChange={(e) => setForm({ ...form, since: e.target.value })} /></label>
           <label className="field">Kilómetros que ya llevaba<input inputMode="decimal" value={form.startKm} onChange={(e) => setForm({ ...form, startKm: km(e.target.value) })} /></label>

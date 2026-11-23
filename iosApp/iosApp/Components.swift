@@ -446,6 +446,24 @@ struct ProgressLine: View {
     }
 }
 
+/// Opciones cortas (de 2 a 8) en cápsulas, como en Android y la web; las listas largas (zona, material, tipo) siguen en menú.
+struct ChipChoice<T: Hashable>: View {
+    let title: String
+    let options: [(T, String)]
+    @Binding var selection: T
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.ui(13, .semibold, relativeTo: .footnote)).foregroundStyle(Palette.muted)
+            Flow(spacing: 8) {
+                ForEach(options.indices, id: \.self) { i in
+                    Chip(label: options[i].1, selected: selection == options[i].0) { selection = options[i].0 }
+                }
+            }
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 struct Chip: View {
     let label: String
     let selected: Bool

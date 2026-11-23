@@ -115,9 +115,7 @@ private struct MeasuresSection: View {
             Text("Tus medidas").font(.section)
             Secondary("Apunta tu peso o tus perímetros con una cinta para ver cómo cambian. La de hoy sustituye a la que ya hubiera hoy.")
             ForEach(Array(screen.measures.enumerated()), id: \.offset) { i, m in MetricRow(metric: m, first: i == 0) }
-            Picker("Medida", selection: $kind) {
-                ForEach(TrainingKt.MEASURE_KINDS, id: \.self) { k in Text(TrainingKt.MEASURES[k]?.label ?? k).tag(k) }
-            }
+            ChipChoice(title: "Medida", options: TrainingKt.MEASURE_KINDS.map { ($0, TrainingKt.MEASURES[$0]?.label ?? $0) }, selection: $kind)
             HStack(spacing: 10) {
                 TextField("Valor (\(TrainingKt.MEASURES[kind]?.unit ?? ""))", text: $value).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
                 Button("Apuntar") {

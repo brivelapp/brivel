@@ -83,9 +83,7 @@ private struct RoutineEditor: View {
                         }
                     }
                     Button("Añadir ejercicio") { picking = true }.buttonStyle(SecondaryStyle())
-                    Picker("Reserva al acabar cada serie", selection: $rir) {
-                        ForEach(0...5, id: \.self) { n in Text(n == 0 ? "Hasta no poder más" : "\(n) repeticiones").tag(n) }
-                    }
+                    ChipChoice(title: "Reserva al acabar cada serie", options: (0...5).map { ($0, $0 == 0 ? "Hasta no poder más" : "\($0)") }, selection: $rir)
                     Secondary("Brivel te propone el peso con lo que apuntes, sin subir nunca más de un 10 % de una vez.")
                     if let saveError { Text(saveError).foregroundStyle(Palette.danger) }
                     Button("Guardar") { save() }.buttonStyle(PrimaryStyle())

@@ -103,3 +103,18 @@ export function ChoiceCards({ options, selected, onSelect, label }:
     </div>
   )
 }
+
+/** Opciones cortas (de 2 a 8) en cápsulas, como ChipChoice de iOS y los Chip de Android; las listas largas siguen en <select>. */
+export function Choice<T extends string | number>({ label, options, value, onChange }:
+  { label: string; options: [T, string][]; value: T; onChange: (v: T) => void }) {
+  return (
+    <fieldset className="field">
+      <legend>{label}</legend>
+      <div className="chips" role="group" aria-label={label}>
+        {options.map(([k, l]) => (
+          <button key={String(k)} type="button" className="chip" aria-pressed={value === k} onClick={() => onChange(k)}>{l}</button>
+        ))}
+      </div>
+    </fieldset>
+  )
+}

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
 import type { WebApp } from "brivel-shared"
 import type { FigureLines, LoggedSet, NextSet, StrengthExercise, StrengthScreen } from "./types"
 import { Icon, localToday, type Act } from "./Today"
-import { Segmented } from "./ProfileParts"
+import { Choice, Segmented } from "./ProfileParts"
 import { ExercisePicker, ExerciseSheet } from "./Library"
 import check from "../../iosApp/iosApp/Assets.xcassets/check.imageset/check.svg"
 import back from "../../iosApp/iosApp/Assets.xcassets/chevron_left.imageset/chevron_left.svg"
@@ -220,12 +220,7 @@ function SetView({ core, e, setNo, next, done, swap }: { core: WebApp; e: Streng
         </div>
       </div>
       {plates && <p className="muted small-text">{plates}</p>}
-      <label className="field">Tipo de serie
-        <select value={kind} onChange={(ev) => setKind(ev.target.value)}>
-          <option value="">Normal</option>
-          {kinds.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-        </select>
-      </label>
+      <Choice label="Tipo de serie" options={[["", "Normal"], ...kinds] as [string, string][]} value={kind} onChange={setKind} />
       <button className="primary" onClick={() => done(weight, reps, kind || null)}>{today ? "Guardar cambio" : "Serie hecha"}</button>
       {!today && previous && <p className="muted small-text">La última vez: {setText(previous, e.timed)}</p>}
       {next && <p className="small-text"><span className="muted">Después: </span><strong>{next.name}</strong></p>}

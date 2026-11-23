@@ -4,6 +4,7 @@ import type { WebApp } from "brivel-shared"
 import type { Metric, Milestone, Point, ProgressScreen, RecentActivity } from "./types"
 import { Icon, SPORT_ICON, type Act } from "./Today"
 import { ActivityDialog, BadgesCard, Curves } from "./Activities"
+import { Choice } from "./ProfileParts"
 
 const BODY = ["sleep", "sleepScore", "deepSleep", "remSleep", "hrv", "restingHR", "spo2", "respiration", "stress", "weight", "bodyFat", "steps"]
 const fmt = (v: number | null) => v == null ? "—" : v >= 20 ? String(Math.round(v)) : String(Math.round(v * 10) / 10).replace(".", ",")
@@ -131,12 +132,8 @@ function Measures({ core, act, screen }: { core: WebApp; act: Act; screen: Progr
       <h3>Tus medidas</h3>
       <p className="muted small-text">Apunta tu peso o tus perímetros con una cinta para ver cómo cambian. La de hoy sustituye a la que ya hubiera hoy.</p>
       {screen.measures.map((m) => <MetricRow key={m.key} m={m} />)}
+      <Choice label="Medida" options={kinds.map(([k, label]): [string, string] => [k, label])} value={kind} onChange={setKind} />
       <div className="row wrap">
-        <label className="field small-field">Medida
-          <select value={kind} onChange={(e) => setKind(e.target.value)}>
-            {kinds.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-          </select>
-        </label>
         <label className="field small-field">Valor ({unit})
           <input inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value.replace(/[^\d.,]/g, ""))} />
         </label>

@@ -200,7 +200,7 @@ test("entreno libre: se monta sobre la marcha, con calentamiento, discos y super
   await expect(page.getByText("Por lado: 20 kg (barra de 20 kg)")).toBeVisible()  // (60 − 20) / 2
 
   // Una serie de calentamiento se suma a las tres de trabajo
-  await page.getByLabel("Tipo de serie").selectOption("warmup")
+  await page.getByRole("group", { name: "Tipo de serie" }).getByRole("button", { name: "Calentamiento" }).click()
   await page.getByRole("button", { name: "Serie hecha" }).click()
   await expect(page.getByText("1/4 series")).toBeVisible()
   await page.getByRole("button", { name: "Saltar" }).click()
@@ -254,7 +254,7 @@ test("Progreso guarda las medidas corporales y rechaza las imposibles", async ({
   await signUp(page)
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Progreso" }).click()
   const measures = page.locator("section.module", { hasText: "Tus medidas" })
-  await measures.getByLabel("Medida").selectOption("waist")
+  await measures.getByRole("group", { name: "Medida" }).getByRole("button", { name: "Cintura" }).click()
   await measures.getByLabel("Valor (cm)").fill("82,5")
   await measures.getByRole("button", { name: "Apuntar" }).click()
   await expect(page.getByRole("status")).toHaveText("Medida apuntada")
@@ -280,7 +280,7 @@ test("sesión propia: se monta por pasos, se guarda, se pone hoy y sale en Hoy",
   await editor.getByLabel("Minutos").fill("15")
   await editor.getByRole("button", { name: "Añadir paso" }).click()
   const step = editor.locator(".routine-exercise").nth(1)
-  await step.getByLabel("Intensidad").selectOption("Z4")
+  await step.getByRole("group", { name: "Intensidad" }).getByRole("button", { name: /\(Z4\)/ }).click()
   await step.getByLabel("Minutos").fill("3")
   await step.getByLabel("Veces").fill("5")
   await step.getByLabel("Descanso (min)").fill("2")
@@ -317,7 +317,7 @@ test("actividad propia: se importa un FIT, se apunta al material, sale su detall
   const gear = page.locator("section.module", { hasText: "Zapatillas y bicis" })
   await gear.getByRole("button", { name: "Añadir zapatillas o bici" }).click()
   await gear.getByLabel("Nombre").fill("Bici de carretera")
-  await gear.getByLabel("Qué es").selectOption("cycling")
+  await gear.getByRole("group", { name: "Qué es" }).getByRole("button", { name: "Bici" }).click()
   await gear.getByLabel("Cuenta las actividades desde").fill("2026-10-01")
   await gear.getByLabel("Kilómetros que ya llevaba").fill("1000")
   await gear.getByRole("button", { name: "Guardar" }).click()

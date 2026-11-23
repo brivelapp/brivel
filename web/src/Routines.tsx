@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import type { WebApp } from "brivel-shared"
 import type { Act } from "./Today"
 import type { CustomExercise, ExerciseCard, Routine, RoutineExercise } from "./types"
+import { Choice } from "./ProfileParts"
 
 export const DAYS: [string, string][] = [["MON", "L"], ["TUE", "M"], ["WED", "X"], ["THU", "J"], ["FRI", "V"], ["SAT", "S"], ["SUN", "D"]]
 export const DAY_NAME: Record<string, string> = { MON: "lunes", TUE: "martes", WED: "miércoles", THU: "jueves", FRI: "viernes", SAT: "sábado", SUN: "domingo" }
@@ -85,11 +86,8 @@ function Editor({ core, act, start, close }: { core: WebApp; act: Act; start: Ro
           ))}
         </select>
       </label>
-      <label className="field">Reserva al acabar cada serie
-        <select value={r.rir} onChange={(e) => setR({ ...r, rir: parseInt(e.target.value) })}>
-          {[0, 1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n === 0 ? "Hasta no poder más" : `${n} repeticiones`}</option>)}
-        </select>
-      </label>
+      <Choice label="Reserva al acabar cada serie" options={[0, 1, 2, 3, 4, 5].map((n): [number, string] => [n, n === 0 ? "Hasta no poder más" : `${n}`])}
+        value={r.rir} onChange={(rir) => setR({ ...r, rir })} />
       <p className="muted small">Brivel te propone el peso con lo que apuntes, sin subir nunca más de un 10 % de una vez.</p>
       {error && <p className="caution-text" role="alert">{error}</p>}
       <button className="primary" onClick={() => attempt(() => core.saveRoutineJson(JSON.stringify(r)), setError, () => act(close, "Rutina guardada"))}>Guardar</button>

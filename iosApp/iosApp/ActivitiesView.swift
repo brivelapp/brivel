@@ -366,9 +366,7 @@ private struct GearEditor: View {
                 Text(old == nil ? "Añadir material" : "Cambiar material").font(.screenTitle)
                 TextField("Nombre", text: $name).textFieldStyle(.roundedBorder)
                 if old == nil {
-                    Picker("Qué es", selection: $sport) {
-                        ForEach(GearKt.GEAR_SPORTS, id: \.self) { s in Text(GearKt.GEAR_LABEL[s] ?? s).tag(s) }
-                    }
+                    ChipChoice(title: "Qué es", options: GearKt.GEAR_SPORTS.map { ($0, GearKt.GEAR_LABEL[$0] ?? $0) }, selection: $sport)
                 }
                 DatePicker("Cuenta las actividades desde", selection: $since, in: ...Date(), displayedComponents: .date)
                 TextField("Kilómetros que ya llevaba", text: $startKm).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)

@@ -70,9 +70,7 @@ private struct SessionEditor: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     TextField("Nombre", text: $name).textFieldStyle(.roundedBorder)
-                    Picker("Deporte", selection: $sport) {
-                        ForEach(OwnSessionsKt.OWN_SPORTS, id: \.self) { k in Text(sportLabel(k)).tag(k) }
-                    }
+                    ChipChoice(title: "Deporte", options: OwnSessionsKt.OWN_SPORTS.map { ($0, sportLabel($0)) }, selection: $sport)
                     Text("Pasos").font(.section)
                     ForEach($steps) { $step in
                         Module {
@@ -85,9 +83,7 @@ private struct SessionEditor: View {
                                 }
                             }
                             TextField("Nombre del paso (opcional)", text: $step.name).textFieldStyle(.roundedBorder)
-                            Picker("Intensidad", selection: $step.zone) {
-                                ForEach(OwnSessionsKt.OWN_ZONE_KEYS, id: \.self) { k in Text(zoneLabel(k)).tag(k) }
-                            }
+                            ChipChoice(title: "Intensidad", options: OwnSessionsKt.OWN_ZONE_KEYS.map { ($0, zoneLabel($0)) }, selection: $step.zone)
                             HStack(spacing: 8) {
                                 NumberBox(label: "Minutos", text: $step.minutes, decimalPad: true)
                                 NumberBox(label: "Veces", text: $step.reps, decimalPad: false)

@@ -62,10 +62,7 @@ struct OtherRacesView: View {
                 if adding {
                     TextField("Nombre de la carrera", text: $name).textFieldStyle(.roundedBorder)
                     DatePicker("Fecha", selection: $date, displayedComponents: .date)
-                    Picker("Prioridad", selection: $priority) {
-                        Text("Importante (B)").tag("B")
-                        Text("De preparación (C)").tag("C")
-                    }.pickerStyle(.segmented)
+                    ChipChoice(title: "Prioridad", options: [("B", "Importante (B)"), ("C", "De preparación (C)")], selection: $priority)
                     HStack {
                         Button("Añadir") {
                             let f = DateFormatter()
