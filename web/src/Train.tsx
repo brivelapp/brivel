@@ -8,7 +8,7 @@ import { RoutinesCard } from "./Routines"
 import { LibraryCard } from "./Library"
 import { SessionsCard } from "./Sessions"
 import { ActivitiesCard } from "./Activities"
-import { Fold } from "./ProfileParts"
+import { RowButton, SubScreen } from "./ProfileParts"
 
 const count = (n: number, one: string, many: string) => n === 0 ? "Ninguna todavía" : n === 1 ? `1 ${one}` : `${n} ${many}`
 
@@ -20,13 +20,25 @@ export function Train({ core, act, openStrength }: { core: WebApp; act: Act; ope
   const activityCount = (JSON.parse(core.activitiesJson()) as unknown[]).length
   const custom: unknown[] = JSON.parse(core.customExercisesJson())
   const start = (routineId: string | null) => act(() => openStrength(core.startWorkout(routineId)))
-  const [uploading, setUploading] = useState(0)  // «Subir actividad» abre «Actividades», donde está el botón de importar
+  const [page, setPage] = useState<"sessions" | "routines" | "activities" | "library" | null>(null)  // cada parte, su pantalla
+  const back = () => setPage(null)
+  if (page === "sessions") return <SubScreen title="Sesiones" back={back} backLabel="Volver a Entrenar"><SessionsCard core={core} act={act} /></SubScreen>
+  if (page === "routines") return (
+    <SubScreen title="Rutinas de fuerza" back={back} backLabel="Volver a Entrenar">
+      {!workout && routines.length > 0 && (
+        <div className="row wrap">{routines.map((r) => <button key={r.id} className="secondary" onClick={() => start(r.id)}>Empezar «{r.name}» hoy</button>)}</div>
+      )}
+      <RoutinesCard core={core} act={act} />
+    </SubScreen>
+  )
+  if (page === "activities") return <SubScreen title="Actividades" back={back} backLabel="Volver a Entrenar"><ActivitiesCard core={core} act={act} /></SubScreen>
+  if (page === "library") return <SubScreen title="Biblioteca de ejercicios" back={back} backLabel="Volver a Entrenar"><LibraryCard core={core} /></SubScreen>
   return (
     <main className="wide">
       <header className="page-head"><div><p className="muted">Por tu cuenta</p><h1>Entrenar</h1></div></header>
       <div className="row pills">
         <button className="primary grow" onClick={() => workout ? openStrength(workout.date) : start(null)}>{workout ? "Seguir con la fuerza" : "Entrenar fuerza"}</button>
-        <button className="secondary grow" onClick={() => setUploading((n) => n + 1)}>Subir actividad</button>
+        <button className="secondary grow" onClick={() => setPage("activities")}>Subir actividad</button>
       </div>
       {workout && (
         <section className="module">
@@ -37,24 +49,12 @@ export function Train({ core, act, openStrength }: { core: WebApp; act: Act; ope
       )}
       <h2 className="settings-title">Lo tuyo</h2>
       <div className="stack tight">
-        <Fold title="Sesiones" line={count(sessions.length, "sesión", "sesiones") + " · carrera, bici, natación"}>
-          <SessionsCard core={core} act={act} />
-        </Fold>
-        <Fold title="Rutinas de fuerza" line={count(routines.length, "rutina", "rutinas") + " · sustituyen a la del plan"}>
-          {!workout && routines.length > 0 && (
-            <div className="row wrap">{routines.map((r) => <button key={r.id} className="secondary" onClick={() => start(r.id)}>Empezar «{r.name}» hoy</button>)}</div>
-          )}
-          <RoutinesCard core={core} act={act} />
-        </Fold>
-        <Fold key={`act-${uploading}`} open={uploading > 0} title="Actividades" line={count(activityCount, "actividad", "actividades") + " · subir FIT, GPX o TCX"}>
-          <ActivitiesCard core={core} act={act} />
-        </Fold>
-        {custom.length > 0 && <p className="muted small-text">Tus ejercicios propios están en «Rutinas de fuerza».</p>}
+        <RowButton title="Sesiones" value={count(sessions.length, "sesión", "sesiones") + " · carrera, bici, natación"} onClick={() => setPage("sessions")} />
+        <RowButton title="Rutinas de fuerza" value={count(routines.length, "rutina", "rutinas") + (custom.length ? ` · ${custom.length} ejercicios propios` : " · sustituyen a la del plan")} onClick={() => setPage("routines")} />
+        <RowButton title="Actividades" value={count(activityCount, "actividad", "actividades") + " · subir FIT, GPX o TCX"} onClick={() => setPage("activities")} />
       </div>
       <h2 className="settings-title">Consultar</h2>
-      <Fold title="Biblioteca de ejercicios" line="Busca por zona del cuerpo o material">
-        <LibraryCard core={core} />
-      </Fold>
+      <RowButton title="Biblioteca de ejercicios" value="Busca por zona del cuerpo o material" onClick={() => setPage("library")} />
     </main>
   )
 }

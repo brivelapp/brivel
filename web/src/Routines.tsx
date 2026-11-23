@@ -131,16 +131,14 @@ export function RoutinesCard({ core, act }: { core: WebApp; act: Act }) {
   const custom: CustomExercise[] = JSON.parse(core.customExercisesJson())
   return (
     <section className="module">
-      <h3>Tus rutinas</h3>
-      <p className="muted">Crea tu propia rutina de fuerza y elige qué días la haces. Esos días sustituye a la fuerza del plan.</p>
+      <button className="primary" onClick={() => setEditing(EMPTY)}>Nueva rutina</button>
+      {routines.length === 0 && <p className="muted small-text">Aún no tienes ninguna. Los días que elijas, sustituye a la fuerza del plan.</p>}
       {routines.map((r) => (
         <button key={r.id} className="row option" onClick={() => setEditing(r)}>
           <span className="grow">{r.name}<span className="muted small"> · {r.exercises.length} ejercicios · {daysText(r.days)}</span></span>
         </button>
       ))}
-      <button className="secondary" onClick={() => setEditing(EMPTY)}>Nueva rutina</button>
-      <h3>Tus ejercicios</h3>
-      <p className="muted">Si falta alguno en la biblioteca, créalo y úsalo en tus rutinas.</p>
+      <h3>Ejercicios propios</h3>
       {custom.map((e) => (
         <div key={e.name} className="row">
           <span className="grow">{e.name}</span>
@@ -149,6 +147,7 @@ export function RoutinesCard({ core, act }: { core: WebApp; act: Act }) {
         </div>
       ))}
       <button className="secondary" onClick={() => setAdding(true)}>Nuevo ejercicio</button>
+      {custom.length === 0 && <p className="muted small-text">Si falta alguno en la biblioteca, créalo aquí.</p>}
       {editing && <Editor core={core} act={act} start={editing} close={() => setEditing(null)} />}
       {adding && <NewExercise core={core} act={act} close={() => setAdding(false)} />}
     </section>

@@ -6,7 +6,7 @@ import { SyncCard } from "./Sync"
 import { GarminCard } from "./Garmin"
 import { IntervalsCard } from "./Intervals"
 import { GearCard } from "./Activities"
-import { CheckList, Fold, LEVEL_CHOICES, SPORT_NAME, STRENGTH_CHOICES, SubScreen, WeekBars, type Profile as ProfileData } from "./ProfileParts"
+import { CheckList, Fold, LEVEL_CHOICES, RowButton, SPORT_NAME, STRENGTH_CHOICES, SubScreen, WeekBars, type Profile as ProfileData } from "./ProfileParts"
 import { OtherRaces } from "./Today"
 
 /** «3 días · 2 h 30 min»: los días con minutos y el total de la semana. */
@@ -17,15 +17,6 @@ const weekLine = (days: Record<string, number>) => {
   return `${on.length} ${on.length === 1 ? "día" : "días"} · ${Math.floor(total / 60)} h${total % 60 ? ` ${total % 60} min` : ""}`
 }
 
-/** Una fila que abre su pantalla: título, valor y ›. */
-function Row({ title, value, onClick }: { title: string; value: string; onClick: () => void }) {
-  return (
-    <button className="module row-button" onClick={onClick}>
-      <span className="grow"><strong>{title}</strong><br /><span className="muted small-text">{value}</span></span>
-      <span className="chev" aria-hidden>›</span>
-    </button>
-  )
-}
 
 const gearLine = (core: WebApp) => {
   const n = (JSON.parse(core.gearJson()) as { rows: unknown[] }).rows.length
@@ -126,7 +117,7 @@ export function Profile({ core, act, synced, settings, setSettings }:
           <CheckList label="Deportes" options={core.pickableCardio.map((c) => [c, SPORT_NAME[c]] as [string, string])} selected={profile.cardio}
             onToggle={(c) => save({ ...profile, cardio: [...core.toggleCardio(profile.cardio, c)] })} />
         </Fold>
-        <Row title="Tu semana" value={weekLine(profile.days)} onClick={() => setScreen("week")} />
+        <RowButton title="Tu semana" value={weekLine(profile.days)} onClick={() => setScreen("week")} />
         <Fold title="Fuerza" line={STRENGTH_CHOICES.find(([k]) => k === profile.strength)?.[1] ?? null}>
           <CheckList label="Fuerza" options={STRENGTH_CHOICES} selected={[profile.strength]} onToggle={(strength) => save({ ...profile, strength })} />
         </Fold>
@@ -144,8 +135,8 @@ export function Profile({ core, act, synced, settings, setSettings }:
           </label>
           {year != null && year >= 1000 && !core.ageOk(year) && <p className="caution-text">Hace falta tener al menos {core.minAge} años.</p>}
         </Fold>
-        {core.goalLabel && <Row title="Objetivo" value={core.goalLabel} onClick={() => setScreen("goal")} />}
-        <Row title="Zapatillas y bicis" value={gearLine(core)} onClick={() => setScreen("gear")} />
+        {core.goalLabel && <RowButton title="Objetivo" value={core.goalLabel} onClick={() => setScreen("goal")} />}
+        <RowButton title="Zapatillas y bicis" value={gearLine(core)} onClick={() => setScreen("gear")} />
       </div>
     </main>
   )

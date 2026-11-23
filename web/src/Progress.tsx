@@ -4,7 +4,7 @@ import type { WebApp } from "brivel-shared"
 import type { Metric, Milestone, Point, ProgressScreen, RecentActivity, WidgetChoice, WidgetView } from "./types"
 import { Icon, SPORT_ICON, type Act } from "./Today"
 import { ActivityDialog, BadgesCard, Curves } from "./Activities"
-import { Choice, Fold } from "./ProfileParts"
+import { Choice, Fold, RowButton, SubScreen } from "./ProfileParts"
 
 const BODY = ["sleep", "sleepScore", "deepSleep", "remSleep", "hrv", "restingHR", "spo2", "respiration", "stress", "weight", "bodyFat", "steps"]
 const fmt = (v: number | null) => v == null ? "—" : v >= 20 ? String(Math.round(v)) : String(Math.round(v * 10) / 10).replace(".", ",")
@@ -129,16 +129,13 @@ function Measures({ core, act, screen }: { core: WebApp; act: Act; screen: Progr
   const unit = kinds.find(([k]) => k === kind)?.[2] ?? ""
   return (
     <section className="module">
-      <h3>Tus medidas</h3>
-      <p className="muted small-text">Apunta tu peso o tus perímetros con una cinta para ver cómo cambian. La de hoy sustituye a la que ya hubiera hoy.</p>
-      {screen.measures.map((m) => <MetricRow key={m.key} m={m} />)}
       <Choice label="Medida" options={kinds.map(([k, label]): [string, string] => [k, label])} value={kind} onChange={setKind} />
-      <div className="row wrap">
-        <label className="field small-field">Valor ({unit})
-          <input inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value.replace(/[^\d.,]/g, ""))} />
-        </label>
-        <button className="secondary" onClick={() => { act(() => { core.logMeasure(kind, value); setValue("") }, "Medida apuntada") }}>Apuntar</button>
-      </div>
+      <label className="field">Valor ({unit})
+        <input className="big-input" inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value.replace(/[^\d.,]/g, ""))} />
+      </label>
+      <button className="primary" onClick={() => { act(() => { core.logMeasure(kind, value); setValue("") }, "Medida apuntada") }}>Apuntar</button>
+      {screen.measures.length > 0 && <h3>Últimas</h3>}
+      {screen.measures.map((m) => <MetricRow key={m.key} m={m} />)}
     </section>
   )
 }
@@ -184,6 +181,13 @@ function Tiles({ core, act }: { core: WebApp; act: Act }) {
 
 export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; openProfile: () => void }) {
   const screen: ProgressScreen = JSON.parse(core.progressJson())
+  const [page, setPage] = useState<"medals" | "measures" | null>(null)  // las que tienen su pantalla (2026-11-23)
+  if (page === "medals" && screen.badges) return (
+    <SubScreen title="Medallas" back={() => setPage(null)} backLabel="Volver a Progreso"><BadgesCard badges={screen.badges} /></SubScreen>
+  )
+  if (page === "measures") return (
+    <SubScreen title="Tus medidas" back={() => setPage(null)} backLabel="Volver a Progreso"><Measures core={core} act={act} screen={screen} /></SubScreen>
+  )
   const body = screen.metrics.filter((m) => BODY.includes(m.key))
   const training = screen.metrics.filter((m) => !BODY.includes(m.key))
   const last = screen.weeklyMinutes.at(-1)?.value ?? 0
@@ -202,9 +206,7 @@ export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; o
       )}
       <div className="stack tight">
         {screen.badges && (
-          <Fold title="Medallas" line={screen.badges.next[0] ? `La más cerca: ${screen.badges.next[0].title}` : screen.badges.nextLevel}>
-            <BadgesCard badges={screen.badges} />
-          </Fold>
+          <RowButton title="Medallas" value={screen.badges.next[0] ? `La más cerca: ${screen.badges.next[0].title}` : screen.badges.nextLevel ?? ""} onClick={() => setPage("medals")} />
         )}
         {screen.linked && body.length > 0 && (
           <Fold title="Tu cuerpo" line={body.slice(0, 3).map((m) => m.label).join(", ") + (body.length > 3 ? "…" : "")}>
@@ -264,12 +266,10 @@ export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; o
             <Curves curves={screen.curves} />
           </Fold>
         )}
-        <Fold title="Tus medidas" line={screen.measures.length ? screen.measures.map((m) => m.label).join(", ") : "Apunta tu peso o tus perímetros"}>
-          <Measures core={core} act={act} screen={screen} />
-        </Fold>
-        <Fold title="Récords y marcas" line={screen.strengthRecords[0]?.title ?? screen.milestones[0]?.title ?? "Saldrán al entrenar"}>
-          <Milestones core={core} screen={screen} />
-        </Fold>
+        <RowButton title="Tus medidas" value={screen.measures.length ? screen.measures.map((m) => m.label).join(", ") : "Apunta tu peso o tus perímetros"} onClick={() => setPage("measures")} />
+        {screen.strengthRecords.length + screen.milestones.length > 0
+          ? <Fold title="Récords y marcas" line={screen.strengthRecords[0]?.title ?? screen.milestones[0]?.title ?? null}><Milestones core={core} screen={screen} /></Fold>
+          : <div className="module row-button static"><span className="grow"><strong>Récords y marcas</strong><br /><span className="muted small-text">Saldrán al entrenar</span></span></div>}
       </div>
     </main>
   )

@@ -34,9 +34,8 @@ const openFold = (page: Page, title: string) => page.locator("details.fold > sum
 
 async function openLibrary(page: Page) {
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Entrenar" }).click()
-  await openFold(page, "Biblioteca de ejercicios")
-  await page.getByRole("button", { name: "Ver los ejercicios" }).click()
-  return page.locator("section.module", { hasText: "Biblioteca de ejercicios" })
+  await page.getByRole("button", { name: /^Biblioteca de ejercicios/ }).click()  // su pantalla, ya con la lista
+  return page.getByRole("main")
 }
 
 
@@ -140,13 +139,13 @@ test("la biblioteca filtra por zona y búsqueda, y enseña la ficha con músculo
   await library.getByRole("button", { name: "Ver más" }).click()
   await expect(library.locator("button.option")).toHaveCount(120)
 
-  await library.getByLabel("Zona").selectOption("espalda")
+  await library.getByRole("group", { name: "Zona" }).getByRole("button", { name: "espalda", exact: true }).click()
   const back = await count(library)
   expect(back).toBeGreaterThan(50)
   expect(back).toBeLessThan(all)
   await expect(library.locator("button.option")).toHaveCount(60)  // el filtro vuelve al primer tramo
 
-  await library.getByLabel("Zona").selectOption("")
+  await library.getByRole("group", { name: "Zona" }).getByRole("button", { name: "Todas" }).click()
   await library.getByLabel("Buscar").fill("curl femoral tumbado")
   await expect(library.locator("button.option").first()).toContainText("Curl femoral tumbado")
   await library.locator("button.option").first().click()
@@ -164,17 +163,21 @@ test("el material del usuario se guarda y «solo con mi material» reduce la lis
   await signUp(page)
   const library = await openLibrary(page)
   const all = await count(library)
-  await expect(library.getByLabel("Solo con mi material")).toHaveCount(0)  // sin material indicado no hay nada que filtrar
-  await library.getByRole("button", { name: "mancuernas", exact: true }).click()
-  await expect(library.getByRole("button", { name: "mancuernas", exact: true })).toHaveAttribute("aria-pressed", "true")
-  await library.getByLabel("Solo con mi material").check()
+  const material = library.getByRole("group", { name: "Material" })
+  await expect(material.getByRole("button", { name: "Mi material" })).toHaveCount(0)  // sin material indicado no hay nada que filtrar
+  await openFold(page, "Tu material")
+  const owned = library.locator("details.fold", { hasText: "Tu material" })
+  await owned.getByRole("button", { name: "mancuernas", exact: true }).click()
+  await expect(owned.getByRole("button", { name: "mancuernas", exact: true })).toHaveAttribute("aria-pressed", "true")
+  await material.getByRole("button", { name: "Mi material" }).click()
   const mine = await count(library)
   expect(mine).toBeGreaterThan(100)
   expect(mine).toBeLessThan(all)
 
   await page.reload()
-  const again = await openLibrary(page)
-  await expect(again.getByRole("button", { name: "mancuernas", exact: true })).toHaveAttribute("aria-pressed", "true")
+  await openLibrary(page)
+  await openFold(page, "Tu material")
+  await expect(page.locator("details.fold", { hasText: "Tu material" }).getByRole("button", { name: "mancuernas", exact: true })).toHaveAttribute("aria-pressed", "true")
 })
 
 test("la sesión de fuerza de hoy dice cómo calentar y se puede empezar", async ({ page }) => {
@@ -266,8 +269,8 @@ test("la ficha de un ejercicio enseña su historial y sus marcas tras apuntar un
 test("Progreso guarda las medidas corporales y rechaza las imposibles", async ({ page }) => {
   await signUp(page)
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Progreso" }).click()
-  await openFold(page, "Tus medidas")
-  const measures = page.locator("section.module", { hasText: "Tus medidas" })
+  await page.getByRole("button", { name: /^Tus medidas/ }).click()
+  const measures = page.getByRole("main")
   await measures.getByRole("group", { name: "Medida" }).getByRole("button", { name: "Cintura" }).click()
   await measures.getByLabel("Valor (cm)").fill("82,5")
   await measures.getByRole("button", { name: "Apuntar" }).click()
@@ -279,16 +282,16 @@ test("Progreso guarda las medidas corporales y rechaza las imposibles", async ({
   await page.reload()
   await page.getByRole("navigation", { name: "Secciones" }).getByRole("button", { name: "Progreso" }).click()
   await expect(page.getByRole("region", { name: "Peso" })).toBeVisible()  // los cuatro de arriba, de serie
-  await openFold(page, "Tus medidas")
-  await expect(page.locator("section.module", { hasText: "Tus medidas" }).getByRole("button", { name: /Cintura.*82,5 cm/ })).toBeVisible()
+  await page.getByRole("button", { name: /^Tus medidas/ }).click()
+  await expect(page.getByRole("main").getByRole("button", { name: /Cintura.*82,5 cm/ })).toBeVisible()
 })
 
 test("sesión propia: se monta por pasos, se guarda, se pone hoy y sale en Hoy", async ({ page }) => {
   await signUp(page)
   const nav = page.getByRole("navigation", { name: "Secciones" })
   await nav.getByRole("button", { name: "Entrenar" }).click()
-  await openFold(page, "Sesiones")
-  const card = page.locator("section.module", { hasText: "Tus sesiones" })
+  await page.getByRole("button", { name: /^Sesiones/ }).click()
+  const card = page.getByRole("main")
   await card.getByRole("button", { name: "Nueva sesión" }).click()
   const editor = page.getByRole("dialog", { name: "Nueva sesión" })
   await editor.getByRole("button", { name: "Guardar" }).click()  // sin nombre no se guarda, y dice por qué
@@ -332,7 +335,7 @@ test("actividad propia: se importa un FIT, se apunta al material, sale su detall
   // Antes, una bici en Perfil: la actividad se le apuntará a ella
   await nav.getByRole("button", { name: "Perfil" }).click()
   await page.getByRole("button", { name: /^Zapatillas y bicis/ }).click()  // su propia pantalla
-  const gear = page.locator("section.module", { hasText: "Zapatillas y bicis" })
+  const gear = page.getByRole("main")
   await gear.getByRole("button", { name: "Añadir zapatillas o bici" }).click()
   await gear.getByLabel("Nombre").fill("Bici de carretera")
   await gear.getByRole("group", { name: "Qué es" }).getByRole("button", { name: "Bici" }).click()
@@ -345,7 +348,7 @@ test("actividad propia: se importa un FIT, se apunta al material, sale su detall
   // El archivo es sintético (e2e/fixtures): 10 min de bici a 210 W y 140 ppm, 4,8 km, escrito con otra librería
   await nav.getByRole("button", { name: "Entrenar" }).click()
   await page.getByRole("button", { name: "Subir actividad" }).click()  // abre «Actividades», con el botón de importar
-  const activities = page.locator("section.module", { hasText: "Tus actividades" })
+  const activities = page.getByRole("main")
   await activities.getByLabel("Archivo de actividad").setInputFiles("e2e/fixtures/salida.fit")
   await expect(page.getByRole("status")).toHaveText("Actividad importada")
   const detail = page.getByRole("dialog", { name: "Bici" })
@@ -364,12 +367,14 @@ test("actividad propia: se importa un FIT, se apunta al material, sale su detall
 
   // Progreso: sin reloj, la actividad propia ya da datos, su curva de potencia y la primera medalla
   await nav.getByRole("button", { name: "Progreso" }).click()
-  for (const fold of ["Curvas de ritmo y potencia", "Medallas", "Actividades recientes"]) await openFold(page, fold)
+  await page.getByRole("button", { name: /^Medallas/ }).click()  // su pantalla
+  const badges = page.getByRole("region", { name: "Medallas" })
+  await expect(badges.getByRole("button", { name: /Primer paso/ })).toBeVisible()
+  await expect(badges.getByText(/Nivel 1 · 1 punto/)).toBeVisible()
+  await page.getByRole("button", { name: "Volver a Progreso" }).click()
+  for (const fold of ["Curvas de ritmo y potencia", "Actividades recientes"]) await openFold(page, fold)
   const curve = page.locator("section.module", { hasText: "Curva de potencia (bici)" })
   await expect(curve.getByRole("row", { name: /5 min.*210 W.*210 W/ })).toBeVisible()
-  const badges = page.locator("section.module", { hasText: "Medallas" })
-  await expect(badges.getByText("Primer paso")).toBeVisible()
-  await expect(badges.getByText(/Nivel 1 · 1 punto/)).toBeVisible()
   await page.locator("section.module", { hasText: "Tus últimos entrenamientos" }).getByRole("button", { name: /Bici/ }).first().click()
   await page.getByRole("button", { name: "Ver la actividad" }).click()
   await expect(page.getByRole("dialog", { name: "Bici" })).toBeVisible()
@@ -379,7 +384,7 @@ test("actividad propia: se importa un FIT, se apunta al material, sale su detall
   await page.reload()
   await nav.getByRole("button", { name: "Perfil" }).click()
   await page.getByRole("button", { name: /^Zapatillas y bicis/ }).click()  // su propia pantalla
-  await expect(page.locator("section.module", { hasText: "Zapatillas y bicis" }).getByText("1005 km")).toBeVisible()
+  await expect(page.getByRole("main").getByText("1005 km")).toBeVisible()
   expect(errors).toEqual([])
 })
 

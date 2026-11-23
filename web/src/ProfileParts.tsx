@@ -155,3 +155,13 @@ export function Fold({ title, line, children, open }: { title: string; line: str
     </details>
   )
 }
+
+/** Una fila que abre su propia pantalla: título, valor y ›. */
+export function RowButton({ title, value, onClick }: { title: string; value: string; onClick: () => void }) {
+  return (
+    <button className="module row-button" onClick={onClick}>
+      <span className="grow"><strong>{title}</strong><br /><span className="muted small-text">{value}</span></span>
+      <span className="chev" aria-hidden>›</span>
+    </button>
+  )
+}

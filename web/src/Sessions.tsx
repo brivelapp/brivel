@@ -86,8 +86,8 @@ export function SessionsCard({ core, act }: { core: WebApp; act: Act }) {
   const sessions: OwnSession[] = JSON.parse(core.ownSessionsJson())
   return (
     <section className="module">
-      <h3>Tus sesiones</h3>
-      <p className="muted">Monta tus propias sesiones de carrera, bici, natación o caminata, paso a paso. Van al calendario y al reloj como las del plan.</p>
+      <button className="primary" onClick={() => setEditing(EMPTY)}>Nueva sesión</button>
+      {sessions.length === 0 && <p className="muted small-text">Aún no tienes ninguna. Móntala paso a paso y va al calendario y al reloj como las del plan.</p>}
       {sessions.map((s) => (
         <div key={s.id} className="row">
           <button className="row option grow" onClick={() => setEditing(s)}>
@@ -96,7 +96,6 @@ export function SessionsCard({ core, act }: { core: WebApp; act: Act }) {
           <button className="text" aria-label={`Hacer ${s.name} hoy`} onClick={() => act(() => core.doOwnSessionToday(s.id), "Puesta hoy: la tienes en Hoy")}>Hoy</button>
         </div>
       ))}
-      <button className="secondary" onClick={() => setEditing(EMPTY)}>Nueva sesión</button>
       {editing && <Editor core={core} act={act} start={editing} close={() => setEditing(null)} />}
     </section>
   )
