@@ -483,3 +483,33 @@ struct Source: View {
     let text: String
     var body: some View { Text(text).font(.caption12).foregroundStyle(Palette.muted) }
 }
+
+/// Una parte en una línea, como «La más cerca» de Progreso: al tocarla se abre debajo (Progreso y Entrenar).
+struct Fold<Content: View>: View {
+    let title: String
+    let line: String?
+    @ViewBuilder var content: Content
+    @State private var open: Bool
+
+    init(title: String, line: String?, startOpen: Bool = false, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.line = line
+        self.content = content()
+        _open = State(initialValue: startOpen)
+    }
+
+    var body: some View {
+        Button { open.toggle() } label: {
+            Module {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(.section).foregroundStyle(Palette.text)
+                        if let line { Secondary(line) }
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                    RowChevron(open: open)
+                }
+            }
+        }.buttonStyle(.plain).accessibilityAddTraits(.isButton)
+        if open { content }
+    }
+}

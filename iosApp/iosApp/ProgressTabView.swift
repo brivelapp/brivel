@@ -112,29 +112,6 @@ struct ProgressTabView: View {
     }
 }
 
-/// Una parte de Progreso en una línea, como «La más cerca»: al tocarla se abre debajo.
-private struct Fold<Content: View>: View {
-    let title: String
-    let line: String?
-    @ViewBuilder var content: Content
-    @State private var open = false
-
-    var body: some View {
-        Button { open.toggle() } label: {
-            Module {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(title).font(.section).foregroundStyle(Palette.text)
-                        if let line { Secondary(line) }
-                    }.frame(maxWidth: .infinity, alignment: .leading)
-                    RowChevron(open: open)
-                }
-            }
-        }.buttonStyle(.plain).accessibilityAddTraits(.isButton)
-        if open { content }
-    }
-}
-
 /// Los cuatro de arriba; «Editar» abre la lista para elegir otros cuatro.
 private struct ProgressTiles: View {
     @EnvironmentObject var model: AppModel
