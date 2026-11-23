@@ -11,18 +11,25 @@ struct ProgressTabView: View {
     var body: some View {
         let _ = model.version
         let screen = model.core.progress()
+        let bodyMetrics = screen.metrics.filter { bodyKeys.contains($0.key) }
+        let training = screen.metrics.filter { !bodyKeys.contains($0.key) }
+        let last = screen.weeklyMinutes.last?.value ?? 0
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 ScreenTitle(text: "Progreso", subtitle: "Últimos 90 días")
+                // Arriba, los cuatro que elige cada uno (decidido el 2026-11-23); debajo, cada parte plegada en una línea
+                ProgressTiles()
                 if !screen.linked {
                     Module {
                         Secondary("Para ver tu sueño, tu VFC, tu pulso en reposo o tu VO2max, conecta Apple Salud (los datos de tu reloj o tu báscula en este iPhone) o tu cuenta de intervals.icu (gratis) en Perfil → Ajustes.")
-                        Button("Ir a Ajustes", action: openProfile).buttonStyle(PrimaryStyle())
+                        Button("Ir a Ajustes", action: openProfile).buttonStyle(SecondaryStyle())
                     }
-                } else {
-                    let bodyMetrics = screen.metrics.filter { bodyKeys.contains($0.key) }
-                    let training = screen.metrics.filter { !bodyKeys.contains($0.key) }
-                    if !bodyMetrics.isEmpty {
+                }
+                if let badges = screen.badges {
+                    Fold(title: "Medallas", line: badges.next.first.map { "La más cerca: \($0.title)" } ?? badges.nextLevel) { BadgesSection(badges: badges) }
+                }
+                if screen.linked && !bodyMetrics.isEmpty {
+                    Fold(title: "Tu cuerpo", line: bodyMetrics.prefix(3).map { $0.label }.joined(separator: ", ") + (bodyMetrics.count > 3 ? "…" : "")) {
                         Module {
                             TitleRow {
                                 Text("Tu cuerpo").font(.section)
@@ -32,7 +39,9 @@ struct ProgressTabView: View {
                             ForEach(Array(bodyMetrics.enumerated()), id: \.offset) { i, m in MetricRow(metric: m, first: i == 0) }
                         }
                     }
-                    if screen.status != nil || !training.isEmpty {
+                }
+                if screen.linked && (screen.status != nil || !training.isEmpty) {
+                    Fold(title: "Forma", line: screen.status?.label ?? training.prefix(3).map { $0.label }.joined(separator: ", ")) {
                         Module {
                             if let st = screen.status {
                                 let warn = st.label == "Sobrecarga" || st.label == "Perdiendo forma"
@@ -49,18 +58,23 @@ struct ProgressTabView: View {
                             }
                         }
                     }
-                    Module {
-                        let last = screen.weeklyMinutes.last?.value ?? 0
-                        TitleRow {
-                            Text("Actividad semanal").font(.section)
-                        } trailing: {
-                            Text("\(Int(last.rounded())) / 150 min").font(.mono(15, .semibold))
+                }
+                if screen.linked {
+                    Fold(title: "Minutos por semana", line: "Esta semana, \(Int(last.rounded())) de 150") {
+                        Module {
+                            TitleRow {
+                                Text("Actividad semanal").font(.section)
+                            } trailing: {
+                                Text("\(Int(last.rounded())) / 150 min").font(.mono(15, .semibold))
+                            }
+                            ProgressLine(fraction: last / 150)
+                            Secondary("La OMS recomienda al menos 150 minutos moderados (o 75 intensos) a la semana.")
+                            Bars(points: screen.weeklyMinutes, target: 150)
                         }
-                        ProgressLine(fraction: last / 150)
-                        Secondary("La OMS recomienda al menos 150 minutos moderados (o 75 intensos) a la semana.")
-                        Bars(points: screen.weeklyMinutes, target: 150)
                     }
-                    if !screen.predictions.isEmpty {
+                }
+                if !screen.predictions.isEmpty {
+                    Fold(title: "Predicciones de carrera", line: screen.predictions.prefix(2).map { "\($0.distance) \($0.time)" }.joined(separator: " · ")) {
                         Module {
                             Text("Tiempos previstos").font(.section)
                             if let note = screen.garminNote { Source(text: note) }
@@ -74,20 +88,109 @@ struct ProgressTabView: View {
                             if let source = screen.predictionSource { Secondary("Calculado con \(source) (fórmula de Daniels).") }
                         }
                     }
-                    if !screen.recent.isEmpty {
+                }
+                if !screen.recent.isEmpty {
+                    Fold(title: "Actividades recientes", line: screen.recent.first?.title) {
                         Module {
                             Text("Tus últimos entrenamientos").font(.section)
                             ForEach(Array(screen.recent.enumerated()), id: \.offset) { _, r in RecentRow(activity: r) }
                         }
                     }
-                    CurvesSection(curves: screen.curves)
                 }
-                MeasuresSection(screen: screen)
-                if let badges = screen.badges { BadgesSection(badges: badges) }
-                MilestonesSection(screen: screen)
+                if !screen.curves.isEmpty {
+                    Fold(title: "Curvas de ritmo y potencia", line: screen.curves.map { $0.title }.joined(separator: " · ")) { CurvesSection(curves: screen.curves) }
+                }
+                Fold(title: "Tus medidas", line: screen.measures.isEmpty ? "Apunta tu peso o tus perímetros" : screen.measures.map { $0.label }.joined(separator: ", ")) {
+                    MeasuresSection(screen: screen)
+                }
+                Fold(title: "Récords y marcas", line: screen.strengthRecords.first?.title ?? screen.milestones.first?.title ?? "Saldrán al entrenar") {
+                    MilestonesSection(screen: screen)
+                }
             }.padding(.horizontal, 18).padding(.vertical, 16)
         }.background(Palette.bg)
         .keyboardDone()
+    }
+}
+
+/// Una parte de Progreso en una línea, como «La más cerca»: al tocarla se abre debajo.
+private struct Fold<Content: View>: View {
+    let title: String
+    let line: String?
+    @ViewBuilder var content: Content
+    @State private var open = false
+
+    var body: some View {
+        Button { open.toggle() } label: {
+            Module {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(.section).foregroundStyle(Palette.text)
+                        if let line { Secondary(line) }
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                    RowChevron(open: open)
+                }
+            }
+        }.buttonStyle(.plain).accessibilityAddTraits(.isButton)
+        if open { content }
+    }
+}
+
+/// Los cuatro de arriba; «Editar» abre la lista para elegir otros cuatro.
+private struct ProgressTiles: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @State private var editing: [String]? = nil
+
+    var body: some View {
+        let _ = model.version
+        let tiles = model.core.progressTiles()
+        VStack(alignment: .leading, spacing: 12) {
+            HStack { Spacer(); Button("Editar") { editing = tiles.map { $0.key } }.buttonStyle(TextActionStyle()) }
+            let columns = typeSize.isAccessibilitySize ? 1 : 2
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: columns), spacing: 12) {
+                ForEach(tiles, id: \.key) { t in
+                    Module {
+                        Text(t.title).font(.section)
+                        if let value = t.value {
+                            (Text(value).font(.mono(24, .semibold, relativeTo: .title2))
+                                + Text(t.unit.isEmpty ? "" : " \(t.unit)").font(.mono(13, relativeTo: .footnote)).foregroundColor(Palette.muted))
+                            if let detail = t.detail { Secondary(detail) }
+                        } else {
+                            Secondary(t.empty ?? "")
+                        }
+                    }.frame(maxHeight: .infinity, alignment: .top)
+                }
+            }
+        }
+        .sheet(isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) {
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Secondary("Los cuatro de arriba en Progreso. Lo que no elijas sigue debajo. \(editing?.count ?? 0) de 4.")
+                        Flow(spacing: 8) {
+                            ForEach(model.core.tileChoices(), id: \.key) { c in
+                                Chip(label: c.title, selected: editing?.contains(c.key) == true) {
+                                    guard var e = editing else { return }
+                                    if let i = e.firstIndex(of: c.key) { e.remove(at: i) } else if e.count < 4 { e.append(c.key) }
+                                    editing = e
+                                }
+                            }
+                        }
+                    }.padding(20)
+                }
+                .background(Palette.surface)
+                .navigationTitle("Elige 4").navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Listo") {
+                            let keys = editing ?? []
+                            editing = nil
+                            model.run { try model.core.setProgressTiles(keys: keys) }
+                        }.disabled(editing?.count != 4)
+                    }
+                }
+            }
+        }
     }
 }
 
