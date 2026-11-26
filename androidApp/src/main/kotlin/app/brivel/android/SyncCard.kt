@@ -8,11 +8,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -64,12 +64,7 @@ private fun grouped(code: String) = code.chunked(3).joinToString(" ")
 private fun AccountButton(provider: String, onClick: () -> Unit) {
     val google = provider == "google"
     val dark = androidx.compose.foundation.isSystemInDarkTheme()
-    val (bg, fg, border) = when {
-        google && !dark -> Triple(Color(0xFFFFFFFF), Color(0xFF1F1F1F), Color(0xFF747775))
-        google -> Triple(Color(0xFF131314), Color(0xFFE3E3E3), Color(0xFF8E918F))
-        !dark -> Triple(Color.Black, Color.White, Color.Black)
-        else -> Triple(Color.White, Color.Black, Color.White)
-    }
+    val (bg, fg, border) = accountColors(google, dark)
     OutlinedButton(onClick, Modifier.fillMaxWidth().heightIn(min = 48.dp), border = BorderStroke(1.dp, border),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = bg, contentColor = fg)) {
         Icon(painterResource(if (google) R.drawable.ic_google_g else R.drawable.ic_apple), null, Modifier.size(18.dp),
@@ -125,7 +120,7 @@ fun SyncCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: In
                 }
                 ChipRow {
                     Button(onClick = { act.syncNow() }) { Text("Sincronizar ahora") }
-                    OutlinedButton(onClick = { showCode = !showCode }) { Text(if (showCode) "Ocultar código" else "Ver código") }
+                    TonalButton(onClick = { showCode = !showCode }) { Text(if (showCode) "Ocultar código" else "Ver código") }
                 }
                 if (account != null) TextButton(onClick = {
                     act.suspend("Ya no entras con $account en ningún dispositivo. La sincronización con el código sigue") { app.signOutAccount() }
@@ -144,8 +139,8 @@ fun SyncCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: In
                 }
                 Secondary("O con un código, si prefieres que solo tus dispositivos puedan leer la copia:")
                 ChipRow {
-                    if (allowCreate) OutlinedButton(onClick = { view = SyncView.CREATE }) { Text("Activar con un código") }
-                    OutlinedButton(onClick = { view = SyncView.JOIN }) { Text("Tengo un código") }
+                    if (allowCreate) Button(onClick = { view = SyncView.CREATE }) { Text("Activar con un código") }
+                    TonalButton(onClick = { view = SyncView.JOIN }) { Text("Tengo un código") }
                 }
             }
             view == SyncView.GOOGLE || view == SyncView.APPLE -> {
@@ -159,7 +154,7 @@ fun SyncCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: In
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(app.signInUrl(provider))))
                         view = SyncView.IDLE
                     }) { Text("Continuar") }
-                    OutlinedButton(onClick = { view = SyncView.IDLE }) { Text("Cancelar") }
+                    TonalButton(onClick = { view = SyncView.IDLE }) { Text("Cancelar") }
                 }
             }
             else -> {
@@ -186,7 +181,7 @@ fun SyncCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: In
                             showCode = true
                         }
                     }) { Text(if (joining) "Unirse" else "Activar") }
-                    OutlinedButton(onClick = { view = SyncView.IDLE }) { Text("Cancelar") }
+                    TonalButton(onClick = { view = SyncView.IDLE }) { Text("Cancelar") }
                 }
             }
         }

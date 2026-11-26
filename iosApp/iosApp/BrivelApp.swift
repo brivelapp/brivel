@@ -148,7 +148,7 @@ struct RootView: View {
                         .tabItem { Label { Text("Entrenar") } icon: { Image("sport_strength").renderingMode(.template) } }.tag(2)
                     ProgressTabView(openProfile: { tab = 4; settings = true }).readableWidth()
                         .tabItem { Label { Text("Progreso") } icon: { Image("tab_progress").renderingMode(.template) } }.tag(3)
-                    ProfileView(settings: $settings).readableWidth()
+                    ProfileView(settings: $settings, openGoal: { model.run { model.core.abandonGoal() } }).readableWidth()
                         .tabItem { Label { Text("Perfil") } icon: { Image("tab_profile").renderingMode(.template) } }.tag(4)
                 }
             }
@@ -160,7 +160,7 @@ struct RootView: View {
         .refreshable { await model.refreshAll() }
         .fullScreenCover(isPresented: Binding(get: { model.strengthDate != nil }, set: { if !$0 { model.strengthDate = nil } })) {
             if let date = model.strengthDate {
-                StrengthSessionView(date: date) { model.strengthDate = nil }.readableWidth().environmentObject(model)
+                StrengthSessionView(date: date) { model.run { model.core.closeStrength() }; model.strengthDate = nil }.readableWidth().environmentObject(model)
             }
         }
         .onAppear {

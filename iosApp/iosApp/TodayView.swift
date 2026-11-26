@@ -5,19 +5,30 @@ struct TodayView: View {
     @EnvironmentObject var model: AppModel
     let openGoal: () -> Void
     var openTrain: () -> Void = {}
-    @State private var goalOpen = false
+    @State private var detail: String? = nil  // la sesión abierta con «Detalles ›»
 
     var body: some View {
         let _ = model.version
         let screen = model.core.todayScreen()
         let day = screen.day
+        if let opened = day.items.first(where: { $0.slot == detail }) {
+            // La sesión entera en su pantalla; el botón de volver deja Hoy como estaba
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 4) {
+                        Button { detail = nil } label: { Glyph(name: "chevron_left", size: 24) }
+                            .frame(minWidth: 44, minHeight: 44).accessibilityLabel("Volver a Hoy")
+                        Text(opened.title).font(.screenTitle)
+                    }
+                    DayContent(day: day, linked: model.core.watchRoute != nil, today: true, only: opened.slot)
+                }.padding(.horizontal, 18).padding(.vertical, 16)
+            }.background(Palette.bg)
+        } else {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 ScreenTitle(text: "Hoy", subtitle: screen.dateLabel)
-                if let goal = screen.goalLine {
-                    Secondary(goal)
-                    Button("Tu objetivo") { goalOpen = true }.buttonStyle(TextActionStyle())
-                }
+                // Cambiar el objetivo vive en Perfil desde el 2026-11-23 (secciones): aquí, solo cuál es
+                if let goal = screen.goalLine { Secondary(goal) }
                 if screen.noPlan { Button("Quiero un plan de Brivel", action: openGoal).buttonStyle(TextActionStyle()) }
                 if screen.goalFinished {
                     Module {
@@ -30,47 +41,57 @@ struct TodayView: View {
                 if !screen.stateTitle.isEmpty {
                     StateCard(tone: screen.tone, title: screen.stateTitle, detail: screen.stateDetail, source: screen.garminNote)
                 }
-                if screen.askReadiness { ReadinessCard() }
                 if let run = screen.rateRun { RateRunCard(run: run) }
                 if screen.noPlan && day.items.isEmpty { NoRoutineToday(next: screen.nextRoutine, openTrain: openTrain) }
-                DayContent(day: day, linked: model.core.watchRoute != nil, today: true)
-                Module {
-                    TitleRow {
-                        Text("Esta semana").font(.section)
-                    } trailing: {
-                        // Sin plan, la fuerza hecha frente a los 2 días de la OMS; con plan, los minutos de actividad
-                        Text(screen.noPlan ? "\(screen.strengthDone) de 2 días de fuerza" : "\(screen.weekMinutes) de 150 min")
-                            .font(.mono(14, relativeTo: .subheadline)).foregroundStyle(Palette.muted)
+                if day.items.isEmpty {
+                    DayContent(day: day, linked: model.core.watchRoute != nil, today: true)
+                } else {
+                    ForEach(Array(day.items.enumerated()), id: \.offset) { _, item in
+                        CompactSession(day: day, item: item) { detail = item.slot }
                     }
-                    WeekDots(days: screen.weekDots)
-                    if screen.noPlan {
-                        if screen.strengthDone >= 2 {
-                            Text("Cumples los 2 días de fuerza que recomienda la OMS").font(.ui(14, .semibold, relativeTo: .subheadline))
-                                .foregroundStyle(Palette.ok)
-                        }
-                    } else if screen.meetsWho {
-                        HStack(spacing: 6) {
-                            Glyph(name: "check", size: 18, color: Palette.ok)
-                            Text("Cumples la recomendación de la OMS para tu salud").font(.ui(14, .semibold, relativeTo: .subheadline))
-                                .foregroundStyle(Palette.ok)
-                        }
-                    } else {
-                        Secondary(screen.strengthDays >= 2 ? "Fuerza: \(screen.strengthDays) días, mínimo cumplido" : "Fuerza: \(screen.strengthDays) de 2 días")
-                    }
-                    ForEach(screen.warnings, id: \.self) { ReasonRow(reason: Reason(text: $0, evidence: nil)) }
-                    ForEach(screen.info, id: \.self) { Secondary($0) }
                 }
+                // Widgets (TodayWidgets.swift): las preguntas y la semana de serie, y los que se añadan
+                TodayWidgets(screen: screen)
             }.padding(.horizontal, 18).padding(.vertical, 16)
         }.background(Palette.bg)
-        .sheet(isPresented: $goalOpen) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(model.core.data.goal.map { TextsKt.goalLabel(goal: $0) } ?? "Sin objetivo").font(.screenTitle)
-                    Secondary("Puedes cambiarlo o abandonarlo cuando quieras; el plan se rehace al momento.")
-                    Button("Cambiar objetivo") { goalOpen = false; openGoal() }.buttonStyle(SecondaryStyle())
-                    OtherRacesView()
-                }.padding(20)
-            }.background(Palette.surface)
+        }
+    }
+}
+
+/// La sesión de hoy, compacta: lo de cada día aquí y el resto en «Detalles ›» (como en Android y la web).
+private struct CompactSession: View {
+    @EnvironmentObject var model: AppModel
+    let day: DayView
+    let item: PlanItem
+    let open: () -> Void
+
+    var body: some View {
+        let done = day.doneSports.contains(item.slot) || day.doneSports.contains(item.sport)
+        Module(accent: done ? Palette.ok : nil) {
+            HStack(spacing: 10) {
+                SportBadge(sport: item.sport)
+                Text(item.chosen ? "\(sportLabel(item.sport)) · elegida por ti" : sportLabel(item.sport))
+                    .font(.ui(13, .semibold, relativeTo: .footnote)).foregroundStyle(Palette.muted)
+                Spacer()
+                if done { Text("Hecha").font(.ui(13, .bold, relativeTo: .footnote)).foregroundStyle(Palette.ok) }
+                (Text("\(item.doneMin?.int32Value ?? item.durationMin)").font(.mono(22, .semibold, relativeTo: .title2))
+                    + Text(" min").font(.mono(13, relativeTo: .footnote)).foregroundColor(Palette.muted))
+            }
+            Text(item.title).font(.cardTitle)
+            Secondary(item.isStrength
+                ? item.exercises.map { String($0.split(separator: ":").first ?? "") }.joined(separator: " · ")
+                : item.doneDetail ?? item.target ?? item.hint)
+            if item.isStrength {
+                Button { model.strengthDate = day.date } label: { Text(done ? "Ver las series" : "Empezar").frame(maxWidth: .infinity) }
+                    .buttonStyle(PrimaryStyle())
+            }
+            HStack {
+                if !done {
+                    Button("La he hecho") { model.run { try model.core.markDone(date: day.date, sport: item.sport) } }.buttonStyle(TextActionStyle())
+                }
+                Spacer()
+                Button("Detalles ›", action: open).buttonStyle(TextActionStyle())
+            }
         }
     }
 }
@@ -81,6 +102,7 @@ struct DayContent: View {
     let day: DayView
     let linked: Bool
     let today: Bool
+    var only: String? = nil  // una sola sesión: la pantalla de «Detalles ›»
 
     var body: some View {
         let core = model.core
@@ -98,7 +120,7 @@ struct DayContent: View {
                     }
                 }
             }
-            ForEach(Array(day.items.enumerated()), id: \.offset) { _, item in
+            ForEach(Array(day.items.filter { only == nil || $0.slot == only }.enumerated()), id: \.offset) { _, item in
                 SessionItem(day: day, item: item, linked: linked, today: today)
             }
             ForEach(Array(day.matches.enumerated()), id: \.offset) { _, m in
@@ -196,30 +218,6 @@ private struct SessionItem: View {
                     }.buttonStyle(SecondaryStyle())
                 }
             }
-        }
-    }
-}
-
-private let ratings = (1...5).map { n in ("\(n)", n == 1 ? "1 mal" : n == 5 ? "5 bien" : "\(n)") }
-
-private struct ReadinessCard: View {
-    @EnvironmentObject var model: AppModel
-    @State private var sleep = 3
-    @State private var energy = 3
-    @State private var soreness = 3
-
-    var body: some View {
-        Module {
-            Text("¿Cómo estás hoy?").font(.section)
-            Secondary("Sin reloj vinculado, tus respuestas ajustan la sesión de hoy: si dormiste mal o estás cargado, será más suave.")
-            // Del 1 al 5, con el mismo selector que el Perfil
-            ForEach([("Sueño", $sleep), ("Energía", $energy), ("Agujetas o molestias", $soreness)], id: \.0) { label, value in
-                Text(label).font(.small)
-                Segmented(options: ratings, selected: "\(value.wrappedValue)") { value.wrappedValue = Int($0) ?? 3 }
-            }
-            Button("Ajustar hoy") {
-                model.run { try model.core.answerReadiness(sleep: Int32(sleep), energy: Int32(energy), soreness: Int32(soreness)) }
-            }.buttonStyle(PrimaryStyle())
         }
     }
 }

@@ -15,7 +15,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -71,7 +70,7 @@ private fun SessionEditor(app: BrivelApp, act: Act, start: OwnSession, close: ()
             OutlinedTextField(s.name, { s = s.copy(name = it) }, label = { Text("Nombre") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             SectionTitle("Deporte")
             ChipRow {
-                OWN_SPORTS.forEach { k -> FilterChip(selected = s.sport == k, label = { Text(SPORT_LABEL[k] ?: k) }, onClick = { s = s.copy(sport = k) }) }
+                OWN_SPORTS.forEach { k -> Chip(selected = s.sport == k, label = { Text(SPORT_LABEL[k] ?: k) }, onClick = { s = s.copy(sport = k) }) }
             }
             SectionTitle("Pasos")
             s.steps.forEachIndexed { i, step ->
@@ -88,7 +87,7 @@ private fun SessionEditor(app: BrivelApp, act: Act, start: OwnSession, close: ()
                         Secondary("Intensidad")
                         ChipRow {
                             OWN_ZONES.forEach { (k, label) ->
-                                FilterChip(selected = step.intensityZone == k, label = { Text("$label ($k)") }, onClick = { setStep(i, step.copy(intensityZone = k)) })
+                                Chip(selected = step.intensityZone == k, label = { Text("$label ($k)") }, onClick = { setStep(i, step.copy(intensityZone = k)) })
                             }
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -99,13 +98,13 @@ private fun SessionEditor(app: BrivelApp, act: Act, start: OwnSession, close: ()
                     }
                 }
             }
-            OutlinedButton(onClick = { s = s.copy(steps = s.steps + OwnStep("", 10.0, "Z2")) }) { Text("Añadir paso") }
+            TonalButton(onClick = { s = s.copy(steps = s.steps + OwnStep("", 10.0, "Z2")) }) { Text("Añadir paso") }
             Secondary("Total: ${s.minutes().roundToInt()} min. El pulso o el ritmo de cada paso salen de tus zonas, como en las sesiones del plan.")
             SectionTitle("Qué días la haces")
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 DAY_LETTERS.forEach { (k, l) ->
                     val on = k in s.days
-                    FilterChip(selected = on, label = { Text(l) }, modifier = Modifier.weight(1f), onClick = { s = s.copy(days = if (on) s.days - k else s.days + k) })
+                    Chip(selected = on, label = { Text(l) }, modifier = Modifier.weight(1f), onClick = { s = s.copy(days = if (on) s.days - k else s.days + k) })
                 }
             }
             Secondary("Esos días sustituye a la sesión de ese deporte de tu plan. Sin días, queda guardada para hacerla cuando quieras.")
@@ -125,8 +124,8 @@ private fun SessionEditor(app: BrivelApp, act: Act, start: OwnSession, close: ()
 fun SessionsCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version: Int) {
     var editing by remember { mutableStateOf<OwnSession?>(null) }
     Module {
-        SectionTitle("Tus sesiones")
-        Secondary("Monta tus propias sesiones de carrera, bici, natación o caminata, paso a paso. Van al calendario y al reloj como las del plan.")
+        PrimaryButton("Nueva sesión", Modifier.fillMaxWidth()) { editing = OwnSession("", "", "running", listOf(OwnStep("", 30.0, "Z2")), since = "") }
+        if (app.ownSessions.isEmpty()) Secondary("Aún no tienes ninguna. Móntala paso a paso y va al calendario y al reloj como las del plan.")
         app.ownSessions.forEach { s ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f).clickable { editing = s }.padding(vertical = 6.dp)) {
@@ -137,7 +136,6 @@ fun SessionsCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version
                     modifier = Modifier.semantics { contentDescription = "Hacer ${s.name} hoy" }) { LinkText("Hoy") }
             }
         }
-        OutlinedButton(onClick = { editing = OwnSession("", "", "running", listOf(OwnStep("", 30.0, "Z2")), since = "") }) { Text("Nueva sesión") }
     }
     editing?.let { SessionEditor(app, act, it) { editing = null } }
 }

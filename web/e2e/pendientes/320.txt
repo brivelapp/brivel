@@ -1,0 +1,42 @@
+toque-pequeno: Domingo 1 de noviembre
+toque-pequeno: Domingo 15 de noviembre
+toque-pequeno: Domingo 22 de noviembre
+toque-pequeno: Domingo 29 de noviembre
+toque-pequeno: Domingo 6 de diciembre
+toque-pequeno: Domingo 8 de noviembre
+toque-pequeno: Jueves 12 de noviembre
+toque-pequeno: Jueves 19 de noviembre
+toque-pequeno: Jueves 26 de noviembre
+toque-pequeno: Jueves 29 de octubre
+toque-pequeno: Jueves 3 de diciembre
+toque-pequeno: Jueves 5 de noviembre
+toque-pequeno: Lunes 16 de noviembre, 1 planificada
+toque-pequeno: Lunes 2 de noviembre
+toque-pequeno: Lunes 23 de noviembre, 2 planificadas
+toque-pequeno: Lunes 26 de octubre
+toque-pequeno: Lunes 30 de noviembre, 1 planificada
+toque-pequeno: Lunes 9 de noviembre
+toque-pequeno: Martes 1 de diciembre
+toque-pequeno: Martes 10 de noviembre
+toque-pequeno: Martes 17 de noviembre
+toque-pequeno: Martes 24 de noviembre
+toque-pequeno: Martes 27 de octubre
+toque-pequeno: Martes 3 de noviembre
+toque-pequeno: Miércoles 11 de noviembre
+toque-pequeno: Miércoles 18 de noviembre, 1 planificada
+toque-pequeno: Miércoles 2 de diciembre, 1 planificada
+toque-pequeno: Miércoles 25 de noviembre, 2 planificadas
+toque-pequeno: Miércoles 28 de octubre
+toque-pequeno: Miércoles 4 de noviembre
+toque-pequeno: Sábado 14 de noviembre
+toque-pequeno: Sábado 21 de noviembre, 2 planificadas
+toque-pequeno: Sábado 28 de noviembre, 2 planificadas
+toque-pequeno: Sábado 31 de octubre
+toque-pequeno: Sábado 5 de diciembre, 2 planificadas
+toque-pequeno: Sábado 7 de noviembre
+toque-pequeno: Viernes 13 de noviembre
+toque-pequeno: Viernes 20 de noviembre
+toque-pequeno: Viernes 27 de noviembre
+toque-pequeno: Viernes 30 de octubre
+toque-pequeno: Viernes 4 de diciembre
+toque-pequeno: Viernes 6 de noviembre

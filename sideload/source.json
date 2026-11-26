@@ -16,6 +16,24 @@
       "category": "health",
       "versions": [
         {
+          "version": "0.2.227",
+          "buildVersion": "227",
+          "date": "2026-11-23T19:40:00Z",
+          "localizedDescription": "Perfil, Entrenar y Progreso rehechos por dentro: cada tema en su pantalla, Deportes, Fuerza y Nivel con ✓, Tu semana con − y +, biblioteca sin desplegables y medallas en cuadrícula. La versión ya se ve en Ajustes. Formato de datos 12.",
+          "downloadURL": "https://github.com/brivelapp/brivel/releases/download/prueba-2026-11-23-2/Brivel.ipa",
+          "size": 5647843,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "0.1.0",
+          "buildVersion": "220",
+          "date": "2026-11-23T15:06:00Z",
+          "localizedDescription": "Brivel por secciones: Hoy con widgets y la sesión en una tarjeta con «Detalles ›»; Progreso con los cuatro datos que elijas; Entrenar con «Entrenar fuerza» y «Grabar con GPS»; Perfil en filas. Una sesión hecha enseña los datos de la actividad. Formato de datos 12.",
+          "downloadURL": "https://github.com/brivelapp/brivel/releases/download/prueba-2026-11-23-1/Brivel.ipa",
+          "size": 5605685,
+          "minOSVersion": "17.0"
+        },
+        {
           "version": "0.1.0",
           "buildVersion": "184",
           "date": "2026-11-18T21:58:12Z",

@@ -1,4 +1,5 @@
 // Biblioteca de ejercicios (Library.kt): buscar y filtrar, la ficha de cada uno y cambiar un ejercicio de la sesión
+import { Fold } from "./ProfileParts"
 import { useEffect, useRef, useState } from "react"
 import type { WebApp } from "brivel-shared"
 import type { ExerciseCard, ExerciseHistory } from "./types"
@@ -124,7 +125,6 @@ const PAGE = 60
 
 /** En Entrenar: todos los ejercicios, con búsqueda y filtros de zona y de material, y el material que tienes. */
 export function LibraryCard({ core }: { core: WebApp }) {
-  const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [zone, setZone] = useState("")
   const [equipment, setEquipment] = useState("")
@@ -133,7 +133,7 @@ export function LibraryCard({ core }: { core: WebApp }) {
   const [limit, setLimit] = useState(PAGE)
   const [shown, setShown] = useState<string | null>(null)
   const tags: string[] = JSON.parse(core.equipmentJson())
-  const list: ExerciseCard[] = open ? JSON.parse(core.libraryByZoneJson(query, zone || null, equipment || null, mine)) : []
+  const list: ExerciseCard[] = JSON.parse(core.libraryByZoneJson(query, zone || null, equipment || null, mine))
   const filter = <T,>(set: (v: T) => void) => (v: T) => { set(v); setLimit(PAGE) }
   const toggle = (t: string) => {
     const next = owned.includes(t) ? owned.filter((o) => o !== t) : [...owned, t]
@@ -142,36 +142,20 @@ export function LibraryCard({ core }: { core: WebApp }) {
   }
   return (
     <section className="module">
-      <h3>Biblioteca de ejercicios</h3>
-      <p className="muted">Busca entre todos los ejercicios por zona del cuerpo o material.</p>
-      {!open
-        ? <button className="secondary" onClick={() => setOpen(true)}>Ver los ejercicios</button>
-        : (
-          <>
-            <p className="muted small-text">Tu material (sin el peso corporal, que siempre cuenta). Brivel solo te propone variantes que puedas hacer con él.</p>
-            <div className="chips">
-              {tags.filter((t) => t !== "peso corporal").map((t) => (
-                <button key={t} className={owned.includes(t) ? "chip selected" : "chip"} aria-pressed={owned.includes(t)} onClick={() => toggle(t)}>{t}</button>
-              ))}
-            </div>
-            <label className="field">Buscar
-              <input type="search" value={query} onChange={(e) => filter(setQuery)(e.target.value)} placeholder="Sentadilla, remo, espalda…" />
-            </label>
-            <label className="field">Zona
-                <select value={zone} onChange={(e) => filter(setZone)(e.target.value)}>
-                  <option value="">Todas</option>
-                  {(JSON.parse(core.zonesJson()) as string[]).map((z) => <option key={z} value={z}>{z}</option>)}
-                </select>
-            </label>
-            <label className="field">Material
-                <select value={equipment} onChange={(e) => filter(setEquipment)(e.target.value)}>
-                  <option value="">Cualquiera</option>
-                  {tags.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-            </label>
-            {owned.length > 0 && (
-              <label className="check"><input type="checkbox" checked={mine} onChange={(e) => filter(setMine)(e.target.checked)} /> Solo con mi material</label>
-            )}
+      <label className="field">Buscar
+        <input type="search" value={query} onChange={(e) => filter(setQuery)(e.target.value)} placeholder="Sentadilla, remo, espalda…" />
+      </label>
+      <div className="chips scroll" role="group" aria-label="Zona">
+        {["", ...(JSON.parse(core.zonesJson()) as string[])].map((z) => (
+          <button key={z || "todas"} className="chip" aria-pressed={zone === z} onClick={() => filter(setZone)(z)}>{z || "Todas"}</button>
+        ))}
+      </div>
+      <div className="chips scroll" role="group" aria-label="Material">
+        {owned.length > 0 && <button className="chip" aria-pressed={mine} onClick={() => filter(setMine)(!mine)}>Mi material</button>}
+        {tags.map((t) => (
+          <button key={t} className="chip" aria-pressed={equipment === t} onClick={() => filter(setEquipment)(equipment === t ? "" : t)}>{t}</button>
+        ))}
+      </div>
             <p className="muted small-text">{list.length} ejercicios</p>
             {list.slice(0, limit).map((c) => (
               <button key={c.name} className="row option" onClick={() => setShown(c.name)}>
@@ -180,8 +164,14 @@ export function LibraryCard({ core }: { core: WebApp }) {
               </button>
             ))}
             {list.length > limit && <button className="secondary" onClick={() => setLimit(limit + PAGE)}>Ver más</button>}
-          </>
-        )}
+      {/* Lo que tienes: el plan solo te propone variantes que puedas hacer con ello (el peso corporal siempre cuenta) */}
+      <Fold title="Tu material" line={owned.length ? owned.join(", ") : "Solo tu peso"}>
+        <div className="chips">
+          {tags.filter((t) => t !== "peso corporal").map((t) => (
+            <button key={t} className="chip" aria-pressed={owned.includes(t)} onClick={() => toggle(t)}>{t}</button>
+          ))}
+        </div>
+      </Fold>
       {shown && <ExerciseSheet core={core} name={shown} close={() => setShown(null)} />}
     </section>
   )

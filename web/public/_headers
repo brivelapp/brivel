@@ -1,0 +1,8 @@
+# Cabeceras de la web estática (Cloudflare Workers Static Assets; /api las pone el Worker). La CSP va en una <meta> de
+# index.html (vite.config.ts), y una <meta> no admite frame-ancestors: aquí, que nadie meta Brivel en un iframe
+/*
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()

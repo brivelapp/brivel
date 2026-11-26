@@ -83,9 +83,7 @@ private struct RoutineEditor: View {
                         }
                     }
                     Button("Añadir ejercicio") { picking = true }.buttonStyle(SecondaryStyle())
-                    Picker("Reserva al acabar cada serie", selection: $rir) {
-                        ForEach(0...5, id: \.self) { n in Text(n == 0 ? "Hasta no poder más" : "\(n) repeticiones").tag(n) }
-                    }
+                    ChipChoice(title: "Reserva al acabar cada serie", options: (0...5).map { ($0, $0 == 0 ? "Hasta no poder más" : "\($0)") }, selection: $rir)
                     Secondary("Brivel te propone el peso con lo que apuntes, sin subir nunca más de un 10 % de una vez.")
                     if let saveError { Text(saveError).foregroundStyle(Palette.danger) }
                     Button("Guardar") { save() }.buttonStyle(PrimaryStyle())
@@ -190,8 +188,8 @@ struct RoutinesSection: View {
 
     var body: some View {
         Module {
-            Text("Tus rutinas").font(.section)
-            Secondary("Crea tu propia rutina de fuerza y elige qué días la haces. Esos días sustituye a la fuerza del plan.")
+            Button { creating = true } label: { Text("Nueva rutina").frame(maxWidth: .infinity) }.buttonStyle(PrimaryStyle())
+            if model.core.routines.isEmpty { Secondary("Aún no tienes ninguna. Los días que elijas, sustituye a la fuerza del plan.") }
             ForEach(model.core.routines, id: \.id) { r in
                 Button { editing = r } label: {
                     HStack {
@@ -204,9 +202,8 @@ struct RoutinesSection: View {
                     }.contentShape(Rectangle())
                 }.buttonStyle(.plain)
             }
-            Button("Nueva rutina") { creating = true }.buttonStyle(SecondaryStyle())
-            Text("Tus ejercicios").font(.section)
-            Secondary("Si falta alguno en la biblioteca, créalo y úsalo en tus rutinas.")
+            Text("Ejercicios propios").font(.section)
+            if model.core.customExercises.isEmpty { Secondary("Si falta alguno en la biblioteca, créalo aquí.") }
             ForEach(model.core.customExercises, id: \.name) { e in
                 HStack {
                     Text(e.name)
@@ -214,7 +211,7 @@ struct RoutinesSection: View {
                     Button("Borrar") { model.run("Ejercicio borrado") { try model.core.deleteCustomExercise(name: e.name) } }.buttonStyle(TextActionStyle())
                 }
             }
-            Button("Nuevo ejercicio") { adding = true }.buttonStyle(SecondaryStyle())
+            Button { adding = true } label: { Text("Nuevo ejercicio").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
         }
         .sheet(isPresented: $adding) { NewExercise() }
         .sheet(isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) { RoutineEditor(start: editing) }

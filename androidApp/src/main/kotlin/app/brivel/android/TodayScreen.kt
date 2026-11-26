@@ -24,12 +24,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,31 +42,40 @@ import app.brivel.app.SPORT_LABEL
 import app.brivel.app.BrivelApp
 import app.brivel.app.dateLabel
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.activity.compose.BackHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {}, openGoal: () -> Unit) {
     val screen = remember(version) { app.todayScreen() }
     val day = screen.day
-    var goalOpen by remember { mutableStateOf(false) }
-    if (goalOpen) ModalBottomSheet(onDismissRequest = { goalOpen = false }, containerColor = Palette.surface) {
-        Column(Modifier.navigationBarsPadding().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(app.data.goal?.let { goalLabel(it) } ?: "Sin objetivo", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Secondary("Puedes cambiarlo o abandonarlo cuando quieras; el plan se rehace al momento.")
-            OutlinedButton(onClick = { goalOpen = false; openGoal() }) { Text("Cambiar objetivo") }
-            OtherRaces(app, act)
+    // «Detalles ›» abre la sesión entera en su pantalla; atrás vuelve a Hoy
+    var detail by remember { mutableStateOf<String?>(null) }
+    val opened = day.items.firstOrNull { it.slot == detail }
+    if (opened != null) {
+        BackHandler { detail = null }
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = { detail = null }, modifier = Modifier.semantics { contentDescription = "Volver a Hoy" }) {
+                    Text("‹", fontSize = 26.sp, color = Palette.text)
+                }
+                Text(opened.title, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+            }
+            DayContent(app, day, app.watchRoute != null, act, today = true, only = opened.slot)
+            Spacer(Modifier.height(24.dp))
         }
+        return
     }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         ScreenTitle("Hoy", subtitle = screen.dateLabel)
-        screen.goalLine?.let {
-            Secondary(it)
-            TextButton(onClick = { goalOpen = true }) { LinkText("Tu objetivo") }
-        }
+        // Cambiar el objetivo vive en Perfil desde el 2026-11-23 (secciones): aquí, solo cuál es
+        screen.goalLine?.let { Secondary(it) }
         if (screen.noPlan) TextButton(onClick = openGoal) { LinkText("Quiero un plan de Brivel") }
         if (screen.goalFinished) {
             Module {
@@ -79,28 +86,12 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {},
         }
         // Tu cuerpo hoy en una frase: sale de la misma decisión que la sesión
         if (screen.stateTitle.isNotEmpty()) StateCard(screen.tone, screen.stateTitle, screen.stateDetail, screen.garminNote)
-        if (screen.askReadiness) ReadinessCard(act)
         screen.rateRun?.let { RateRun(app, act, it) }
         if (screen.noPlan && day.items.isEmpty()) NoRoutineToday(app, screen.nextRoutine, version, act, openTrain)
-        DayContent(app, day, app.watchRoute != null, act, today = true)
-        Module {
-            TitleRow {
-                SectionTitle("Esta semana")
-                // Sin plan, la fuerza hecha frente a los 2 días de la OMS; con plan, los minutos de actividad
-                Text(if (screen.noPlan) "${screen.strengthDone} de 2 días de fuerza" else "${screen.weekMinutes} de 150 min",
-                    fontFamily = Mono, fontSize = 14.sp, color = Palette.muted)
-            }
-            WeekDots(screen.weekDots)
-            if (screen.noPlan) {
-                if (screen.strengthDone >= 2) Text("Cumples los 2 días de fuerza que recomienda la OMS", color = Palette.ok,
-                    fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            } else if (screen.meetsWho) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Glyph(R.drawable.ic_check, 18.dp, Palette.ok)
-                Text("Cumples la recomendación de la OMS para tu salud", color = Palette.ok, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            } else Secondary(if (screen.strengthDays >= 2) "Fuerza: ${screen.strengthDays} días, mínimo cumplido" else "Fuerza: ${screen.strengthDays} de 2 días")
-            screen.warnings.forEach { ReasonRow(Reason(it, null)) }
-            screen.info.forEach { Secondary(it) }
-        }
+        if (day.items.isEmpty()) DayContent(app, day, app.watchRoute != null, act, today = true)
+        else day.items.forEach { CompactSession(app, day, it, act) { detail = it.slot } }
+        // Widgets (TodayWidgets.kt): las preguntas y la semana de serie, y los que se añadan
+        TodayWidgets(app, version, act, screen)
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -155,7 +146,7 @@ private fun NoRoutineToday(app: BrivelApp, next: String?, version: Int, act: Act
         } else {
             Text("Hoy no te toca rutina", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
             next?.let { Secondary("$it. Si te apetece entrenar hoy, elige una o empieza en blanco.") }
-            routines.forEach { r -> OutlinedButton(onClick = { start(r.id) }, modifier = Modifier.fillMaxWidth()) { Text("Hacer «${r.name}» hoy") } }
+            routines.forEach { r -> TonalButton(onClick = { start(r.id) }, modifier = Modifier.fillMaxWidth()) { Text("Hacer «${r.name}» hoy") } }
             SecondaryButton("Entreno libre", Modifier.fillMaxWidth()) { start(null) }
         }
     }
@@ -163,7 +154,7 @@ private fun NoRoutineToday(app: BrivelApp, next: String?, version: Int, act: Act
 
 /** Las sesiones de un día con sus acciones: hecha, cambiar de deporte, enviar al reloj, hoy no puedo. */
 @Composable
-fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: Boolean) {
+fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: Boolean, only: String? = null) {
     // En Hoy la tarjeta de estado ya dice que descansas: aquí solo lo que se puede hacer
     val changeable = app.canChangeDay(day.date)
     if (day.items.isEmpty() && (!today || changeable)) {
@@ -177,7 +168,7 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
             }
         }
     }
-    for (item in day.items) {
+    for (item in day.items.filter { only == null || it.slot == only }) {
         val done = item.slot in day.doneSports || item.sport in day.doneSports
         SessionCard(item, done) {
             var open by remember { mutableStateOf(false) }
@@ -210,7 +201,7 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
             if (targets.isNotEmpty()) TextButton(onClick = { moving = !moving }) { LinkText(if (moving) "No moverla" else "Moverla a otro día") }
             if (moving) ChipRow {
                 targets.forEach { t ->
-                    OutlinedButton(onClick = { moving = false; act.run { app.moveSession(day.date, item.slot, t) } }) {
+                    TonalButton(onClick = { moving = false; act.run { app.moveSession(day.date, item.slot, t) } }) {
                         Text(dateLabel(t) + if (t == item.movedFrom) " (su día)" else "")
                     }
                 }
@@ -224,26 +215,27 @@ fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: B
     }
 }
 
+/** La sesión de hoy, compacta: lo de cada día aquí y el resto en «Detalles ›» (como CompactSession de la web). */
 @Composable
-private fun ReadinessCard(act: Act) {
-    var sleep by remember { mutableIntStateOf(3) }
-    var energy by remember { mutableIntStateOf(3) }
-    var soreness by remember { mutableIntStateOf(3) }
-    Module {
-        SectionTitle("¿Cómo estás hoy?")
-        Secondary("Sin reloj vinculado, tus respuestas ajustan la sesión de hoy: si dormiste mal o estás cargado, será más suave.")
-        for ((label, value, set) in listOf(
-            Triple("Sueño", sleep) { v: Int -> sleep = v },
-            Triple("Energía", energy) { v: Int -> energy = v },
-            Triple("Agujetas o molestias", soreness) { v: Int -> soreness = v },
-        )) {
-            Text(label, fontSize = 14.sp)
-            Segmented(RATINGS, value.toString()) { set(it.toInt()) }
+private fun CompactSession(app: BrivelApp, day: DayView, item: app.brivel.app.PlanItem, act: Act, open: () -> Unit) {
+    val done = item.slot in day.doneSports || item.sport in day.doneSports
+    Module(accent = if (done) Palette.ok else null) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SportBadge(item.sport)
+            Spacer(Modifier.width(10.dp))
+            Text(if (item.chosen) "${SPORT_LABEL[item.sport]} · elegida por ti" else SPORT_LABEL[item.sport] ?: "",
+                fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Palette.muted, modifier = Modifier.weight(1f))
+            if (done) Text("Hecha", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Palette.ok, modifier = Modifier.padding(end = 10.dp))
+            Text("${item.doneMin ?: item.durationMin}", fontFamily = Mono, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+            Text(" min", fontFamily = Mono, fontSize = 13.sp, color = Palette.muted)
         }
-        PrimaryButton("Ajustar hoy") { act.run { act.app.answerReadiness(sleep, energy, soreness) } }
+        Text(item.title, fontSize = 22.sp, lineHeight = 26.sp, fontWeight = FontWeight.ExtraBold)
+        Secondary(if (item.isStrength) item.exercises.joinToString(" · ") { it.substringBefore(":") } else item.doneDetail ?: item.target ?: item.hint)
+        if (item.isStrength) PrimaryButton(if (done) "Ver las series" else "Empezar", Modifier.fillMaxWidth()) { act.openStrength(day.date) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (!done) TextButton(onClick = { act.run { app.markDone(day.date, item.sport) } }) { LinkText("La he hecho") }
+            Spacer(Modifier.weight(1f))
+            TextButton(onClick = open) { LinkText("Detalles ›") }
+        }
     }
 }
-
-// Del 1 al 5, con el mismo selector que el Perfil
-private val RATINGS = (1..5).map { n -> "$n" to when (n) { 1 -> "1 mal"; 5 -> "5 bien"; else -> "$n" } }
-

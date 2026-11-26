@@ -15,7 +15,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -78,7 +77,7 @@ private fun RoutineEditor(app: BrivelApp, act: Act, start: Routine, close: () ->
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 DAY_LETTERS.forEach { (k, l) ->
                     val on = k in r.days
-                    FilterChip(selected = on, label = { Text(l) }, modifier = Modifier.weight(1f), onClick = { r = r.copy(days = if (on) r.days - k else r.days + k) })
+                    Chip(selected = on, label = { Text(l) }, modifier = Modifier.weight(1f), onClick = { r = r.copy(days = if (on) r.days - k else r.days + k) })
                 }
             }
             Secondary("Esos días sustituye a la fuerza de tu plan. Un día solo puede tener una rutina.")
@@ -101,11 +100,11 @@ private fun RoutineEditor(app: BrivelApp, act: Act, start: Routine, close: () ->
                     }
                 }
             }
-            OutlinedButton(onClick = { picking = true }) { Text("Añadir ejercicio") }
+            TonalButton(onClick = { picking = true }) { Text("Añadir ejercicio") }
             SectionTitle("Reserva al acabar cada serie")
             ChipRow {
                 (0..5).forEach { n ->
-                    FilterChip(selected = r.rir == n, label = { Text(if (n == 0) "Hasta no poder más" else "$n") }, onClick = { r = r.copy(rir = n) })
+                    Chip(selected = r.rir == n, label = { Text(if (n == 0) "Hasta no poder más" else "$n") }, onClick = { r = r.copy(rir = n) })
                 }
             }
             Secondary("Brivel te propone el peso con lo que apuntes, sin subir nunca más de un 10 % de una vez.")
@@ -152,7 +151,7 @@ private fun NewExercise(app: BrivelApp, act: Act, close: () -> Unit) {
             Text("Nuevo ejercicio", fontSize = 22.sp, fontWeight = FontWeight.Bold)
             OutlinedTextField(name, { name = it }, label = { Text("Nombre") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             SectionTitle("Tipo")
-            ChipRow { PATTERN_LABEL.forEach { (k, l) -> FilterChip(selected = pattern == k, label = { Text(l) }, onClick = { pattern = k }) } }
+            ChipRow { PATTERN_LABEL.forEach { (k, l) -> Chip(selected = pattern == k, label = { Text(l) }, onClick = { pattern = k }) } }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Va por tiempo, no por repeticiones", modifier = Modifier.weight(1f))
                 Switch(timed, { timed = it })
@@ -170,8 +169,8 @@ fun RoutinesCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version
     var editing by remember { mutableStateOf<Routine?>(null) }
     var adding by remember { mutableStateOf(false) }
     Module {
-        SectionTitle("Tus rutinas")
-        Secondary("Crea tu propia rutina de fuerza y elige qué días la haces. Esos días sustituye a la fuerza del plan.")
+        PrimaryButton("Nueva rutina", Modifier.fillMaxWidth()) { editing = Routine("", "", emptyList(), emptyList(), since = "") }
+        if (app.routines.isEmpty()) Secondary("Aún no tienes ninguna. Los días que elijas, sustituye a la fuerza del plan.")
         app.routines.forEach { r ->
             Row(Modifier.fillMaxWidth().clickable { editing = r }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -181,16 +180,15 @@ fun RoutinesCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER") version
                 RowChevron()
             }
         }
-        OutlinedButton(onClick = { editing = Routine("", "", emptyList(), emptyList(), since = "") }) { Text("Nueva rutina") }
-        SectionTitle("Tus ejercicios")
-        Secondary("Si falta alguno en la biblioteca, créalo y úsalo en tus rutinas.")
+        SectionTitle("Ejercicios propios")
+        if (app.customExercises.isEmpty()) Secondary("Si falta alguno en la biblioteca, créalo aquí.")
         app.customExercises.forEach { e ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(e.name, modifier = Modifier.weight(1f))
                 TextButton(onClick = { act.run("Ejercicio borrado") { app.deleteCustomExercise(e.name) } }) { LinkText("Borrar") }
             }
         }
-        OutlinedButton(onClick = { adding = true }) { Text("Nuevo ejercicio") }
+        TonalButton(onClick = { adding = true }, Modifier.fillMaxWidth()) { Text("Nuevo ejercicio") }
     }
     if (adding) NewExercise(app, act) { adding = false }
     editing?.let { RoutineEditor(app, act, it) { editing = null } }

@@ -153,8 +153,8 @@ struct ActivitiesSection: View {
         let _ = model.version
         let rows = model.core.activities()
         Module {
-            Text("Tus actividades").font(.section)
-            Secondary("Las que grabas con el GPS o importas de un archivo FIT de tu reloj o tu ciclocomputador, o de un GPX o TCX de otra app. Cuentan en tu plan y en Progreso como las del reloj.")
+            Button { importing = true } label: { Text("Importar un archivo FIT, GPX o TCX").frame(maxWidth: .infinity) }.buttonStyle(SecondaryStyle())
+            if rows.isEmpty { Secondary("Aún no tienes ninguna. Cuentan en tu plan y en Progreso como las del reloj.") }
             ForEach(all ? rows : Array(rows.prefix(5)), id: \.id) { r in
                 Button { open = r.id } label: {
                     HStack(spacing: 10) {
@@ -170,7 +170,6 @@ struct ActivitiesSection: View {
                 }.buttonStyle(.plain)
             }
             if !all && rows.count > 5 { Button("Ver las \(rows.count)") { all = true }.font(.ui(14, .bold)).buttonStyle(TextActionStyle()) }
-            Button("Importar un archivo FIT, GPX o TCX") { importing = true }.buttonStyle(SecondaryStyle())
         }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.data]) { result in
             if case .success(let url) = result { load(url) }
@@ -193,9 +192,8 @@ struct RecordSection: View {
     var body: some View {
         let _ = model.version
         Module {
-            Text("Grabar con el GPS").font(.section)
             if model.core.recordingView(time: now()) == nil {
-                Secondary("Graba el recorrido, la distancia y el ritmo con el GPS de este iPhone. La ubicación solo se usa mientras grabas y el recorrido se queda en este iPhone: no se sube ni se sincroniza.")
+                Secondary("La ubicación solo se usa mientras grabas y el recorrido se queda en este iPhone.")
                 HStack {
                     ForEach(RecorderKt.RECORD_SPORTS, id: \.self) { s in Chip(label: sportLabel(s), selected: sport == s) { sport = s } }
                 }
@@ -273,11 +271,10 @@ struct GearSection: View {
         let _ = model.version
         let screen = model.core.gear()
         Module {
-            Text("Zapatillas y bicis").font(.section)
-            Secondary("Brivel apunta los kilómetros de cada actividad al material que tengas en uso en ese deporte.")
+            Button { adding = true } label: { Text("Añadir zapatillas o bici").frame(maxWidth: .infinity) }.buttonStyle(PrimaryStyle())
             if let note = screen.garminNote { Source(text: note) }
             ForEach(screen.rows, id: \.id) { g in row(g, others: screen.rows.filter { $0.id != g.id && $0.sport == g.sport }) }
-            Button("Añadir zapatillas o bici") { adding = true }.buttonStyle(SecondaryStyle())
+            Secondary(screen.rows.isEmpty ? "Aún no tienes ninguno." : "Brivel suma los km de cada actividad al material en uso de ese deporte.")
         }
         .sheet(isPresented: $adding) { GearEditor(old: nil) }
         .sheet(isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) { GearEditor(old: editing) }
@@ -366,9 +363,7 @@ private struct GearEditor: View {
                 Text(old == nil ? "Añadir material" : "Cambiar material").font(.screenTitle)
                 TextField("Nombre", text: $name).textFieldStyle(.roundedBorder)
                 if old == nil {
-                    Picker("Qué es", selection: $sport) {
-                        ForEach(GearKt.GEAR_SPORTS, id: \.self) { s in Text(GearKt.GEAR_LABEL[s] ?? s).tag(s) }
-                    }
+                    ChipChoice(title: "Qué es", options: GearKt.GEAR_SPORTS.map { ($0, GearKt.GEAR_LABEL[$0] ?? $0) }, selection: $sport)
                 }
                 DatePicker("Cuenta las actividades desde", selection: $since, in: ...Date(), displayedComponents: .date)
                 TextField("Kilómetros que ya llevaba", text: $startKm).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
@@ -416,23 +411,41 @@ private struct BadgeRow: View {
 /// Progreso: nivel, puntos, medallas ganadas y las siguientes más cercanas.
 struct BadgesSection: View {
     let badges: BadgesScreen
-    @State private var all = false
+    @State private var shown: String? = nil
 
     var body: some View {
+        let all = badges.earned + badges.next
         Module {
-            TitleRow {
-                Text("Medallas").font(.section)
-            } trailing: {
-                Text("Nivel \(badges.level) · \(badges.points) \(badges.points == 1 ? "punto" : "puntos")").font(.mono(15, .semibold))
+            HStack(spacing: 12) {
+                Text("\(badges.level)").font(.ui(16, .bold)).foregroundStyle(Palette.surface).frame(width: 40, height: 40)
+                    .background(Palette.ok).clipShape(Circle())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Nivel \(badges.level) · \(badges.points) \(badges.points == 1 ? "punto" : "puntos")").font(.ui(16, .bold))
+                    if let next = badges.nextLevel { Secondary(next) }
+                }
             }
             if let note = badges.garminNote { Source(text: note) }
-            if let next = badges.nextLevel { Secondary("\(next). Cada medalla vale los puntos de su círculo.") }
-            ForEach(all ? badges.earned : Array(badges.earned.prefix(3)), id: \.id) { BadgeRow(badge: $0) }
-            Secondary(badges.earned.isEmpty ? "Aún no tienes ninguna. Estas son las que tienes más cerca:" : "Las siguientes")
-            ForEach(all ? badges.next : Array(badges.next.prefix(3)), id: \.id) { BadgeRow(badge: $0) }
-            if !all && badges.earned.count + badges.next.count > 6 {
-                Button("Ver todas") { all = true }.font(.ui(14, .bold)).buttonStyle(TextActionStyle())
+            if let next = badges.next.first {
+                Text("La más cerca").font(.section)
+                BadgeRow(badge: next)
             }
+            Text(badges.earned.isEmpty ? "Todas" : "Tienes \(badges.earned.count) de \(all.count)").font(.section)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8, alignment: .top), count: 3), spacing: 8) {
+                ForEach(all, id: \.id) { b in
+                    Button { shown = shown == b.id ? nil : b.id } label: {
+                        VStack(spacing: 6) {
+                            Text("\(b.points)").font(.ui(13, .bold)).foregroundStyle(b.earned != nil ? Palette.surface : Palette.muted)
+                                .frame(width: 34, height: 34).background(b.earned != nil ? Palette.ok : .clear).clipShape(Circle())
+                                .overlay(Circle().stroke(b.earned != nil ? Palette.ok : Palette.muted, style: StrokeStyle(lineWidth: 2, dash: b.earned != nil ? [] : [4, 3])))
+                            Text(b.title).font(.ui(12, .semibold)).multilineTextAlignment(.center).foregroundStyle(Palette.text)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 84).padding(6).background(Palette.bg)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(shown == b.id ? Palette.ok : .clear, lineWidth: 2))
+                    }.buttonStyle(.plain)
+                }
+            }
+            if let b = all.first(where: { $0.id == shown }) { BadgeRow(badge: b) }
         }
     }
 }

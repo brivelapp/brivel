@@ -1,5 +1,6 @@
 package app.brivel.android
 
+import app.brivel.app.toggleCardio
 import androidx.compose.foundation.layout.FlowRow
 import android.Manifest
 import androidx.compose.foundation.background
@@ -40,7 +41,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -73,9 +73,17 @@ import app.brivel.app.GoalKind
 import app.brivel.app.RaceInfo
 import app.brivel.app.dateLabel
 
+/** «3 días · 2 h 30 min»: los días con minutos y el total de la semana. */
+private fun weekLine(days: Map<String, Int>): String {
+    val on = days.values.filter { it > 0 }
+    if (on.isEmpty()) return "Sin días puestos"
+    val total = on.sum()
+    return "${on.size} ${if (on.size == 1) "día" else "días"} · ${total / 60} h" + if (total % 60 != 0) " ${total % 60} min" else ""
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openSettings: (Boolean) -> Unit) {
+fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openGoal: () -> Unit = {}, openSettings: (Boolean) -> Unit) {
     val context = LocalContext.current
     var draft by remember(version) { mutableStateOf(app.data.profile ?: UserProfile()) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -87,6 +95,26 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openSe
         draft = p
         act.run { app.saveProfile(p) }
     }
+    // Tu semana, Objetivo y el material tienen su pantalla (revisión de los desplegables, 2026-11-23)
+    var screen by rememberSaveable { mutableStateOf<String?>(null) }
+    if (!settings && screen != null) {
+        when (screen) {
+            "week" -> SubScreen("Tu semana", { screen = null }) {
+                WeekBars(draft.days) { save(draft.copy(days = it)) }
+                Secondary("Sin minutos, ese día es de descanso.")
+            }
+            "goal" -> SubScreen("Objetivo", { screen = null }) {
+                Module {
+                    Text(app.data.goal?.let { goalLabel(it) } ?: "Sin objetivo", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                    Secondary("El plan se rehace al momento si lo cambias.")
+                }
+                TonalButton(onClick = openGoal, Modifier.fillMaxWidth()) { Text("Cambiar objetivo") }
+                OtherRaces(app, act)
+            }
+            else -> SubScreen("Zapatillas y bicis", { screen = null }) { GearCard(app, act, version) }
+        }
+        return
+    }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (!settings) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -94,35 +122,34 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openSe
                 IconButton(onClick = { openSettings(true) }, modifier = Modifier.size(48.dp).clip(CircleShape).background(Palette.chip)
                     .semantics { contentDescription = "Ajustes" }) { Glyph(R.drawable.ic_settings, 22.dp) }
             }
+            // Por secciones (2026-11-23): una fila por dato con su valor; al tocarla se cambia ahí mismo y se guarda solo.
             // Sin plan, deportes, semana, fuerza y nivel no cambian nada: se preguntan si un día pide un plan
             if (app.data.goal?.kind != GoalKind.OWN) {
-                Module {
-                    SectionTitle("Tus deportes")
-                    SportPicker(draft.cardio) { save(draft.copy(cardio = it)) }
+                // Revisión de los desplegables (2026-11-23): lo que se elige, aquí mismo con ✓; Tu semana, en su pantalla
+                Fold("Deportes", draft.cardio.mapNotNull { CARDIO_LABEL[it] }.joinToString(", ").ifEmpty { "Solo caminar" }) {
+                    CheckList(CARDIO_LABEL.map { (k, l) -> Triple(k, l, null) }, draft.cardio) { save(draft.copy(cardio = toggleCardio(draft.cardio, it))) }
                 }
-                Module {
-                    SectionTitle("Tu semana")
-                    WeekBars(draft.days) { save(draft.copy(days = it)) }
+                RowButton("Tu semana", weekLine(draft.days)) { screen = "week" }
+                Fold("Fuerza", STRENGTH_CHOICES.firstOrNull { it.first == draft.strength }?.second) {
+                    CheckList(STRENGTH_CHOICES.map { Triple(it.first, it.second, it.third) }, listOf(draft.strength)) { save(draft.copy(strength = it)) }
                 }
-                Module {
-                    SectionTitle("Fuerza")
-                    Segmented(STRENGTH_CHOICES.map { it.first to it.second }, draft.strength) { save(draft.copy(strength = it)) }
-                }
-                Module {
-                    SectionTitle("Tu nivel")
-                    Segmented(LEVEL_CHOICES.map { it.first to it.second }, draft.level) { save(draft.copy(level = it)) }
+                Fold("Tu nivel", LEVEL_CHOICES.firstOrNull { it.first == draft.level }?.second) {
+                    CheckList(LEVEL_CHOICES.map { Triple(it.first, it.second, it.third) }, listOf(draft.level)) { save(draft.copy(level = it)) }
                 }
             }
-            Module {
-                var year by remember(version) { mutableStateOf(draft.birthYear) }
-                SectionTitle("Año de nacimiento")
-                BirthYearField(year, label = null) { y ->
-                    year = y
-                    if (y != null && ageAllowed(y, systemToday().year)) save(draft.copy(birthYear = y))
+            Fold("Año de nacimiento", draft.birthYear?.toString() ?: "Sin poner") {
+                Module {
+                    var year by remember(version) { mutableStateOf(draft.birthYear) }
+                    BirthYearField(year, label = "Para calcular tus zonas de pulso") { y ->
+                        year = y
+                        if (y != null && ageAllowed(y, systemToday().year)) save(draft.copy(birthYear = y))
+                    }
+                    if (year != null && year!! >= 1000 && !ageAllowed(year!!, systemToday().year)) Secondary("Hace falta tener al menos $MIN_AGE años.", Palette.caution)
                 }
-                if (year != null && year!! >= 1000 && !ageAllowed(year!!, systemToday().year)) Secondary("Hace falta tener al menos $MIN_AGE años.", Palette.caution)
             }
-            GearCard(app, act, version)
+            // «Cambiar objetivo» vive aquí desde el 2026-11-23 (antes, «Tu objetivo» en Hoy)
+            app.data.goal?.let { goal -> RowButton("Objetivo", goalLabel(goal)) { screen = "goal" } }
+            RowButton("Zapatillas y bicis", remember(version) { app.gear().rows.size }.let { n -> when (n) { 0 -> "Ninguna todavía"; 1 -> "1 en tu material"; else -> "$n en tu material" } }) { screen = "gear" }
             Spacer(Modifier.height(24.dp))
             return@Column
         }
@@ -185,6 +212,7 @@ fun ProfileTab(app: BrivelApp, version: Int, act: Act, settings: Boolean, openSe
                     SettingsRow("Aviso de salud") { page = "notice" }
                     SettingsRow("Privacidad, términos y código") { page = "about" }
                 }
+                Secondary("Brivel " + context.packageManager.getPackageInfo(context.packageName, 0).versionName)
             }
         }
         Spacer(Modifier.height(24.dp))
@@ -223,7 +251,7 @@ internal fun OtherRaces(app: BrivelApp, act: Act) {
         }
     } else {
         Secondary("El plan afina unos días antes de cada una y te deja recuperar después. Elige importante (B) o de preparación (C).")
-        OutlinedButton(onClick = { adding = true }) { Text("Añadir otra carrera") }
+        TonalButton(onClick = { adding = true }) { Text("Añadir otra carrera") }
     }
 }
 
@@ -277,11 +305,11 @@ private fun HealthCard(app: BrivelApp, act: Act, version: Int) {  // version: re
             MoreInfo("¿Qué lee exactamente?", HEALTH_READS)
             ChipRow {
                 Button(onClick = { act.suspend("Datos actualizados") { reader.sync(app) } }) { Text("Actualizar ahora") }
-                OutlinedButton(onClick = { act.run { app.clearHealth() } }) { Text("Desconectar") }
+                TonalButton(onClick = { act.run { app.clearHealth() } }) { Text("Desconectar") }
             }
             if (missing.isNotEmpty()) {
                 Secondary("Brivel ya puede leer también las fases del sueño, el oxígeno en sangre, la respiración y la grasa corporal. Necesita tu permiso.")
-                OutlinedButton(onClick = { request.launch(missing) }) { Text("Dar permiso a los datos nuevos") }
+                TonalButton(onClick = { request.launch(missing) }) { Text("Dar permiso a los datos nuevos") }
             }
         } else if (reader.available) {
             Text("Brivel lee tu sueño, pulso y entrenos de Health Connect. Solo en este móvil.", fontSize = 15.sp)
@@ -305,7 +333,7 @@ private fun IntervalsCard(app: BrivelApp, act: Act, @Suppress("UNUSED_PARAMETER"
             app.data.cache?.let { StateLine("Al día", it.syncedAt) }
             ChipRow {
                 Button(onClick = { act.suspend("Datos actualizados") { app.sync() } }) { Text("Actualizar ahora") }
-                OutlinedButton(onClick = { act.suspend("intervals.icu desvinculado") { app.disconnectIntervals() } }) { Text("Desconectar") }
+                TonalButton(onClick = { act.suspend("intervals.icu desvinculado") { app.disconnectIntervals() } }) { Text("Desconectar") }
             }
         } else {
             Text("Gratis; recoge los datos de cualquier reloj.", fontSize = 15.sp)

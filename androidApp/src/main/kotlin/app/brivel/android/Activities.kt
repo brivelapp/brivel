@@ -1,5 +1,7 @@
 package app.brivel.android
 
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
@@ -32,7 +34,6 @@ import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -175,8 +176,8 @@ fun ActivitiesCard(app: BrivelApp, act: Act, version: Int) {
     }
     open?.let { ActivitySheet(app, act, it) { open = null } }
     Module {
-        SectionTitle("Tus actividades")
-        Secondary("Las que grabas con el GPS o importas de un archivo FIT de tu reloj o tu ciclocomputador, o de un GPX o TCX de otra app. Cuentan en tu plan y en Progreso como las del reloj.")
+        TonalButton(onClick = { picker.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) { Text("Importar un archivo FIT, GPX o TCX") }
+        if (rows.isEmpty()) Secondary("Aún no tienes ninguna. Cuentan en tu plan y en Progreso como las del reloj.")
         (if (all) rows else rows.take(5)).forEach { r ->
             Row(Modifier.fillMaxWidth().clickable { open = r.id }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 SportBadge(r.sport, 32.dp)
@@ -189,7 +190,6 @@ fun ActivitiesCard(app: BrivelApp, act: Act, version: Int) {
             }
         }
         if (!all && rows.size > 5) TextButton(onClick = { all = true }) { LinkText("Ver las ${rows.size}") }
-        OutlinedButton(onClick = { picker.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) { Text("Importar un archivo FIT, GPX o TCX") }
     }
 }
 
@@ -201,8 +201,7 @@ fun GearCard(app: BrivelApp, act: Act, version: Int) {
     var adding by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<GearRow?>(null) }
     Module {
-        SectionTitle("Zapatillas y bicis")
-        Secondary("Brivel apunta los kilómetros de cada actividad al material que tengas en uso en ese deporte.")
+        PrimaryButton("Añadir zapatillas o bici", Modifier.fillMaxWidth()) { adding = true }
         screen.garminNote?.let { Source(it) }
         screen.rows.forEach { g ->
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -235,7 +234,7 @@ fun GearCard(app: BrivelApp, act: Act, version: Int) {
                 }
             }
         }
-        OutlinedButton(onClick = { adding = true }, modifier = Modifier.fillMaxWidth()) { Text("Añadir zapatillas o bici") }
+        Secondary(if (screen.rows.isEmpty()) "Aún no tienes ninguno." else "Brivel suma los km de cada actividad al material en uso de ese deporte.")
     }
     if (adding || editing != null) GearEditor(app, act, editing) { adding = false; editing = null }
     deleting?.let { g ->
@@ -283,7 +282,7 @@ private fun GearEditor(app: BrivelApp, act: Act, old: GearRow?, close: () -> Uni
             Text(if (old == null) "Añadir material" else "Cambiar material", fontSize = 22.sp, fontWeight = FontWeight.Bold)
             OutlinedTextField(name, { name = it }, label = { Text("Nombre") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             if (old == null) ChipRow {
-                GEAR_LABEL.forEach { (k, label) -> FilterChip(selected = sport == k, label = { Text(label) }, onClick = { sport = k }) }
+                GEAR_LABEL.forEach { (k, label) -> Chip(selected = sport == k, label = { Text(label) }, onClick = { sport = k }) }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Cuenta las actividades desde el ${dateLabel(since).substringAfter(' ')}", Modifier.weight(1f), fontSize = 14.sp)
@@ -328,18 +327,39 @@ private fun BadgeRow(b: BadgeView) = Row(verticalAlignment = Alignment.Top) {
 /** Progreso: nivel, puntos, medallas ganadas y las siguientes más cercanas. */
 @Composable
 fun BadgesCard(badges: BadgesScreen) {
-    var all by remember { mutableStateOf(false) }
+    val all = badges.earned + badges.next
+    var shown by remember { mutableStateOf<String?>(null) }
     Module {
-        TitleRow {
-            SectionTitle("Medallas")
-            Text("Nivel ${badges.level} · ${badges.points} ${if (badges.points == 1) "punto" else "puntos"}", fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(Modifier.size(40.dp).clip(CircleShape).background(Palette.ok), contentAlignment = Alignment.Center) {
+                Text("${badges.level}", color = Palette.surface, fontWeight = FontWeight.Bold)
+            }
+            Column(Modifier.weight(1f)) {
+                Text("Nivel ${badges.level} · ${badges.points} ${if (badges.points == 1) "punto" else "puntos"}", fontWeight = FontWeight.Bold)
+                badges.nextLevel?.let { Secondary(it) }
+            }
         }
         badges.garminNote?.let { Source(it) }
-        badges.nextLevel?.let { Secondary("$it. Cada medalla vale los puntos de su círculo.") }
-        (if (all) badges.earned else badges.earned.take(3)).forEach { BadgeRow(it) }
-        Secondary(if (badges.earned.isEmpty()) "Aún no tienes ninguna. Estas son las que tienes más cerca:" else "Las siguientes")
-        (if (all) badges.next else badges.next.take(3)).forEach { BadgeRow(it) }
-        if (!all && badges.earned.size + badges.next.size > 6) TextButton(onClick = { all = true }) { LinkText("Ver todas") }
+        badges.next.firstOrNull()?.let { SectionTitle("La más cerca"); BadgeRow(it) }
+        SectionTitle(if (badges.earned.isEmpty()) "Todas" else "Tienes ${badges.earned.size} de ${all.size}")
+        all.chunked(3).forEach { row ->
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { b ->
+                    Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(16.dp)).background(Palette.bg)
+                        .border(2.dp, if (shown == b.id) Palette.ok else Color.Transparent, RoundedCornerShape(16.dp))
+                        .clickable { shown = if (shown == b.id) null else b.id }.padding(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Box(Modifier.size(34.dp).clip(CircleShape).background(if (b.earned != null) Palette.ok else Color.Transparent)
+                            .border(2.dp, if (b.earned != null) Palette.ok else Palette.muted, CircleShape), contentAlignment = Alignment.Center) {
+                            Text("${b.points}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (b.earned != null) Palette.surface else Palette.muted)
+                        }
+                        Text(b.title, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                    }
+                }
+                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+        all.firstOrNull { it.id == shown }?.let { BadgeRow(it) }
     }
 }
 

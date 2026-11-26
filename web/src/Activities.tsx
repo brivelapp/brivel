@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import type { WebApp } from "brivel-shared"
 import { Icon, SPORT_ICON, type Act } from "./Today"
+import { Choice } from "./ProfileParts"
 import type { ActivityRow, ActivityScreen, BadgeView, BadgesScreen, Curve, GearRow, GearScreen, XY } from "./types"
 
 /** Una línea del núcleo (puntos dentro de un cuadrado de lado 1) como SVG; `height`: alto del dibujo sobre 100 de ancho. */
@@ -81,9 +82,9 @@ export function ActivitiesCard({ core, act }: { core: WebApp; act: Act }) {
   }
   return (
     <section className="module">
-      <h3>Tus actividades</h3>
-      <p className="muted small-text">Importa el archivo FIT de tu reloj o tu ciclocomputador, o un GPX o TCX de otra app, o graba con el GPS desde la app del móvil. Cuentan
-        en tu plan y en Progreso como las del reloj.</p>
+      <input ref={file} type="file" accept=".fit,.gpx,.tcx" hidden aria-label="Archivo de actividad" onChange={(e) => load(e.target.files?.[0])} />
+      <button className="primary" onClick={() => file.current?.click()}>Importar un archivo FIT, GPX o TCX</button>
+      {rows.length === 0 && <p className="muted small-text">Aún no tienes ninguna. Cuentan en tu plan y en Progreso como las del reloj.</p>}
       {(all ? rows : rows.slice(0, 5)).map((r) => (
         <button key={r.id} className="metric" onClick={() => setOpen(r.id)}>
           <span className="row">
@@ -93,8 +94,6 @@ export function ActivitiesCard({ core, act }: { core: WebApp; act: Act }) {
         </button>
       ))}
       {!all && rows.length > 5 && <button className="link" onClick={() => setAll(true)}>Ver las {rows.length}</button>}
-      <input ref={file} type="file" accept=".fit,.gpx,.tcx" hidden aria-label="Archivo de actividad" onChange={(e) => load(e.target.files?.[0])} />
-      <button className="secondary" onClick={() => file.current?.click()}>Importar un archivo FIT, GPX o TCX</button>
       {open && <ActivityDialog core={core} act={act} id={open} onClose={() => setOpen(null)} />}
     </section>
   )
@@ -113,8 +112,7 @@ export function GearCard({ core, act }: { core: WebApp; act: Act }) {
   const km = (v: string) => v.replace(/[^\d.,]/g, "")
   return (
     <section className="module">
-      <h3>Zapatillas y bicis</h3>
-      <p className="muted small-text">Brivel apunta los kilómetros de cada actividad al material que tengas en uso en ese deporte.</p>
+      {!form && <button className="primary" onClick={() => setForm(empty)}>Añadir zapatillas o bici</button>}
       {screen.garminNote && <p className="muted small source">{screen.garminNote}</p>}
       {screen.rows.map((g) => (
         <div key={g.id} className="gear">
@@ -145,11 +143,7 @@ export function GearCard({ core, act }: { core: WebApp; act: Act }) {
         <>
           <label className="field">Nombre<input className="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
           {form.id == null && (
-            <label className="field">Qué es
-              <select value={form.sport} onChange={(e) => setForm({ ...form, sport: e.target.value })}>
-                {sports.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-              </select>
-            </label>
+            <Choice label="Qué es" options={sports} value={form.sport} onChange={(sport) => setForm({ ...form, sport })} />
           )}
           <label className="field">Cuenta las actividades desde<input type="date" value={form.since} max={today()} onChange={(e) => setForm({ ...form, since: e.target.value })} /></label>
           <label className="field">Kilómetros que ya llevaba<input inputMode="decimal" value={form.startKm} onChange={(e) => setForm({ ...form, startKm: km(e.target.value) })} /></label>
@@ -159,7 +153,7 @@ export function GearCard({ core, act }: { core: WebApp; act: Act }) {
             <button className="link" onClick={() => setForm(null)}>Cancelar</button>
           </div>
         </>
-      ) : <button className="secondary" onClick={() => setForm(empty)}>Añadir zapatillas o bici</button>}
+      ) : <p className="muted small-text">{screen.rows.length ? "Brivel suma los km de cada actividad al material en uso de ese deporte." : "Aún no tienes ninguno."}</p>}
     </section>
   )
 }
@@ -182,17 +176,28 @@ function Badge({ b }: { b: BadgeView }) {
 
 /** Progreso: nivel, puntos, medallas ganadas y las siguientes más cercanas. */
 export function BadgesCard({ badges }: { badges: BadgesScreen }) {
-  const [all, setAll] = useState(false)
+  const all = [...badges.earned, ...badges.next]
+  const [shown, setShown] = useState<string | null>(null)
+  const open = all.find((b) => b.id === shown)
+  const next = badges.next[0]
   return (
-    <section className="module">
-      <div className="row between"><h3>Medallas</h3><span className="mono">Nivel {badges.level} · {badges.points} {badges.points === 1 ? "punto" : "puntos"}</span></div>
+    <section className="module" aria-label="Medallas">
+      <div className="row">
+        <span className="medal on" aria-hidden="true">{badges.level}</span>
+        <span className="grow"><strong>Nivel {badges.level} · {badges.points} {badges.points === 1 ? "punto" : "puntos"}</strong>
+          {badges.nextLevel && <><br /><span className="muted small">{badges.nextLevel}</span></>}</span>
+      </div>
       {badges.garminNote && <p className="muted small source">{badges.garminNote}</p>}
-      {badges.nextLevel && <p className="muted small-text">{badges.nextLevel}. Cada medalla vale los puntos de su círculo.</p>}
-      {badges.earned.slice(0, all ? undefined : 3).map((b) => <Badge key={b.id} b={b} />)}
-      {badges.earned.length === 0 && <p className="muted small-text">Aún no tienes ninguna. Estas son las que tienes más cerca:</p>}
-      {badges.earned.length > 0 && <p className="muted small-text">Las siguientes</p>}
-      {badges.next.slice(0, all ? undefined : 3).map((b) => <Badge key={b.id} b={b} />)}
-      {!all && badges.earned.length + badges.next.length > 6 && <button className="link" onClick={() => setAll(true)}>Ver todas</button>}
+      {next && <><h3>La más cerca</h3><Badge b={next} /></>}
+      <h3>{badges.earned.length ? `Tienes ${badges.earned.length} de ${all.length}` : "Todas"}</h3>
+      <div className="medal-grid">
+        {all.map((b) => (
+          <button key={b.id} className={`medal-cell${shown === b.id ? " on" : ""}`} aria-pressed={shown === b.id} onClick={() => setShown(shown === b.id ? null : b.id)}>
+            <span className={b.earned ? "medal on" : "medal"} aria-hidden="true">{b.points}</span>{b.title}
+          </button>
+        ))}
+      </div>
+      {open && <Badge b={open} />}
     </section>
   )
 }

@@ -113,6 +113,18 @@ class BrivelAppTest {
     }
 
     @Test
+    fun todayLeavesOutTheMinutesSentenceThePlanStillHas() {
+        val a = app()
+        a.saveProfile(profile.copy(days = mapOf("MON" to 25)))  // 25 min a la semana: no llega a 150
+        a.setGoal(GoalKind.FITNESS)
+        val week = Planner(a.data, today).week(mondayOf(today))
+        val note = assertNotNull(week.minutesNote)
+        assertTrue(note in week.warnings + week.info, "el plan (calendario, validación) sigue diciéndolo")
+        val screen = a.todayScreen()
+        assertTrue(note !in screen.warnings + screen.info, "Hoy ya da la cifra: «Cardio 25 de 150 min»")
+    }
+
+    @Test
     fun healthScreeningSetsTheCeilingOrStopsThePlan() {
         val a = app()
         a.saveProfile(profile)
@@ -246,6 +258,44 @@ class BrivelAppTest {
         assertFailsWith<IllegalArgumentException> { a.changeDay(today.plusDays(7).toString(), 0) }
         a.changeDay(today.plusDays(1).toString(), 0)
         assertTrue(a.day(today.plusDays(1).toString()).items.isEmpty())
+    }
+
+    @Test
+    fun `una sesion hecha ensena los datos de la actividad y no los planificados`() {
+        val store = MemoryStore()
+        val a = app(store)
+        a.saveProfile(profile)
+        a.setGoal(GoalKind.FITNESS)
+        val planned = a.day(today.toString()).items.first { !it.isStrength }
+        // Más larga que la planificada, con distancia y pulso, y además marcada a mano
+        val longer = buildJsonObject {
+            put("id", "act-hoy"); put("type", if (planned.sport == "cycling") "Ride" else "Run")
+            put("start_date_local", "${today}T08:00:00"); put("moving_time", (planned.durationMin + 20) * 60)
+            put("distance", 15000); put("average_heartrate", 142)
+        }
+        val c = cache()
+        store.write("brivel.data", Json.encodeToString(AppData.serializer(), a.data.copy(cache = c.copy(activities = c.activities + longer))))
+        val b = app(store)
+        b.markDone(today.toString(), planned.sport)
+        for (item in listOf(b.day(today.toString()).items, b.todayScreen().day.items, b.month(2026, 10).weeks.flatten()
+            .first { it.date == today.toString() }.planned).map { items -> items.first { it.slot == planned.slot } }) {
+            assertEquals(planned.durationMin + 20, item.doneMin)
+            assertTrue(item.doneDetail!!.startsWith("15,0 km · "), item.doneDetail)
+            assertTrue(item.doneDetail!!.endsWith("142 ppm"), item.doneDetail)
+        }
+        // Lo que aún no se ha hecho sigue con lo planificado
+        assertTrue(b.day(today.plusDays(2).toString()).items.all { it.doneMin == null && it.doneDetail == null })
+    }
+
+    @Test
+    fun `la fuerza de la semana cuenta lo hecho, no lo planificado`() {
+        assertEquals("Fuerza: 0 de 3 días (mínimo 2)", strengthLine(0, 3))
+        assertEquals("Fuerza: 1 de 1 día (mínimo 2)", strengthLine(1, 1))
+        assertEquals("Fuerza: 2 días hechos, mínimo cumplido", strengthLine(2, 3))
+        val a = app()
+        a.saveProfile(profile)
+        a.setGoal(GoalKind.FITNESS)
+        assertTrue(a.todayScreen().strengthLine.startsWith("Fuerza: 0 de "))  // un jueves sin nada hecho
     }
 
     @Test

@@ -3,14 +3,15 @@ export type Tone = "OK" | "CAUTION" | "REST"
 export interface Reason { text: string; evidence: string | null }
 export interface Step { name: string; reps: number; minutes: number; intensityZone: string; target: string | null; meters: number | null; detail: string | null }
 export interface PlanItem { sport: string; title: string; hint: string; durationMin: number; steps: Step[]; exercises: string[]; notes: string | null; chosen: boolean; slot: string
-  alternatives: PlanItem[]; movedFrom: string | null; target: string | null; targetNote: string | null; testKind: string | null }
+  alternatives: PlanItem[]; movedFrom: string | null; target: string | null; targetNote: string | null; testKind: string | null
+  doneMin: number | null; doneDetail: string | null }
 export interface DayView { date: string; isToday: boolean; isPast: boolean; items: PlanItem[]; note: string | null; reasons: Reason[]; adjustments: Reason[]; doneSports: string[] }
 export interface WeekDot { letter: string; date: string; isToday: boolean; planned: boolean; done: boolean }
 export interface TodayScreen {
   dateLabel: string; goalLine: string | null; stateTitle: string; stateDetail: Reason[]; tone: Tone; day: DayView
   meetsWho: boolean; weekMinutes: number; strengthDays: number; weekDots: WeekDot[]; warnings: string[]; info: string[]
   askReadiness: boolean; goalFinished: boolean; garminNote: string | null
-  noPlan: boolean; strengthDone: number; nextRoutine: string | null
+  noPlan: boolean; strengthDone: number; strengthLine: string; nextRoutine: string | null
   rateRun: { id: string; question: string; detail: string; note: string; source: string | null } | null
 }
 // Sesión de fuerza serie a serie (Workout.kt) y figura de su movimiento (Figures.kt); reps son segundos si timed
@@ -63,3 +64,6 @@ export interface GearRow { id: string; name: string; sport: string; label: strin
   uses: { activity: string; text: string }[]; since: string; startKm: number; limitKm: number | null }
 export interface GearScreen { rows: GearRow[]; garminNote: string | null }
 export interface Milestone { title: string; value: string; date: string | null; source: string | null }
+// Widgets de Hoy (Widgets.kt): readiness y week se pintan con TodayScreen; los demás, con estos textos
+export interface WidgetView { key: string; title: string; wide: boolean; value: string | null; unit: string; detail: string | null; empty: string | null }
+export interface WidgetChoice { key: string; title: string; description: string; inUse: boolean }

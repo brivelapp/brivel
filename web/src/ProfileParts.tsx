@@ -1,5 +1,5 @@
 // Piezas del perfil (lienzo de Pulso, opción B), las mismas que ProfileParts.kt y ProfileParts.swift de las apps
-import type { CSSProperties } from "react"
+import type { ReactNode } from "react"
 import type { WebApp } from "brivel-shared"
 import { Icon, SPORT_ICON } from "./Today"
 
@@ -13,7 +13,7 @@ export interface Profile {
   [key: string]: unknown  // el resto (cribado, renombrar actividades) se guarda tal cual
 }
 
-const SPORT_NAME: Record<string, string> = { running: "Correr", cycling: "Bici", swimming_pool: "Nadar" }
+export const SPORT_NAME: Record<string, string> = { running: "Correr", cycling: "Bici", swimming_pool: "Nadar" }
 const DAYS: [string, string, string][] = [["MON", "L", "Lunes"], ["TUE", "M", "Martes"], ["WED", "X", "Miércoles"],
   ["THU", "J", "Jueves"], ["FRI", "V", "Viernes"], ["SAT", "S", "Sábado"], ["SUN", "D", "Domingo"]]
 export const STRENGTH_CHOICES: [string, string, string][] = [["gym", "Gimnasio", "Con máquinas, barras y mancuernas"],
@@ -43,6 +43,7 @@ export function SportPicker({ core, cardio, onChange }: { core: WebApp; cardio: 
  * La semana, un día por fila: deslizar de 15 en 15 o escribir los minutos (de 0 a 5 h; 0 o vacío, ese día queda libre).
  * En filas y en horizontal, desplazar la página no mueve nada, y escribir la cifra evita afinar con el dedo.
  */
+/** La semana con − y + de 15 en 15 minutos (decidido el 2026-11-23: solo botones, sin deslizador); el número se puede escribir. */
 export function WeekBars({ core, days, onCommit }:
   { core: WebApp; days: Record<string, number>; onCommit: (d: Record<string, number>) => void }) {
   const top = core.maxDayMinutes
@@ -54,26 +55,52 @@ export function WeekBars({ core, days, onCommit }:
         <span className="muted">{count === 1 ? "1 día" : `${count} días`}</span>
         <span className="mono week-total">{core.weekTime(JSON.stringify(days))}</span>
       </div>
-      <div className="week-rows">
+      <div className="settings-list">
         {DAYS.map(([d, , name]) => {
           const m = days[d] ?? 0
           return (
             <div key={d} className={`week-row${m === 0 ? " free" : ""}`}>
               <span className="week-day">{name}</span>
-              <input type="range" min={0} max={top} step={15} value={m} aria-label={name}
-                style={{ "--p": `${(m / top) * 100}%` } as CSSProperties}
-                aria-valuetext={m === 0 ? "libre" : `${m} minutos`} onChange={(e) => put(d, Number(e.target.value))} />
-              <label className="week-minutes">
-                <input type="number" inputMode="numeric" min={0} max={top} value={m === 0 ? "" : m} placeholder="—"
-                  aria-label={`Minutos el ${name.toLowerCase()}`} onChange={(e) => put(d, Number(e.target.value))} />
-                <span className="muted" aria-hidden>min</span>
-              </label>
+              <button className="icon-button" aria-label={`Menos minutos el ${name.toLowerCase()}`} disabled={m === 0} onClick={() => put(d, m - 15)}>−</button>
+              <input className="week-number" type="number" inputMode="numeric" min={0} max={top} value={m === 0 ? "" : m} placeholder="—"
+                aria-label={`Minutos el ${name.toLowerCase()}`} onChange={(e) => put(d, Number(e.target.value))} />
+              <button className="icon-button" aria-label={`Más minutos el ${name.toLowerCase()}`} disabled={m >= top} onClick={() => put(d, m + 15)}>+</button>
             </div>
           )
         })}
       </div>
-      <p className="muted small-text">Desliza o escribe los minutos de cada día, hasta 5 h. Sin minutos, ese día queda libre.</p>
     </div>
+  )
+}
+
+/** Lista de opciones con ✓ (una o varias): lo elegido se ve sin depender del color. */
+export function CheckList({ options, selected, onToggle, label }:
+  { options: [string, string, string?][]; selected: string[]; onToggle: (key: string) => void; label: string }) {
+  return (
+    <div className="settings-list" role="group" aria-label={label}>
+      {options.map(([k, l, hint]) => {
+        const on = selected.includes(k)
+        return (
+          <button key={k} className="settings-row" aria-pressed={on} onClick={() => onToggle(k)}>
+            <span className="settings-name grow">{l}{hint && <><br /><span className="muted small-text">{hint}</span></>}</span>
+            {on && <span className="check-mark" aria-hidden="true">✓</span>}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Una pantalla propia dentro de una pestaña: título una vez, arriba, con «‹» para volver. */
+export function SubScreen({ title, back, backLabel, children }: { title: string; back: () => void; backLabel: string; children: ReactNode }) {
+  return (
+    <main className="wide">
+      <div className="row">
+        <button className="back" aria-label={backLabel} onClick={back}>‹</button>
+        <h1 className="grow">{title}</h1>
+      </div>
+      <div className="stack">{children}</div>
+    </main>
   )
 }
 
@@ -101,5 +128,40 @@ export function ChoiceCards({ options, selected, onSelect, label }:
         </button>
       ))}
     </div>
+  )
+}
+
+/** Opciones cortas (de 2 a 8) en cápsulas, como ChipChoice de iOS y los Chip de Android; las listas largas siguen en <select>. */
+export function Choice<T extends string | number>({ label, options, value, onChange }:
+  { label: string; options: [T, string][]; value: T; onChange: (v: T) => void }) {
+  return (
+    <fieldset className="field">
+      <legend>{label}</legend>
+      <div className="chips" role="group" aria-label={label}>
+        {options.map(([k, l]) => (
+          <button key={String(k)} type="button" className="chip" aria-pressed={value === k} onClick={() => onChange(k)}>{l}</button>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
+/** Una parte plegada en una línea, como «La más cerca» de Progreso: se abre al tocarla (Progreso y Entrenar). */
+export function Fold({ title, line, children, open }: { title: string; line: string | null; children: ReactNode; open?: boolean }) {
+  return (
+    <details className="module fold" open={open}>
+      <summary><span className="grow"><strong>{title}</strong>{line && <><br /><span className="muted small-text">{line}</span></>}</span><span className="chev" aria-hidden>›</span></summary>
+      <div className="fold-body">{children}</div>
+    </details>
+  )
+}
+
+/** Una fila que abre su propia pantalla: título, valor y ›. */
+export function RowButton({ title, value, onClick }: { title: string; value: string; onClick: () => void }) {
+  return (
+    <button className="module row-button" onClick={onClick}>
+      <span className="grow"><strong>{title}</strong><br /><span className="muted small-text">{value}</span></span>
+      <span className="chev" aria-hidden>›</span>
+    </button>
   )
 }

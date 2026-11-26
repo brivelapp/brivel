@@ -3,6 +3,7 @@ package app.brivel.intervals
 // Datos de intervals.icu → entradas del motor. Portado de prototype/backend/app/routers/plan.py y me.py.
 // Funciones puras sobre el JSON de la API: el cliente (IntervalsClient) solo descarga.
 
+import app.brivel.app.activityDetail
 import app.brivel.engine.DayState
 import app.brivel.engine.Done
 import app.brivel.engine.Goal
@@ -184,7 +185,8 @@ fun watchSessions(activities: List<JsonObject>): Map<String, List<Done>> {
         val moving = a["moving_time"].num() ?: 0.0
         if (moving >= MIN_ACTIVITY_S && start.isNotEmpty()) {
             done.getOrPut(start.take(10)) { mutableListOf() } +=
-                Done(sport, "watch", (moving / 60).toInt(), start.drop(11).take(5).ifEmpty { null })
+                Done(sport, "watch", (moving / 60).toInt(), start.drop(11).take(5).ifEmpty { null },
+                    activityDetail(sport, a["distance"].num(), moving, a["average_heartrate"].num(), null))
         }
     }
     return done

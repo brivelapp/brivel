@@ -5,6 +5,7 @@ import type { WebApp } from "brivel-shared"
 import type { Act } from "./Today"
 import type { OwnSession, OwnStep } from "./types"
 import { attempt, DAYS, DAY_NAME, daysText, Num } from "./Routines"
+import { Choice } from "./ProfileParts"
 
 const EMPTY: OwnSession = { id: "", name: "", sport: "running", steps: [{ name: "", minutes: 30, intensityZone: "Z2", reps: 1, restMinutes: 0 }], days: [], dates: [], since: "" }
 const total = (s: OwnSession) => Math.round(s.steps.reduce((a, x) => a + x.reps * x.minutes + (x.reps > 1 ? x.reps * x.restMinutes : 0), 0))
@@ -38,11 +39,7 @@ function Editor({ core, act, start, close }: { core: WebApp; act: Act; start: Ow
       <label className="field">Nombre
         <input className="text" value={s.name} onChange={(e) => setS({ ...s, name: e.target.value })} placeholder="Series de 3 minutos, rodaje…" />
       </label>
-      <label className="field">Deporte
-        <select value={s.sport} onChange={(e) => setS({ ...s, sport: e.target.value })}>
-          {sports.map((k) => <option key={k} value={k}>{core.sportLabel(k)}</option>)}
-        </select>
-      </label>
+      <Choice label="Deporte" options={sports.map((k): [string, string] => [k, core.sportLabel(k)])} value={s.sport} onChange={(sport) => setS({ ...s, sport })} />
       <h3>Pasos</h3>
       {s.steps.map((step, i) => (
         <div key={i} className="module routine-exercise">
@@ -54,11 +51,8 @@ function Editor({ core, act, start, close }: { core: WebApp; act: Act; start: Ow
           <label className="field">Nombre del paso (opcional)
             <input className="text" value={step.name} onChange={(e) => setStep(i, { ...step, name: e.target.value })} placeholder="Calentamiento, rápido…" />
           </label>
-          <label className="field">Intensidad
-            <select value={step.intensityZone} onChange={(e) => setStep(i, { ...step, intensityZone: e.target.value })}>
-              {zones.map(([k, label]) => <option key={k} value={k}>{label} ({k})</option>)}
-            </select>
-          </label>
+          <Choice label="Intensidad" options={zones.map(([k, label]): [string, string] => [k, `${label} (${k})`])} value={step.intensityZone}
+            onChange={(intensityZone) => setStep(i, { ...step, intensityZone })} />
           <div className="row wrap">
             <Minutes label="Minutos" value={step.minutes} onChange={(minutes) => setStep(i, { ...step, minutes })} />
             <Num label="Veces" value={step.reps} onChange={(reps) => setStep(i, { ...step, reps })} />
@@ -92,8 +86,8 @@ export function SessionsCard({ core, act }: { core: WebApp; act: Act }) {
   const sessions: OwnSession[] = JSON.parse(core.ownSessionsJson())
   return (
     <section className="module">
-      <h3>Tus sesiones</h3>
-      <p className="muted">Monta tus propias sesiones de carrera, bici, natación o caminata, paso a paso. Van al calendario y al reloj como las del plan.</p>
+      <button className="primary" onClick={() => setEditing(EMPTY)}>Nueva sesión</button>
+      {sessions.length === 0 && <p className="muted small-text">Aún no tienes ninguna. Móntala paso a paso y va al calendario y al reloj como las del plan.</p>}
       {sessions.map((s) => (
         <div key={s.id} className="row">
           <button className="row option grow" onClick={() => setEditing(s)}>
@@ -102,7 +96,6 @@ export function SessionsCard({ core, act }: { core: WebApp; act: Act }) {
           <button className="text" aria-label={`Hacer ${s.name} hoy`} onClick={() => act(() => core.doOwnSessionToday(s.id), "Puesta hoy: la tienes en Hoy")}>Hoy</button>
         </div>
       ))}
-      <button className="secondary" onClick={() => setEditing(EMPTY)}>Nueva sesión</button>
       {editing && <Editor core={core} act={act} start={editing} close={() => setEditing(null)} />}
     </section>
   )

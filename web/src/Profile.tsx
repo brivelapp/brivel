@@ -6,7 +6,22 @@ import { SyncCard } from "./Sync"
 import { GarminCard } from "./Garmin"
 import { IntervalsCard } from "./Intervals"
 import { GearCard } from "./Activities"
-import { LEVEL_CHOICES, Segmented, SportPicker, STRENGTH_CHOICES, WeekBars, type Profile as ProfileData } from "./ProfileParts"
+import { CheckList, Fold, LEVEL_CHOICES, RowButton, SPORT_NAME, STRENGTH_CHOICES, SubScreen, WeekBars, type Profile as ProfileData } from "./ProfileParts"
+import { OtherRaces } from "./Today"
+
+/** «3 días · 2 h 30 min»: los días con minutos y el total de la semana. */
+const weekLine = (days: Record<string, number>) => {
+  const on = Object.values(days).filter((m) => m > 0)
+  const total = on.reduce((a, b) => a + b, 0)
+  if (on.length === 0) return "Sin días puestos"
+  return `${on.length} ${on.length === 1 ? "día" : "días"} · ${Math.floor(total / 60)} h${total % 60 ? ` ${total % 60} min` : ""}`
+}
+
+
+const gearLine = (core: WebApp) => {
+  const n = (JSON.parse(core.gearJson()) as { rows: unknown[] }).rows.length
+  return n === 0 ? "Ninguna todavía" : n === 1 ? "1 en tu material" : `${n} en tu material`
+}
 
 export function Profile({ core, act, synced, settings, setSettings }:
   { core: WebApp; act: Act; synced: (m: string | null) => void; settings: boolean; setSettings: (open: boolean) => void }) {
@@ -14,6 +29,7 @@ export function Profile({ core, act, synced, settings, setSettings }:
   const save = (p: ProfileData) => act(() => core.saveProfileJson(JSON.stringify(p)))
   const [year, setYear] = useState<number | null>(profile.birthYear)
   const [page, setPage] = useState<string | null>(null)  // dentro de Ajustes: garmin, intervals, sync o notice
+  const [screen, setScreen] = useState<string | null>(null)  // pantalla propia de Perfil: week, goal o gear
 
   const exportData = () => {
     const a = document.createElement("a")
@@ -56,10 +72,30 @@ export function Profile({ core, act, synced, settings, setSettings }:
           <SettingsGroup title="Sobre Brivel">
             <SettingsRow name="Aviso de salud" onClick={() => setPage("notice")} />
           </SettingsGroup>
+          <p className="muted small-text">Brivel {__APP_VERSION__}</p>
         </div>}
       </main>
     )
   }
+
+  if (screen === "week") return (
+    <SubScreen title="Tu semana" back={() => setScreen(null)} backLabel="Volver a Perfil">
+      <WeekBars core={core} days={profile.days} onCommit={(days) => save({ ...profile, days })} />
+      <p className="muted small-text">Sin minutos, ese día es de descanso.</p>
+    </SubScreen>
+  )
+  if (screen === "goal") return (
+    <SubScreen title="Objetivo" back={() => setScreen(null)} backLabel="Volver a Perfil">
+      <section className="module"><h2>{core.goalLabel}</h2><p className="muted small-text">El plan se rehace al momento si lo cambias.</p></section>
+      <button className="secondary" onClick={() => { if (confirm("¿Cambiar de objetivo? El plan se rehará al momento.")) act(() => core.abandonGoal()) }}>Cambiar objetivo</button>
+      <OtherRaces core={core} act={act} />
+    </SubScreen>
+  )
+  if (screen === "gear") return (
+    <SubScreen title="Zapatillas y bicis" back={() => setScreen(null)} backLabel="Volver a Perfil">
+      <GearCard core={core} act={act} />
+    </SubScreen>
+  )
 
   return (
     <main className="wide">
@@ -73,28 +109,23 @@ export function Profile({ core, act, synced, settings, setSettings }:
           </svg>
         </button>
       </div>
-      <div className="profile-grid">
+      {/* Por secciones (2026-11-23): Tu semana, Objetivo y el material, en su pantalla; lo demás se elige aquí mismo */}
+      <div className="stack tight">
         {/* Sin plan, deportes, semana, fuerza y nivel no cambian nada: se preguntan si un día pide un plan */}
         {!core.noPlan && <>
-        <section className="module">
-          <h3>Tus deportes</h3>
-          <SportPicker core={core} cardio={profile.cardio} onChange={(cardio) => save({ ...profile, cardio })} />
-        </section>
-        <section className="module">
-          <h3>Tu semana</h3>
-          <WeekBars core={core} days={profile.days} onCommit={(days) => save({ ...profile, days })} />
-        </section>
-        <section className="module">
-          <h3>Fuerza</h3>
-          <Segmented options={STRENGTH_CHOICES.map(([k, l]) => [k, l])} selected={profile.strength} label="Fuerza"
-            onSelect={(strength) => save({ ...profile, strength })} />
-          <h3>Tu nivel</h3>
-          <Segmented options={LEVEL_CHOICES.map(([k, l]) => [k, l])} selected={profile.level} label="Nivel"
-            onSelect={(level) => save({ ...profile, level })} />
-        </section>
+        <Fold title="Deportes" line={profile.cardio.filter((c) => SPORT_NAME[c]).map((c) => SPORT_NAME[c]).join(", ") || "Solo caminar"}>
+          <CheckList label="Deportes" options={core.pickableCardio.map((c) => [c, SPORT_NAME[c]] as [string, string])} selected={profile.cardio}
+            onToggle={(c) => save({ ...profile, cardio: [...core.toggleCardio(profile.cardio, c)] })} />
+        </Fold>
+        <RowButton title="Tu semana" value={weekLine(profile.days)} onClick={() => setScreen("week")} />
+        <Fold title="Fuerza" line={STRENGTH_CHOICES.find(([k]) => k === profile.strength)?.[1] ?? null}>
+          <CheckList label="Fuerza" options={STRENGTH_CHOICES} selected={[profile.strength]} onToggle={(strength) => save({ ...profile, strength })} />
+        </Fold>
+        <Fold title="Tu nivel" line={LEVEL_CHOICES.find(([k]) => k === profile.level)?.[1] ?? null}>
+          <CheckList label="Tu nivel" options={LEVEL_CHOICES} selected={[profile.level]} onToggle={(level) => save({ ...profile, level })} />
+        </Fold>
         </>}
-        <section className="module">
-          <h3>Año de nacimiento</h3>
+        <Fold title="Año de nacimiento" line={profile.birthYear ? String(profile.birthYear) : "Sin poner"}>
           <label className="field">Para calcular tus zonas de pulso
             <input inputMode="numeric" value={year ?? ""} onChange={(e) => {
               const y = parseInt(e.target.value.replace(/\D/g, "").slice(0, 4)) || null
@@ -103,8 +134,9 @@ export function Profile({ core, act, synced, settings, setSettings }:
             }} />
           </label>
           {year != null && year >= 1000 && !core.ageOk(year) && <p className="caution-text">Hace falta tener al menos {core.minAge} años.</p>}
-        </section>
-        <GearCard core={core} act={act} />
+        </Fold>
+        {core.goalLabel && <RowButton title="Objetivo" value={core.goalLabel} onClick={() => setScreen("goal")} />}
+        <RowButton title="Zapatillas y bicis" value={gearLine(core)} onClick={() => setScreen("gear")} />
       </div>
     </main>
   )

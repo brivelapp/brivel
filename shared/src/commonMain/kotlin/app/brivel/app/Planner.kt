@@ -74,6 +74,8 @@ data class PlanItem(
     val target: String? = null,  // la cifra de la parte principal («5:33-6:17 /km», «134-180 W»), en grande; null sin datos
     val targetNote: String? = null,  // el techo de pulso de las suaves cuando la cifra es de ritmo o vatios
     val testKind: String? = null,  // un test de campo: talk / threshold / ftp / lthr (el resultado se apunta en FieldTests.kt)
+    val doneMin: Int? = null,  // minutos de la actividad que cuenta por esta sesión (reloj, móvil o grabada en Brivel)
+    val doneDetail: String? = null,  // sus km, ritmo y pulso; con ellos se enseña lo hecho en vez de lo planificado
     @Transient internal val session: Session? = null,  // la web recibe la pantalla en JSON: lo interno no sale
     @Transient internal val healthStrength: HealthStrength? = null,
     @Transient internal val raceStrength: RaceStrength? = null,
@@ -115,6 +117,7 @@ data class WeekView(
     val info: List<String>,
     val step: WeekStep?,  // sin fecha: bloque, semana de subida o de descarga y dosis
     val changed: Boolean,
+    val minutesNote: String? = null,  // WeekPlan.minutesNote: está en warnings o info, y Hoy no la repite
 )
 
 private val RACE_SPORTS = setOf("running", "cycling", "swimming_pool")
@@ -315,7 +318,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             dayView(d.date, d.weekday, applyChoice(d.date, items, step.block, mine, rotate), note, d.availableMin, emptyList(), adjustments, null)
         }
         return WeekView(monday.toString(), days, activeMinutes(days), days.count { d -> d.items.any { it.isStrength } },
-            plan.warnings, plan.info, step, plan.changed == true)
+            plan.warnings, plan.info, step, plan.changed == true, plan.minutesNote)
     }
 
     // ------------------------------------------------------------ hacia una carrera
@@ -575,7 +578,14 @@ class Planner(private val data: AppData, private val today: LocalDate) {
         val due = items.filter { it.isStrength }.sumOf { i -> i.exercises.sumOf { prescription(it, i.raceStrength?.dose, data.customExercises)?.sets ?: 0 } }
         val unfinished = date in strengthFromSets && 2 * latestSets(data.sets).count { it.date == date && it.counts() } <= due
         val matches = matchDay(planned, (done[date] ?: emptyList()).filterNot { unfinished && it.sport == "strength" })
-        return DayView(date, weekday, date == today.toString(), date < today.toString(), items, note, availableMin,
+        // Lo hecho sustituye a lo planificado en la tarjeta: cada actividad, en la sesión por la que cuenta
+        val left = items.toMutableList()
+        for (m in matches) {
+            if (m.matched == null || m.done.source != "watch") continue
+            val i = left.indexOfFirst { it.doneMin == null && it.planned().sport == m.matched }
+            if (i >= 0) left[i] = left[i].copy(doneMin = m.done.minutes, doneDetail = m.done.detail)
+        }
+        return DayView(date, weekday, date == today.toString(), date < today.toString(), left, note, availableMin,
             reasons, adjustments, matches.map { MatchView(it.why, it.matched != null) },
             matches.mapNotNull { it.matched }.toSet(), phase)
     }

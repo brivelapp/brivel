@@ -70,9 +70,7 @@ private struct SessionEditor: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     TextField("Nombre", text: $name).textFieldStyle(.roundedBorder)
-                    Picker("Deporte", selection: $sport) {
-                        ForEach(OwnSessionsKt.OWN_SPORTS, id: \.self) { k in Text(sportLabel(k)).tag(k) }
-                    }
+                    ChipChoice(title: "Deporte", options: OwnSessionsKt.OWN_SPORTS.map { ($0, sportLabel($0)) }, selection: $sport)
                     Text("Pasos").font(.section)
                     ForEach($steps) { $step in
                         Module {
@@ -85,9 +83,7 @@ private struct SessionEditor: View {
                                 }
                             }
                             TextField("Nombre del paso (opcional)", text: $step.name).textFieldStyle(.roundedBorder)
-                            Picker("Intensidad", selection: $step.zone) {
-                                ForEach(OwnSessionsKt.OWN_ZONE_KEYS, id: \.self) { k in Text(zoneLabel(k)).tag(k) }
-                            }
+                            ChipChoice(title: "Intensidad", options: OwnSessionsKt.OWN_ZONE_KEYS.map { ($0, zoneLabel($0)) }, selection: $step.zone)
                             HStack(spacing: 8) {
                                 NumberBox(label: "Minutos", text: $step.minutes, decimalPad: true)
                                 NumberBox(label: "Veces", text: $step.reps, decimalPad: false)
@@ -152,8 +148,8 @@ struct SessionsSection: View {
 
     var body: some View {
         Module {
-            Text("Tus sesiones").font(.section)
-            Secondary("Monta tus propias sesiones de carrera, bici, natación o caminata, paso a paso. Van al calendario y al reloj como las del plan.")
+            Button { creating = true } label: { Text("Nueva sesión").frame(maxWidth: .infinity) }.buttonStyle(PrimaryStyle())
+            if model.core.ownSessions.isEmpty { Secondary("Aún no tienes ninguna. Móntala paso a paso y va al calendario y al reloj como las del plan.") }
             ForEach(model.core.ownSessions, id: \.id) { s in
                 HStack {
                     Button { editing = s } label: {
@@ -166,7 +162,6 @@ struct SessionsSection: View {
                         .font(.ui(14, .bold)).buttonStyle(TextActionStyle()).accessibilityLabel("Hacer \(s.name) hoy")
                 }
             }
-            Button("Nueva sesión") { creating = true }.buttonStyle(SecondaryStyle())
         }
         .sheet(isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) { SessionEditor(start: editing) }
         .sheet(isPresented: $creating) { SessionEditor(start: nil) }

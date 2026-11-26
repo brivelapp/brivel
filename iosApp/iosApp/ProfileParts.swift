@@ -40,18 +40,22 @@ struct SportPicker: View {
     }
 }
 
-/// La semana, un día por fila: deslizar de 15 en 15 o escribir los minutos (de 0 a 5 h; sin minutos, ese día queda
-/// libre). En horizontal, desplazar la pantalla no mueve nada, y escribir la cifra evita afinar con el dedo (con las
-/// barras verticales costaba acertar en 45). `onCommit` llega al soltar el deslizador o con cada cifra escrita.
+/// La semana con − y + de 15 en 15 minutos (decidido el 2026-11-23: solo botones, sin deslizador); la cifra también se
+/// escribe. Sin minutos, ese día es de descanso. `onCommit` llega con cada cambio.
 struct WeekBars: View {
     let days: [String: Int]
     var onCommit: ([String: Int]) -> Void = { _ in }
     @State private var live: [String: Int]?
     private let top = Int(TextsKt.MAX_DAY_MINUTES)
-    // Crecen con el texto del sistema: con 84 puntos fijos, «Miércoles» se partía con el texto grande
-    @ScaledMetric(relativeTo: .body) private var nameWidth: CGFloat = 84
-    @ScaledMetric(relativeTo: .body) private var fieldWidth: CGFloat = 64
-    @ScaledMetric(relativeTo: .body) private var fieldHeight: CGFloat = 44
+    private let order = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+    @ScaledMetric(relativeTo: .body) private var fieldWidth: CGFloat = 56
+
+    private func put(_ day: String, _ minutes: Int) {
+        var next = live ?? days
+        next[day] = min(top, max(0, minutes))
+        live = next
+        onCommit(next)
+    }
 
     var body: some View {
         let shown = live ?? days
@@ -63,57 +67,33 @@ struct WeekBars: View {
                 Text(TextsKt.weekTimeText(days: shown.mapValues { KotlinInt(int: Int32($0)) }))
                     .font(.mono(17, .semibold)).foregroundStyle(Palette.ok)
             }
-            // Cada día en una fila si al deslizador le quedan 96 puntos; si no, el nombre va encima (todos a la vez)
-            ViewThatFits(in: .horizontal) {
-                rows(shown, stacked: false)
-                rows(shown, stacked: true)
-            }
-            Secondary("Desliza o escribe los minutos de cada día, hasta 5 h. Sin minutos, ese día queda libre.")
-        }
-    }
-
-    private func rows(_ shown: [String: Int], stacked: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(weekDays, id: \.self) { d in
-                let m = shown[d] ?? 0
-                let name = TextsKt.WEEKDAY_LABEL[d] ?? d
-                let label = Text(name).font(.ui(14, .bold)).foregroundStyle(m == 0 ? Palette.muted : Palette.text)
-                VStack(alignment: .leading, spacing: 2) {
-                    if stacked { label }
+            VStack(spacing: 0) {
+                ForEach(Array(order.enumerated()), id: \.offset) { i, d in
+                    let m = shown[d] ?? 0
+                    let name = TextsKt.WEEKDAY_LABEL[d] ?? d
+                    if i > 0 { Divider() }
                     HStack(spacing: 8) {
-                        if !stacked { label.lineLimit(1).frame(width: nameWidth, alignment: .leading) }
-                        // El del sistema: en iOS 26 lleva el cristal, como la barra inferior
-                        Slider(value: Binding(get: { Double(m) }, set: { set(d, Int(($0 / 15).rounded()) * 15) }),
-                               in: 0...Double(top), step: 15, onEditingChanged: { editing in if !editing { commit() } })
-                            .tint(Palette.ok)
-                            .frame(minWidth: 96, idealWidth: 96, maxWidth: .infinity)
-                            .accessibilityLabel(name)
-                            .accessibilityValue(m == 0 ? "libre" : "\(m) minutos")
-                        TextField("—", text: Binding(get: { m == 0 ? "" : "\(m)" }, set: { t in
-                            set(d, Int(String(t.filter(\.isNumber).prefix(3))) ?? 0)
-                            commit()
-                        }))
-                        .keyboardType(.numberPad).multilineTextAlignment(.trailing).font(.mono(16, .semibold))
-                        .padding(.horizontal, 8).frame(width: min(fieldWidth, 112), height: fieldHeight)
-                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Palette.muted, lineWidth: 1))
-                        .accessibilityLabel("Minutos el \(name.lowercased())")
-                        Secondary("min").fixedSize()
-                    }
+                        Text(name).font(.ui(15, m > 0 ? .bold : .regular)).foregroundStyle(m == 0 ? Palette.muted : Palette.text)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        step("−", "Menos minutos el \(name.lowercased())", enabled: m > 0) { put(d, m - 15) }
+                        TextField("—", text: Binding(get: { m == 0 ? "" : "\(m)" }, set: { put(d, Int($0.filter(\.isNumber).prefix(3)) ?? 0) }))
+                            .keyboardType(.numberPad).multilineTextAlignment(.center).font(.mono(17, .semibold))
+                            .frame(width: fieldWidth).accessibilityLabel("Minutos el \(name.lowercased())")
+                        step("+", "Más minutos el \(name.lowercased())", enabled: m < top) { put(d, m + 15) }
+                    }.padding(.horizontal, 14).frame(minHeight: 56)
                 }
-                .sensoryFeedback(.selection, trigger: m)  // un toque suave en cada paso de 15 minutos
             }
+            .background(Palette.surface).clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
+        .onChange(of: days) { _, _ in live = nil }
     }
 
-    private func set(_ day: String, _ minutes: Int) {
-        var next = live ?? days
-        next[day] = min(top, max(0, minutes))
-        live = next
-    }
-
-    private func commit() {
-        if let live { onCommit(live) }
-        live = nil
+    private func step(_ sign: String, _ label: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(sign).font(.ui(20, .bold)).frame(width: 40, height: 40)
+                .foregroundStyle(enabled ? Palette.text : Palette.muted)
+                .background(Palette.chip.opacity(enabled ? 1 : 0.4)).clipShape(Circle())
+        }.buttonStyle(.plain).disabled(!enabled).accessibilityLabel(label)
     }
 }
 

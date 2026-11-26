@@ -6,6 +6,9 @@ const MAX_BYTES = 16 * 1024 * 1024
 const CHUNK = 1024 * 1024  // D1 admite como mucho 2 MB por fila: la copia va en trozos (migrations/0002_trozos.sql)
 import { cuentas, forgetVault, type Secrets } from "./cuentas"
 
+// Sin el tope de 1 MB (Gabriel, 2026-11-19): queda uno alto solo contra abusos; una copia normal ocupa pocos MB
+const MAX_BYTES = 16 * 1024 * 1024
+const CHUNK = 1024 * 1024  // D1 admite como mucho 2 MB por fila: la copia va en trozos (migrations/0002_trozos.sql)
 const UNUSED_DAYS = 365  // copias sin subir ni bajar en 12 meses: se borran (política de privacidad, apartado 4)
 
 export default {
@@ -117,7 +120,7 @@ function chunkWrites(env: Env, id: string, write: string, body: ArrayBuffer): D1
   return out
 }
 
-function concat(parts: Uint8Array[]): Uint8Array<ArrayBuffer> {
+function concat(parts: Uint8Array[]): Uint8Array {
   const out = new Uint8Array(parts.reduce((sum, p) => sum + p.byteLength, 0))
   let at = 0
   for (const p of parts) { out.set(p, at); at += p.byteLength }

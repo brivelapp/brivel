@@ -63,6 +63,7 @@ data class TodayScreen(
     val garminNote: String? = null,  // el plan se adapta en parte con datos de Garmin (atribución obligatoria)
     val noPlan: Boolean = false,  // «Ya tengo mi rutina»: sin sesiones de Brivel, solo las tuyas
     val strengthDone: Int = 0,  // días de esta semana con fuerza hecha (sin plan, frente a los 2 de la OMS)
+    val strengthLine: String = "",  // con plan: la fuerza hecha frente a la planificada y al mínimo de 2 días
     val nextRoutine: String? = null,  // sin plan y sin rutina hoy: «Mañana, Torso» o «El viernes, Torso»
     val rateRun: RunToRate? = null,  // quien empieza: ¿cómo fue su última carrera? (de ahí sale su ritmo suave)
 )
@@ -118,6 +119,7 @@ fun buildToday(data: AppData, today: LocalDate): TodayScreen {
         else -> Tone.OK
     }
     val strength = week.strengthDays
+    val strengthDone = week.days.count { "strength" in it.doneSports }
     return TodayScreen(
         dateLabel = dateLabel(today.toString()),
         goalLine = goalLine, headline = headline, headlineDetail = detail, day = day,
@@ -128,13 +130,14 @@ fun buildToday(data: AppData, today: LocalDate): TodayScreen {
         },
         weekLine = "Esta semana: ${week.activeMinutes} min de actividad y fuerza $strength ${if (strength == 1) "día" else "días"}",
         meetsWho = week.activeMinutes >= 150 && strength >= 2,
-        warnings = week.warnings,
-        info = week.info + BADGES.filter { data.badges[it.id] == today.toString() }.map { "Medalla nueva: «${it.title}». Está en Progreso." },
+        // Sin la frase de los minutos: «Esta semana» ya da la cifra (Gabriel, 2026-11-26)
+        warnings = week.warnings - setOfNotNull(week.minutesNote),
+        info = week.info - setOfNotNull(week.minutesNote) + BADGES.filter { data.badges[it.id] == today.toString() }.map { "Medalla nueva: «${it.title}». Está en Progreso." },
         // Sin plan, las respuestas no ajustarían nada: no se pregunta
         askReadiness = !noPlan && !planner.hasRecoverySignals && data.readiness[today.toString()] == null && day.items.isNotEmpty(),
         linked = data.cache != null, goalFinished = goalFinished,
         garminNote = GARMIN_DERIVED.takeIf { data.usesGarmin() },
-        noPlan = noPlan, strengthDone = week.days.count { "strength" in it.doneSports },
+        noPlan = noPlan, strengthDone = strengthDone, strengthLine = strengthLine(strengthDone, strength),
         nextRoutine = if (noPlan && day.items.isEmpty()) nextRoutine(planner, today) else null,
         rateRun = runToRate(data, planner, today),
     )
@@ -463,3 +466,8 @@ private fun AppData.sourceOf(key: String, since: String): String? {
     val fromPhone = health?.days?.any { it.date >= since && it.date !in fromGarmin && pick(it) != null } == true
     return if (fromPhone) "Garmin y ${health!!.source}" else "Garmin"
 }
+
+/** «Fuerza: 1 de 3 días (mínimo 2)»: cuenta lo hecho, no lo planificado (antes decía «mínimo cumplido» un lunes sin nada). */
+internal fun strengthLine(done: Int, planned: Int): String =
+    if (done >= 2) "Fuerza: $done días hechos, mínimo cumplido"
+    else "Fuerza: $done de $planned ${if (planned == 1) "día" else "días"} (mínimo 2)"

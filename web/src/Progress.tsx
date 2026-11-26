@@ -1,9 +1,10 @@
 // Progreso, como ProgressScreen.kt: tu cuerpo frente a tu rango habitual, tu forma, la actividad semanal y lo último hecho
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { WebApp } from "brivel-shared"
-import type { Metric, Milestone, Point, ProgressScreen, RecentActivity } from "./types"
+import type { Metric, Milestone, Point, ProgressScreen, RecentActivity, WidgetChoice, WidgetView } from "./types"
 import { Icon, SPORT_ICON, type Act } from "./Today"
 import { ActivityDialog, BadgesCard, Curves } from "./Activities"
+import { Choice, Fold, RowButton, SubScreen } from "./ProfileParts"
 
 const BODY = ["sleep", "sleepScore", "deepSleep", "remSleep", "hrv", "restingHR", "spo2", "respiration", "stress", "weight", "bodyFat", "steps"]
 const fmt = (v: number | null) => v == null ? "—" : v >= 20 ? String(Math.round(v)) : String(Math.round(v * 10) / 10).replace(".", ",")
@@ -128,26 +129,65 @@ function Measures({ core, act, screen }: { core: WebApp; act: Act; screen: Progr
   const unit = kinds.find(([k]) => k === kind)?.[2] ?? ""
   return (
     <section className="module">
-      <h3>Tus medidas</h3>
-      <p className="muted small-text">Apunta tu peso o tus perímetros con una cinta para ver cómo cambian. La de hoy sustituye a la que ya hubiera hoy.</p>
+      <Choice label="Medida" options={kinds.map(([k, label]): [string, string] => [k, label])} value={kind} onChange={setKind} />
+      <label className="field">Valor ({unit})
+        <input className="big-input" inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value.replace(/[^\d.,]/g, ""))} />
+      </label>
+      <button className="primary" onClick={() => { act(() => { core.logMeasure(kind, value); setValue("") }, "Medida apuntada") }}>Apuntar</button>
+      {screen.measures.length > 0 && <h3>Últimas</h3>}
       {screen.measures.map((m) => <MetricRow key={m.key} m={m} />)}
-      <div className="row wrap">
-        <label className="field small-field">Medida
-          <select value={kind} onChange={(e) => setKind(e.target.value)}>
-            {kinds.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-          </select>
-        </label>
-        <label className="field small-field">Valor ({unit})
-          <input inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value.replace(/[^\d.,]/g, ""))} />
-        </label>
-        <button className="secondary" onClick={() => { act(() => { core.logMeasure(kind, value); setValue("") }, "Medida apuntada") }}>Apuntar</button>
-      </div>
     </section>
+  )
+}
+
+/** Los cuatro de arriba, que elige cada uno (decidido el 2026-11-23); «Editar» abre la lista para elegir otros cuatro. */
+function Tiles({ core, act }: { core: WebApp; act: Act }) {
+  const tiles: WidgetView[] = JSON.parse(core.progressTilesJson())
+  const [editing, setEditing] = useState<string[] | null>(null)
+  const ref = useRef<HTMLDialogElement>(null)
+  useEffect(() => { if (editing) ref.current?.showModal() }, [editing != null])
+  const choices: WidgetChoice[] = JSON.parse(core.tileChoicesJson())
+  const toggle = (k: string) => setEditing((e) => e!.includes(k) ? e!.filter((x) => x !== k) : e!.length < 4 ? [...e!, k] : e)
+  return (
+    <>
+      <div className="row"><span className="grow" /><button className="text" onClick={() => setEditing(tiles.map((t) => t.key))}>Editar</button></div>
+      <div className="widgets">
+        {tiles.map((t) => (
+          <section key={t.key} className="module widget" aria-label={t.title}>
+            <h3>{t.title}</h3>
+            {t.value == null ? <p className="muted small-text">{t.empty}</p> : (
+              <>
+                <p><span className="mono widget-value">{t.value}</span>{t.unit && <span className="mono muted">&nbsp;{t.unit}</span>}</p>
+                {t.detail && <p className="muted small-text">{t.detail}</p>}
+              </>
+            )}
+          </section>
+        ))}
+      </div>
+      {editing && (
+        <dialog className="sheet" ref={ref} onClose={() => setEditing(null)} aria-label="Elige 4">
+          <div className="row"><h2 className="grow">Elige 4</h2>
+            <button className="text" disabled={editing.length !== 4}
+              onClick={() => { act(() => core.setProgressTiles(JSON.stringify(editing))); setEditing(null) }}>Listo</button></div>
+          <p className="muted small-text">Los cuatro de arriba en Progreso. Lo que no elijas sigue debajo. {editing.length} de 4.</p>
+          <div className="chips" role="group" aria-label="Datos de arriba">
+            {choices.map((c) => <button key={c.key} className="chip" aria-pressed={editing.includes(c.key)} onClick={() => toggle(c.key)}>{c.title}</button>)}
+          </div>
+        </dialog>
+      )}
+    </>
   )
 }
 
 export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; openProfile: () => void }) {
   const screen: ProgressScreen = JSON.parse(core.progressJson())
+  const [page, setPage] = useState<"medals" | "measures" | null>(null)  // las que tienen su pantalla (2026-11-23)
+  if (page === "medals" && screen.badges) return (
+    <SubScreen title="Medallas" back={() => setPage(null)} backLabel="Volver a Progreso"><BadgesCard badges={screen.badges} /></SubScreen>
+  )
+  if (page === "measures") return (
+    <SubScreen title="Tus medidas" back={() => setPage(null)} backLabel="Volver a Progreso"><Measures core={core} act={act} screen={screen} /></SubScreen>
+  )
   const body = screen.metrics.filter((m) => BODY.includes(m.key))
   const training = screen.metrics.filter((m) => !BODY.includes(m.key))
   const last = screen.weeklyMinutes.at(-1)?.value ?? 0
@@ -156,26 +196,28 @@ export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; o
   return (
     <main className="wide">
       <header className="page-head"><div><p className="muted">Últimos 90 días</p><h1>Progreso</h1></div></header>
-      {!screen.linked ? (
-        <div className="profile-grid">
+      <Tiles core={core} act={act} />
+      {!screen.linked && (
         <section className="module">
-          <p className="muted">El navegador no puede leer Apple Salud ni Health Connect. Para ver aquí tu sueño, tu VFC o tu pulso en
-            reposo, actívalo en la app del móvil y sincroniza: Perfil → Ajustes → «Usar en otros dispositivos».</p>
-          <button className="primary" onClick={openProfile}>Ir a Ajustes</button>
+          <p className="muted">El navegador no puede leer Apple Salud ni Health Connect. Para tener aquí tu sueño, tu VFC o tu pulso en
+            reposo, actívalo en la app del móvil y sincroniza.</p>
+          <button className="secondary" onClick={openProfile}>Ir a Ajustes</button>
         </section>
-        <Measures core={core} act={act} screen={screen} />
-        {screen.badges && <BadgesCard badges={screen.badges} />}
-        <Milestones core={core} screen={screen} />
-        </div>
-      ) : (
-        <div className="profile-grid">
-          {body.length > 0 && (
+      )}
+      <div className="stack tight">
+        {screen.badges && (
+          <RowButton title="Medallas" value={screen.badges.next[0] ? `La más cerca: ${screen.badges.next[0].title}` : screen.badges.nextLevel ?? ""} onClick={() => setPage("medals")} />
+        )}
+        {screen.linked && body.length > 0 && (
+          <Fold title="Tu cuerpo" line={body.slice(0, 3).map((m) => m.label).join(", ") + (body.length > 3 ? "…" : "")}>
             <section className="module">
               <div className="row between"><h3>Tu cuerpo</h3><span className="muted small">último dato · banda = tu rango</span></div>
               {body.map((m) => <MetricRow key={m.key} m={m} />)}
             </section>
-          )}
-          {(screen.status || training.length > 0) && (
+          </Fold>
+        )}
+        {screen.linked && (screen.status || training.length > 0) && (
+          <Fold title="Forma" line={screen.status ? screen.status.label : training.map((m) => m.label).slice(0, 3).join(", ")}>
             <section className="module">
               {screen.status && (
                 <>
@@ -187,35 +229,48 @@ export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; o
               )}
               {training.map((m) => <MetricRow key={m.key} m={m} />)}
             </section>
-          )}
-          <section className="module">
-            <div className="row between"><h3>Actividad semanal</h3><span className="mono">{Math.round(last)} / 150 min</span></div>
-            <p className="muted small-text">La OMS recomienda al menos 150 minutos moderados (o 75 intensos) a la semana.</p>
-            <div className="week-bars" role="img" aria-label={`Minutos por semana; esta semana, ${Math.round(last)}`}>
-              <span className="target" style={{ bottom: `${(150 / top) * 100}%` }} />
-              {screen.weeklyMinutes.map((p) => <span key={p.date} className={p.value >= 150 ? "on" : ""} style={{ height: `${(p.value / top) * 100}%` }} />)}
-            </div>
-          </section>
-          {screen.predictions.length > 0 && (
+          </Fold>
+        )}
+        {screen.linked && (
+          <Fold title="Minutos por semana" line={`Esta semana, ${Math.round(last)} de 150`}>
+            <section className="module">
+              <div className="row between"><h3>Actividad semanal</h3><span className="mono">{Math.round(last)} / 150 min</span></div>
+              <p className="muted small-text">La OMS recomienda al menos 150 minutos moderados (o 75 intensos) a la semana.</p>
+              <div className="week-bars" role="img" aria-label={`Minutos por semana; esta semana, ${Math.round(last)}`}>
+                <span className="target" style={{ bottom: `${(150 / top) * 100}%` }} />
+                {screen.weeklyMinutes.map((p) => <span key={p.date} className={p.value >= 150 ? "on" : ""} style={{ height: `${(p.value / top) * 100}%` }} />)}
+              </div>
+            </section>
+          </Fold>
+        )}
+        {screen.predictions.length > 0 && (
+          <Fold title="Predicciones de carrera" line={screen.predictions.slice(0, 2).map((p) => `${p.distance} ${p.time}`).join(" · ")}>
             <section className="module">
               <h3>Tiempos previstos</h3>
               {screen.garminNote && <p className="muted small source">{screen.garminNote}</p>}
               {screen.predictions.map((p) => <p key={p.distance} className="row between"><span>{p.distance}</span><span className="mono">{p.time}</span></p>)}
               {screen.predictionSource && <p className="muted small-text">Calculado con {screen.predictionSource} (fórmula de Daniels).</p>}
             </section>
-          )}
-          {screen.recent.length > 0 && (
+          </Fold>
+        )}
+        {screen.recent.length > 0 && (
+          <Fold title="Actividades recientes" line={screen.recent[0].title}>
             <section className="module">
               <h3>Tus últimos entrenamientos</h3>
               {screen.recent.map((r, i) => <Recent key={i} r={r} core={core} act={act} />)}
             </section>
-          )}
-          <Curves curves={screen.curves} />
-          <Measures core={core} act={act} screen={screen} />
-          {screen.badges && <BadgesCard badges={screen.badges} />}
-          <Milestones core={core} screen={screen} />
-        </div>
-      )}
+          </Fold>
+        )}
+        {screen.curves.length > 0 && (
+          <Fold title="Curvas de ritmo y potencia" line={screen.curves.map((c) => c.title).join(" · ")}>
+            <Curves curves={screen.curves} />
+          </Fold>
+        )}
+        <RowButton title="Tus medidas" value={screen.measures.length ? screen.measures.map((m) => m.label).join(", ") : "Apunta tu peso o tus perímetros"} onClick={() => setPage("measures")} />
+        {screen.strengthRecords.length + screen.milestones.length > 0
+          ? <Fold title="Récords y marcas" line={screen.strengthRecords[0]?.title ?? screen.milestones[0]?.title ?? null}><Milestones core={core} screen={screen} /></Fold>
+          : <div className="module row-button static"><span className="grow"><strong>Récords y marcas</strong><br /><span className="muted small-text">Saldrán al entrenar</span></span></div>}
+      </div>
     </main>
   )
 }

@@ -347,12 +347,20 @@ struct SessionCard<Actions: View>: View {
                     Glyph(name: "check", size: 18, color: Palette.ok)
                     Text("Hecha").font(.ui(13, .bold, relativeTo: .footnote)).foregroundStyle(Palette.ok)
                 }
-                (Text("\(item.durationMin)").font(.mono(22, .semibold, relativeTo: .title2))
+                (Text("\(item.doneMin?.int32Value ?? item.durationMin)").font(.mono(22, .semibold, relativeTo: .title2))
                     + Text(" min").font(.mono(13, relativeTo: .footnote)).foregroundColor(Palette.muted))
             }
             Text(item.title).font(.cardTitle)
             // La cifra manda (2026-11-18): ritmo, vatios o pulso en grande; sin datos aún, cómo saber si vas bien
-            if let target = item.target {
+            if let actual = item.doneDetail {
+                // Hecha con una actividad: sus datos mandan; lo planificado queda debajo, en pequeño
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(actual).font(.mono(20, .semibold, relativeTo: .title3))
+                    Secondary("Planificado: \(item.durationMin) min" + (item.target.map { " a \($0)" } ?? ""))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.vertical, 12)
+                .background(Palette.bg).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            } else if let target = item.target {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(target).font(.mono(28, .semibold, relativeTo: .title)).lineLimit(1).minimumScaleFactor(0.6)
                     if let note = item.targetNote { Text(note).font(.ui(15, .bold, relativeTo: .subheadline)) }
@@ -378,6 +386,7 @@ struct SessionCard<Actions: View>: View {
             ForEach(item.exercises, id: \.self) { Text($0).font(.body15) }
             actions
             Button(details ? "Menos detalles" : "Más detalles") { details.toggle() }.font(.ui(13, .bold, relativeTo: .footnote))
+                .buttonStyle(TextActionStyle())  // verde y subrayado, como en Android y la web: lo que se pulsa se distingue
             if details {
                 Secondary("Nombre técnico: \(item.technicalName)")
                 if let notes = item.notes { Secondary(notes) }
@@ -437,6 +446,24 @@ struct ProgressLine: View {
     }
 }
 
+/// Opciones cortas (de 2 a 8) en cápsulas, como en Android y la web; las listas largas (zona, material, tipo) siguen en menú.
+struct ChipChoice<T: Hashable>: View {
+    let title: String
+    let options: [(T, String)]
+    @Binding var selection: T
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.ui(13, .semibold, relativeTo: .footnote)).foregroundStyle(Palette.muted)
+            Flow(spacing: 8) {
+                ForEach(options.indices, id: \.self) { i in
+                    Chip(label: options[i].1, selected: selection == options[i].0) { selection = options[i].0 }
+                }
+            }
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 struct Chip: View {
     let label: String
     let selected: Bool
@@ -455,4 +482,101 @@ struct Chip: View {
 struct Source: View {
     let text: String
     var body: some View { Text(text).font(.caption12).foregroundStyle(Palette.muted) }
+}
+
+/// Una parte en una línea, como «La más cerca» de Progreso: al tocarla se abre debajo (Progreso y Entrenar).
+struct Fold<Content: View>: View {
+    let title: String
+    let line: String?
+    @ViewBuilder var content: Content
+    @State private var open: Bool
+
+    init(title: String, line: String?, startOpen: Bool = false, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.line = line
+        self.content = content()
+        _open = State(initialValue: startOpen)
+    }
+
+    var body: some View {
+        Button { open.toggle() } label: {
+            Module {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(.section).foregroundStyle(Palette.text)
+                        if let line { Secondary(line) }
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                    RowChevron(open: open)
+                }
+            }
+        }.buttonStyle(.plain).accessibilityAddTraits(.isButton)
+        if open { content }
+    }
+}
+
+/// Lista de opciones con ✓ (una o varias): lo elegido se ve sin depender del color.
+struct CheckList: View {
+    let options: [(String, String, String?)]
+    let selected: [String]
+    let onToggle: (String) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(options.enumerated()), id: \.offset) { i, o in
+                if i > 0 { Divider() }
+                let on = selected.contains(o.0)
+                Button { onToggle(o.0) } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(o.1).font(.ui(15, on ? .bold : .regular)).foregroundStyle(Palette.text)
+                            if let hint = o.2 { Secondary(hint) }
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                        if on { Text("✓").font(.ui(18, .heavy)).foregroundStyle(Palette.ok) }
+                    }.padding(.horizontal, 16).frame(minHeight: 52).contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .background(Palette.surface).clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+}
+
+/// Una pantalla propia dentro de una pestaña: título una vez, arriba, con «‹» para volver.
+struct SubScreen<Content: View>: View {
+    let title: String
+    let back: () -> Void
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 4) {
+                    Button(action: back) { Glyph(name: "chevron_left", size: 24) }
+                        .frame(minWidth: 44, minHeight: 44).accessibilityLabel("Volver")
+                    Text(title).font(.screenTitle)
+                }
+                content
+            }.padding(.horizontal, 18).padding(.vertical, 16)
+        }.background(Palette.bg)
+    }
+}
+
+/// Una fila que abre su propia pantalla: título, valor y ›.
+struct RowButton: View {
+    let title: String
+    let value: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Module {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(.section).foregroundStyle(Palette.text)
+                        Secondary(value)
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                    RowChevron()
+                }
+            }
+        }.buttonStyle(.plain)
+    }
 }

@@ -99,7 +99,7 @@ internal val BADGES: List<BadgeDef> = listOf(
         Triple(1.0, 1, "Primer kilómetro"), Triple(3.0, 4, "Tres mil metros")),
     chain("walk", "Caminar", "km", { "Camina $it en una sola salida." }, { it.longest("walking") },
         Triple(10.0, 1, "Paseo largo"), Triple(20.0, 2, "Caminata de 20")),
-    chain("strength-days", "Fuerza", "días", { "Apunta series de fuerza $it distintos." }, { it.strengthDays },
+    chain("strength-days", "Fuerza", "días", { if (it == "1 días") "Apunta tus primeras series de fuerza." else "Apunta series de fuerza en $it distintos." }, { it.strengthDays },
         Triple(1.0, 1, "Primera sesión de fuerza"), Triple(10.0, 1, "10 días de fuerza"), Triple(50.0, 2, "50 días de fuerza"),
         Triple(100.0, 4, "100 días de fuerza")),
     chain("volume", "Fuerza", "kg", { "Mueve $it en total, sumando peso por repeticiones." }, { it.volume },

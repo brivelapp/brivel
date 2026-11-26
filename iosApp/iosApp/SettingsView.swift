@@ -32,13 +32,17 @@ struct SettingsView: View {
                                 on: core.syncCode != nil && !core.syncNeedsConsent)
                 }
                 ShareLink("Exportar mis datos", item: core.exportJson()).foregroundStyle(Palette.text)
-                Button("Borrar todo", role: .destructive) { confirmDelete = true }
+                Button("Borrar todo", role: .destructive) { confirmDelete = true }.foregroundStyle(Palette.danger)  // la lista lo pintaba en negro
             }
-            Section("Sobre Brivel") {
+            Section {
                 NavigationLink("Aviso de salud") {
                     ScrollPage(title: "Aviso de salud") { Module { Secondary(TextsKt.HEALTH_NOTICE) } }
                 }
                 NavigationLink("Privacidad, términos y código") { AboutPage() }
+            } header: {
+                Text("Sobre Brivel")
+            } footer: {
+                Text("Brivel \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")").font(.small)
             }
         }
         .font(.body15)

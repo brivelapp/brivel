@@ -330,14 +330,7 @@ private struct SetView: View {
         } message: { Text("Vacío: con tu peso corporal.") }
         if e.barbell, let w = weight, let plates = model.core.plates(weightKg: w) { Secondary(plates) }
         // Tipo de serie: las de calentamiento y las descendentes se suman a las del plan y no cuentan para subir el peso
-        TitleRow {
-            Secondary("Tipo de serie")
-        } trailing: {
-            Picker("Tipo de serie", selection: $kind) {
-                Text("Normal").tag(String?.none)
-                ForEach(DataKt.SET_KIND_KEYS, id: \.self) { k in Text(DataKt.SET_KINDS[k] ?? k).tag(String?.some(k)) }
-            }
-        }
+        ChipChoice(title: "Tipo de serie", options: [(String?.none, "Normal")] + DataKt.SET_KIND_KEYS.map { (String?.some($0), DataKt.SET_KINDS[$0] ?? $0) }, selection: $kind)
         Button { done(weight, reps, kind) } label: { Text(today != nil ? "Guardar cambio" : "Serie hecha").frame(maxWidth: .infinity) }
             .buttonStyle(PrimaryStyle())
         if today == nil, let previous { Secondary("La última vez: \(setText(previous, timed: e.timed))") }

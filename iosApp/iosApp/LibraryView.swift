@@ -134,7 +134,6 @@ struct ExercisePicker: View {
 /// En Entrenar: todos los ejercicios, con búsqueda y filtros de zona y de material, y el material que tienes.
 struct LibrarySection: View {
     @EnvironmentObject var model: AppModel
-    @State private var open = false
     @State private var query = ""
     @State private var zone: String?
     @State private var equipment: String?
@@ -142,35 +141,42 @@ struct LibrarySection: View {
     @State private var limit = 60
     @State private var shown: String?
 
+    /// Cápsulas en una fila que se desliza (zona y material): sin los dos menús desplegables de antes.
+    private func strip(_ options: [(String?, String)], _ selected: String?, _ pick: @escaping (String?) -> Void) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(Array(options.enumerated()), id: \.offset) { _, o in Chip(label: o.1, selected: selected == o.0) { pick(o.0) } }
+            }
+        }
+    }
+
     var body: some View {
         let _ = model.version
         let owned = model.core.equipment
         Module {
-            Text("Biblioteca de ejercicios").font(.section)
-            Secondary("Busca entre todos los ejercicios por zona del cuerpo o material.")
-            if !open {
-                Button("Ver los ejercicios") { open = true }.buttonStyle(SecondaryStyle())
-            } else {
-                Secondary("Tu material (el peso corporal siempre cuenta). Brivel solo te propone variantes que puedas hacer con él.")
-                ForEach(LibraryKt.EQUIPMENT.filter { $0 != "peso corporal" }, id: \.self) { tag in
-                    Toggle(tag, isOn: Binding(get: { owned.contains(tag) }, set: { on in
-                        model.run { try model.core.setEquipment(tags: on ? owned + [tag] : owned.filter { $0 != tag }) }
-                    })).font(.small)
+            TextField("Buscar", text: $query).textFieldStyle(.roundedBorder)
+            strip([(nil, "Todas")] + LibraryKt.ZONES.map { ($0, $0) }, zone) { zone = $0 }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    if !owned.isEmpty { Chip(label: "Mi material", selected: mine) { mine.toggle() } }
+                    ForEach(LibraryKt.EQUIPMENT, id: \.self) { t in Chip(label: t, selected: equipment == t) { equipment = equipment == t ? nil : t } }
                 }
-                TextField("Buscar", text: $query).textFieldStyle(.roundedBorder)
-                Picker("Zona", selection: $zone) {
-                    Text("Todas las zonas").tag(String?.none)
-                    ForEach(LibraryKt.ZONES, id: \.self) { Text($0).tag(String?.some($0)) }
+            }
+            let list = model.core.libraryByZone(query: query, zone: zone, equipment: equipment, mine: mine)
+            Secondary("\(list.count) ejercicios")
+            ForEach(Array(list.prefix(limit)), id: \.name) { c in ExerciseRow(card: c, detail: c.patternLabel) { shown = c.name } }
+            if list.count > limit { Button("Ver más") { limit += 60 }.buttonStyle(SecondaryStyle()) }
+        }
+        // Lo que tienes: el plan solo te propone variantes que puedas hacer con ello (el peso corporal siempre cuenta)
+        Fold(title: "Tu material", line: owned.isEmpty ? "Solo tu peso" : owned.joined(separator: ", ")) {
+            Module {
+                Flow(spacing: 8) {
+                    ForEach(LibraryKt.EQUIPMENT.filter { $0 != "peso corporal" }, id: \.self) { tag in
+                        Chip(label: tag, selected: owned.contains(tag)) {
+                            model.run { try model.core.setEquipment(tags: owned.contains(tag) ? owned.filter { $0 != tag } : owned + [tag]) }
+                        }
+                    }
                 }
-                Picker("Material", selection: $equipment) {
-                    Text("Cualquier material").tag(String?.none)
-                    ForEach(LibraryKt.EQUIPMENT, id: \.self) { Text($0).tag(String?.some($0)) }
-                }
-                if !owned.isEmpty { Toggle("Solo con mi material", isOn: $mine).font(.small) }
-                let list = model.core.libraryByZone(query: query, zone: zone, equipment: equipment, mine: mine)
-                Secondary("\(list.count) ejercicios")
-                ForEach(Array(list.prefix(limit)), id: \.name) { c in ExerciseRow(card: c, detail: c.patternLabel) { shown = c.name } }
-                if list.count > limit { Button("Ver más") { limit += 60 }.buttonStyle(SecondaryStyle()) }
             }
         }
         .onChange(of: query) { _, _ in limit = 60 }

@@ -11,8 +11,10 @@ android {
         applicationId = "app.brivel"
         minSdk = 28  // Health Connect
         targetSdk = 36
-        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toInt() ?: 1  // cada versión del CI, mayor que la anterior
-        versionName = "0.1.0"
+        // Versión 0.<menor>.<compilación>: la menor, a mano en VERSION; la compilación, la del CI (siempre sube)
+        val build = System.getenv("GITHUB_RUN_NUMBER")?.toInt() ?: 1
+        versionCode = build
+        versionName = "${rootProject.file("VERSION").readText().trim()}.$build"
     }
 
     buildFeatures {

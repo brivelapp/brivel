@@ -29,7 +29,6 @@ export function Landing({ onStart, onLogin }: { onStart: () => void; onLogin: ()
           <p className="lead">Brivel te dice qué entrenar hoy y por qué, con tus datos: tu sueño, tu pulso y el tiempo que tienes de verdad.</p>
           <div className="row wrap">
             <button className="primary big-button" onClick={onStart}>Empezar</button>
-            <button className="secondary big-button" onClick={onLogin}>Iniciar sesión</button>
           </div>
           <p className="muted small-text">¿Ya usas Brivel en el móvil? Inicia sesión con su código y tendrás aquí los mismos datos.</p>
         </div>

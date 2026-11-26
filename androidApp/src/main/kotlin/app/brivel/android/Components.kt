@@ -1,9 +1,15 @@
 package app.brivel.android
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.text.TextStyle
@@ -26,7 +32,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -152,6 +157,26 @@ fun SecondaryButton(text: String, modifier: Modifier = Modifier, onClick: () -> 
         Text(text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
     }
 
+/** Botón secundario con contenido propio: la cápsula gris de iOS, en lugar del botón con borde de Material. */
+@Composable
+fun TonalButton(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) =
+    Button(onClick, modifier.heightIn(min = 50.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Palette.chip, contentColor = Palette.text), content = content)
+
+/**
+ * Opción que se elige, como `Chip` de iOS: cápsula gris; elegida, verde suave con borde verde. Mismos parámetros que
+ * `FilterChip` de Material, que llevaba esquinas, borde y una marca distintos de iOS y la web.
+ */
+@Composable
+fun Chip(selected: Boolean, onClick: () -> Unit, label: @Composable () -> Unit, modifier: Modifier = Modifier) =
+    Box(modifier.heightIn(min = 40.dp).clip(CircleShape).background(if (selected) Palette.okSoft else Palette.chip)
+        .border(1.5.dp, if (selected) Palette.ok else Color.Transparent, CircleShape)
+        .selectable(selected, role = Role.Checkbox, onClick = onClick).padding(horizontal = 14.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center) {
+        CompositionLocalProvider(LocalContentColor provides Palette.text,  // texto oscuro también elegida: contraste WCAG (2026-11-19)
+            LocalTextStyle provides LocalTextStyle.current.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)) { label() }
+    }
+
 /** Cómo estás hoy: el color y el icono dicen bien, con cuidado o descanso; debajo, el porqué. */
 @Composable
 fun StateCard(tone: Tone, title: String, detail: List<Reason>, source: String? = null) {
@@ -210,13 +235,19 @@ fun SessionCard(item: PlanItem, done: Boolean, actions: @Composable ColumnScope.
                 Text("Hecha", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Palette.ok)
                 Spacer(Modifier.width(10.dp))
             }
-            Text("${item.durationMin}", fontFamily = Mono, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+            Text("${item.doneMin ?: item.durationMin}", fontFamily = Mono, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
             Text(" min", fontFamily = Mono, fontSize = 13.sp, color = Palette.muted)
         }
         Text(item.title, fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.ExtraBold)
         // La cifra manda (2026-11-18): ritmo, vatios o pulso en grande; sin datos aún, cómo saber si vas bien
         val target = item.target
-        if (target != null) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Palette.bg)
+        val actual = item.doneDetail
+        if (actual != null) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Palette.bg)
+            .padding(horizontal = 16.dp, vertical = 12.dp)) {
+            // Hecha con una actividad: sus datos mandan; lo planificado queda debajo, en pequeño
+            Text(actual, fontFamily = Mono, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+            Secondary("Planificado: ${item.durationMin} min" + (target?.let { " a $it" } ?: ""))
+        } else if (target != null) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Palette.bg)
             .padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text(target, fontFamily = Mono, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
             item.targetNote?.let { Text(it, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
@@ -327,13 +358,18 @@ fun ChipRow(content: @Composable () -> Unit) =
 @Composable
 fun Source(text: String) = Text(text, fontSize = 12.sp, color = Palette.muted)
 
-/**
- * Chip de filtro como en iOS y la web: el elegido, verde suave con borde verde (el beige de Material sobre blanco apenas
- * se distinguía, 2026-11-19). Sustituye al de Material en toda la app: los ficheros no lo importan.
- */
+/** Una parte en una línea, como «La más cerca» de Progreso: al tocarla se abre debajo (Progreso y Entrenar). */
 @Composable
-fun FilterChip(selected: Boolean, onClick: () -> Unit, label: @Composable () -> Unit, modifier: Modifier = Modifier) =
-    androidx.compose.material3.FilterChip(selected = selected, onClick = onClick, label = label, modifier = modifier,
-        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Palette.okSoft, selectedLabelColor = Palette.text),  // verde sobre verde suave: 4,4:1
-        border = FilterChipDefaults.filterChipBorder(enabled = true, selected = selected, selectedBorderColor = Palette.ok,
-            selectedBorderWidth = 1.5.dp))
+fun Fold(title: String, line: String?, startOpen: Boolean = false, content: @Composable () -> Unit) {
+    var open by rememberSaveable(title, startOpen) { mutableStateOf(startOpen) }
+    Module(Modifier.clickable { open = !open }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(title, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                line?.let { Secondary(it) }
+            }
+            RowChevron(open)
+        }
+    }
+    if (open) content()
+}
