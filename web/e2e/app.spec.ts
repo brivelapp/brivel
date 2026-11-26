@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import { alta } from "./alta"
 
 // El recorrido de un usuario nuevo en la web, de la portada a la biblioteca, con el reloj del navegador fijado en un lunes.
 
@@ -8,25 +9,7 @@ const errors: string[] = []
 async function signUp(page: Page) {
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()) })
   page.on("pageerror", (e) => errors.push(String(e)))
-  await page.clock.install({ time: new Date("2026-11-16T10:00:00") })  // un lunes fijo: el plan no depende de cuándo corra la prueba
-  await page.goto("/")
-  await page.getByRole("button", { name: "Empezar" }).click()
-  await page.getByRole("radio", { name: /Fuerza y músculo/ }).click()
-  await page.getByRole("button", { name: "Siguiente" }).click()
-  await page.getByRole("button", { name: "Correr" }).click()
-  await page.getByRole("button", { name: "Siguiente" }).click()
-  await expect(page.getByRole("spinbutton", { name: "Minutos el lunes" })).toBeVisible()  // − y +, sin deslizador
-  await page.getByRole("button", { name: "Siguiente" }).click()
-  await page.getByRole("radio", { name: /Gimnasio/ }).click()
-  await page.getByRole("button", { name: "Siguiente" }).click()
-  await page.getByRole("radio", { name: /A menudo/ }).click()
-  await page.getByRole("button", { name: "Siguiente" }).click()
-  await page.getByRole("textbox", { name: "Año de nacimiento" }).fill("1990")
-  await page.getByRole("button", { name: "Siguiente" }).click()
-  await expect(page.getByRole("button", { name: "Ver mi plan" })).toBeDisabled()  // sin aceptar el aviso no se sigue
-  await page.getByRole("checkbox", { name: /Lo he leído/ }).check()
-  await page.getByRole("button", { name: "Ver mi plan" }).click()
-  await expect(page.getByRole("navigation", { name: "Secciones" })).toBeVisible()
+  await alta(page)
 }
 
 /** Progreso va plegado en tarjetas de una línea: abre la que se llama así. */

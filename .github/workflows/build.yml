@@ -40,6 +40,12 @@ jobs:
         with:
           name: informe-navegador
           path: web/playwright-report
+      # Capturas de todas las pantallas a 320, 375, 768 y 1280 px con su informe (web/e2e/verificar.spec.ts)
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: verificacion-web
+          path: web/verificacion
       # El núcleo en JavaScript y la web ya construida: para probar la web en local sin Java y para los tests de navegador
       - uses: actions/upload-artifact@v7
         with:
