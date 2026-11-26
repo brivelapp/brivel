@@ -232,9 +232,9 @@ private fun CompactSession(app: BrivelApp, day: DayView, item: app.brivel.app.Pl
         Text(item.title, fontSize = 22.sp, lineHeight = 26.sp, fontWeight = FontWeight.ExtraBold)
         Secondary(if (item.isStrength) item.exercises.joinToString(" · ") { it.substringBefore(":") } else item.doneDetail ?: item.target ?: item.hint)
         if (item.isStrength) PrimaryButton(if (done) "Ver las series" else "Empezar", Modifier.fillMaxWidth()) { act.openStrength(day.date) }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // En flujo: con letra grande, «Detalles ›» se partía en «De-talles» al lado de «La he hecho»; ahora baja entero
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             if (!done) TextButton(onClick = { act.run { app.markDone(day.date, item.sport) } }) { LinkText("La he hecho") }
-            Spacer(Modifier.weight(1f))
             TextButton(onClick = open) { LinkText("Detalles ›") }
         }
     }

@@ -21,6 +21,11 @@ android {
         compose = true
     }
 
+    testOptions {
+        unitTests.isIncludeAndroidResources = true  // Robolectric dibuja con los recursos de verdad (fuentes, iconos)
+        unitTests.all { it.systemProperty("roborazzi.test.record", "true") }  // guardar las capturas, no compararlas
+    }
+
     // El CI firma con una clave fija (secreto de GitHub): si no, cada versión de prueba choca con la anterior al instalarla
     signingConfigs {
         getByName("debug") {
@@ -51,6 +56,14 @@ kotlin {
 dependencies {
     implementation(project(":shared"))
     testImplementation(kotlin("test-junit"))  // tests de la JVM de lo que no necesita un móvil (src/test)
+    // Las pantallas de verdad dibujadas en la JVM, con capturas, sin emulador (PantallasTest.kt)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.robolectric)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.ktor.client.mock)
+    debugImplementation(libs.compose.ui.test.manifest)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.material3)
     implementation(libs.compose.ui.tooling.preview)

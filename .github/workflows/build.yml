@@ -48,6 +48,13 @@ jobs:
         with:
           name: verificacion-web
           path: web/verificacion
+      # Lo mismo en Android: Hoy, Calendario, Entrenar, Progreso, Perfil y Ajustes a 320, 360 (también con letra al doble) y
+      # 800 dp, dibujados en la JVM por androidApp/src/test/…/PantallasTest.kt (va dentro de testDebugUnitTest)
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: verificacion-android
+          path: androidApp/build/verificacion
       # El núcleo en JavaScript y la web ya construida: para probar la web en local sin Java y para los tests de navegador
       - uses: actions/upload-artifact@v7
         with:

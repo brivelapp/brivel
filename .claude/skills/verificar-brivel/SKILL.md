@@ -42,7 +42,19 @@ hallazgos sin arreglar, dilo. No digas «funciona» sin haber pasado este paso.
 quitas o mueves una pantalla, cámbialo en el mismo commit. Si una función desaparece por un rediseño, la verificación
 falla: o se recupera la función, o Gabriel confirma que se quita y se borra del mapa.
 
+## Android
+
+```bash
+JAVA_HOME=~/.local/opt/jdk-21.0.12.1+1 ANDROID_HOME=~/Android/Sdk ./gradlew :androidApp:testDebugUnitTest --tests 'app.brivel.android.PantallasTest'
+```
+
+Dibuja la app de verdad en la JVM (Robolectric, sin emulador) a 320 dp, 360 dp, 360 dp con la letra al doble y 800 dp.
+Capturas e `informe.md` en `androidApp/build/verificacion/<tamaño>/`; falla con textos que se cortan, palabras partidas
+y controles de menos de 48 dp que no estén en `androidApp/verificacion-pendientes/<tamaño>.txt` (mismo trinquete que
+la web; `PENDIENTES=1` la reescribe). El mapa de pantallas está al principio de `PantallasTest.kt`. Solo ve lo que cabe
+en la primera pantalla de cada sección: lo de más abajo, con el emulador o en las capturas.
+
 ## Lo que no cubre todavía
 
-Android e iOS: el CI saca capturas de iOS por tamaño (artefacto `ios-screenshots`); Android, con el emulador a mano.
+iOS: el CI saca capturas por tamaño (artefacto `ios-screenshots`), pero nada las revisa solo.
 Ni el envío a Garmin ni intervals.icu: necesitan cuentas reales.
