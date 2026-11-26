@@ -1,10 +1,1 @@
-toque pequeño: Añadir a Hoy
-toque pequeño: Detalles ›
-toque pequeño: Editar
-toque pequeño: La he hecho
-toque pequeño: Mes anterior
-toque pequeño: Mes siguiente
-toque pequeño: Opciones de Esta semana
-toque pequeño: Opciones de ¿Cómo estás hoy?
-toque pequeño: Volver a Perfil
-toque pequeño: sin nombre
+

@@ -30,11 +30,6 @@ toque pequeño: 7
 toque pequeño: 8
 toque pequeño: 9
 toque pequeño: Detalles ›
-toque pequeño: Editar
 toque pequeño: La he hecho
 toque pequeño: Medallas La más cerca: Primer paso
-toque pequeño: Mes anterior
-toque pequeño: Mes siguiente
 toque pequeño: Privacidad, términos y código
-toque pequeño: Volver a Perfil
-toque pequeño: sin nombre
