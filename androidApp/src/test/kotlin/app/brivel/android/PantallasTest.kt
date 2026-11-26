@@ -2,6 +2,7 @@ package app.brivel.android
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -36,7 +37,7 @@ import kotlin.test.assertEquals
 // Verificación de las pantallas de Android: la app de verdad (Root) dibujada en la JVM con Robolectric, sin emulador,
 // en cuatro tamaños (móvil pequeño, móvil, móvil con la letra al doble —el peor caso— y tableta). Saca una captura de cada
 // pantalla en build/verificacion/<tamaño>/ y falla si un texto se corta, si una palabra se parte por la mitad o si algo
-// que se pulsa mide menos de 48 dp. Lo que ya incumplía está en verificacion-pendientes/<tamaño>.txt (trinquete: lo
+// que se pulsa mide menos de 48 dp y choca con otro. Lo que ya incumplía está en verificacion-pendientes/<tamaño>.txt (trinquete: lo
 // nuevo falla, lo arreglado obliga a quitarlo; PENDIENTES=1 la reescribe). Lo pidió Gabriel el 2026-11-18: «la app
 // parece pensada para un único tamaño», «el icono de Entrenar está más pequeño que el resto».
 
@@ -122,10 +123,19 @@ class PantallasTest {
                 if (fin in 1 until texto.length && texto[fin - 1].isLetter() && texto[fin].isLetter()) fuera += "palabra partida: «${texto.take(50)}»"
             }
         }
-        for (n in rule.onAllNodes(hasClickAction()).fetchSemanticsNodes()) {
+        // Compose amplía a 48 dp la zona de toque de lo que mide menos (touchBoundsInRoot), así que un botón de 40 dp
+        // se pulsa bien. Solo es pequeño de verdad si esa zona ampliada choca con la de otro control (los días del
+        // calendario, pegados): ahí el dedo cae en el vecino. Un control dentro de otro (botón en una tarjeta) no cuenta.
+        val clics = rule.onAllNodes(hasClickAction()).fetchSemanticsNodes()
+        fun dentro(a: Rect, b: Rect) = a.intersect(b) == a
+        for (n in clics) {
             val b = n.boundsInRoot
             val (an, al) = (b.width / densidad) to (b.height / densidad)
-            if (an > 0 && al > 0 && (an < 47.5f || al < 47.5f)) fuera += "toque pequeño: ${nombre(n)} (${an.toInt()}×${al.toInt()} dp)"
+            if (an <= 0 || al <= 0 || (an >= 47.5f && al >= 47.5f)) continue
+            val choca = clics.any { o ->
+                o.id != n.id && !dentro(b, o.boundsInRoot) && !dentro(o.boundsInRoot, b) && o.touchBoundsInRoot.overlaps(n.touchBoundsInRoot)
+            }
+            if (choca) fuera += "toque pequeño: ${nombre(n)} (${an.toInt()}×${al.toInt()} dp)"
         }
         return fuera.distinct()
     }

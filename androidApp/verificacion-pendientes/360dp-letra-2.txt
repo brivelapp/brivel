@@ -63,10 +63,6 @@ toque pequeño: 7
 toque pequeño: 8
 toque pequeño: 9
 toque pequeño: Detalles ›
-toque pequeño: Mes anterior
-toque pequeño: Mes siguiente
 toque pequeño: Objetivo Cardio y salud
 toque pequeño: Otros dispositivos Solo aquí
 toque pequeño: Rutinas de fuerza Ninguna todavía · sust
-toque pequeño: Volver a Perfil
-toque pequeño: sin nombre
