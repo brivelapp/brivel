@@ -32,7 +32,7 @@ jobs:
           echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/brivel.jks"
           echo "BRIVEL_KEYSTORE=$RUNNER_TEMP/brivel.jks" >> "$GITHUB_ENV"
       - env: { BRIVEL_KEYSTORE_PASSWORD: "${{ secrets.BRIVEL_KEYSTORE_PASSWORD }}" }
-        run: ./gradlew :shared:compileCommonMainKotlinMetadata :shared:jvmTest :shared:jsNodeTest :shared:jsBrowserProductionLibraryDistribution :androidApp:testDebugUnitTest :androidApp:assembleDebug --console=plain
+        run: ./gradlew detekt :shared:compileCommonMainKotlinMetadata :shared:jvmTest :shared:jsNodeTest :shared:jsBrowserProductionLibraryDistribution :androidApp:testDebugUnitTest :androidApp:assembleDebug --console=plain
       - run: npm ci && npm run build  # la versión web, con el núcleo recién compilado
         working-directory: web
       - run: npx playwright install --with-deps chromium && npm run e2e  # la web construida, en un navegador

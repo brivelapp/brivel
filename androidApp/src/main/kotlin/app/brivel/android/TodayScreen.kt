@@ -64,7 +64,7 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {},
                 }
                 Text(opened.title, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
             }
-            DayContent(app, day, app.watchRoute != null, act, today = true, only = opened.slot)
+            DayContent(app, day, act, today = true, only = opened.slot)
             Spacer(Modifier.height(24.dp))
         }
         return
@@ -88,7 +88,7 @@ fun TodayTab(app: BrivelApp, version: Int, act: Act, openTrain: () -> Unit = {},
         if (screen.stateTitle.isNotEmpty()) StateCard(screen.tone, screen.stateTitle, screen.stateDetail, screen.garminNote)
         screen.rateRun?.let { RateRun(app, act, it) }
         if (screen.noPlan && day.items.isEmpty()) NoRoutineToday(app, screen.nextRoutine, version, act, openTrain)
-        if (day.items.isEmpty()) DayContent(app, day, app.watchRoute != null, act, today = true)
+        if (day.items.isEmpty()) DayContent(app, day, act, today = true)
         else day.items.forEach { CompactSession(app, day, it, act) { detail = it.slot } }
         // Widgets (TodayWidgets.kt): las preguntas y la semana de serie, y los que se añadan
         TodayWidgets(app, version, act, screen)
@@ -154,7 +154,7 @@ private fun NoRoutineToday(app: BrivelApp, next: String?, version: Int, act: Act
 
 /** Las sesiones de un día con sus acciones: hecha, cambiar de deporte, enviar al reloj, hoy no puedo. */
 @Composable
-fun DayContent(app: BrivelApp, day: DayView, linked: Boolean, act: Act, today: Boolean, only: String? = null) {
+fun DayContent(app: BrivelApp, day: DayView, act: Act, today: Boolean, only: String? = null) {
     // En Hoy la tarjeta de estado ya dice que descansas: aquí solo lo que se puede hacer
     val changeable = app.canChangeDay(day.date)
     if (day.items.isEmpty() && (!today || changeable)) {

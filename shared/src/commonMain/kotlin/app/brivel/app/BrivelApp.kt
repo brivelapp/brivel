@@ -493,7 +493,7 @@ class BrivelApp(
         val (token, athlete) = try {
             exchangeIntervalsCode(code, pkce[1], httpEngine)
         } catch (e: IntervalsException) {
-            throw IllegalArgumentException("intervals.icu respondió ${e.status}: vuelve a empezar")
+            throw IllegalArgumentException("intervals.icu respondió ${e.status}: vuelve a empezar", e)
         }
         secrets.write(INTERVALS_TOKEN, token)
         secrets.write(API_KEY, null)

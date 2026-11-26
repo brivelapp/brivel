@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>EmptyElseBlock:ProfileParts.kt:if (text.isEmpty()) Text("—", color = Palette.muted, fontFamily = Mono)</ID>
+    <ID>FunctionNaming:Model.kt:internal fun B</ID>
+    <ID>FunctionNaming:Model.kt:internal fun S</ID>
+    <ID>TooGenericExceptionCaught:Activities.kt:e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MainActivity.kt:Act$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:WebSync.kt:WebTransport$e: Throwable</ID>
+  </CurrentIssues>
+</SmellBaseline>

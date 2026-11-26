@@ -1,0 +1,35 @@
+# Sobre la configuración por defecto de detekt (buildUponDefaultConfig). Se apaga lo que en Brivel es ruido:
+# el largo de línea, los números del dominio (zonas, minutos, edades) y las métricas de tamaño y complejidad.
+# Se quedan los errores probables, lo vacío, lo que no se usa y las excepciones tragadas.
+style:
+  MaxLineLength:
+    active: false
+  MagicNumber:
+    active: false
+  ReturnCount:
+    active: false
+  LoopWithTooManyJumpStatements:
+    active: false
+  ThrowsCount:
+    active: false
+  DestructuringDeclarationWithTooManyEntries:
+    active: false
+complexity:
+  CyclomaticComplexMethod:
+    active: false
+  ComplexCondition:
+    active: false
+  LongMethod:
+    active: false
+  TooManyFunctions:
+    active: false
+  LargeClass:
+    active: false
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable', 'Test']
+  MatchingDeclarationName:
+    active: false
+empty-blocks:
+  EmptyFunctionBlock:
+    ignoreOverridden: true
