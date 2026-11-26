@@ -20,9 +20,13 @@ web y lanza `web/e2e/verificar.spec.ts`. Si `rtk` deja la salida vacía, usa `rt
 
 ## 2. Leer el resultado
 
-- **Falla** si una pantalla del mapa no aparece o si hay errores en la consola. Arréglalo antes de seguir.
-- `web/verificacion/<ancho>/informe.md`: por pantalla, `desborde-pagina`, `se-sale` y `toque-pequeno` (< 44 px).
-  De momento solo se apuntan. Compara con la verificación anterior: lo nuevo lo has causado tú.
+- Primero pasan las reglas (`scripts/reglas.mjs`): cada fallo dice el porqué, cómo arreglarlo y de qué corrección de
+  Gabriel viene. Arregla la causa; no hay forma de saltarse una regla, y si una está mal, se corrige la regla.
+- **Falla** si una pantalla del mapa no aparece, si hay errores en la consola, si algo se sale de ancho o de su caja,
+  o si aparece un control de menos de 44 px o una lista con filas de distinta altura que no estaba en
+  `web/e2e/pendientes/<ancho>.txt`. Esa lista es lo que ya había: solo puede menguar. Si arreglas uno, la prueba pide
+  quitarlo; `PENDIENTES=1 scripts/verificar-web.sh` la reescribe (revisa el diff: solo debe quitar líneas).
+- `web/verificacion/<ancho>/informe.md`: todo lo encontrado, pantalla a pantalla.
 - `web/verificacion/<ancho>/<id>.png`: **mira con Read** las capturas de las pantallas que tocaste, al menos a 320 y a
   1280 px. El detector no ve la alineación, los tamaños desiguales entre elementos hermanos ni los textos que no se
   entienden, y ahí es donde Gabriel encuentra fallos (ver `docs/` y la regla de diseño Pulso).

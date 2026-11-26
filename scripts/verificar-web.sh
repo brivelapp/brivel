@@ -5,6 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export JAVA_HOME="${JAVA_HOME:-$HOME/.local/opt/jdk-21.0.12.1+1}"  # el shell de Claude no carga ~/.bashrc
+node scripts/reglas.mjs  # colores, textos vetados, letra en rem, clics sin botón: lo que ya se corrigió no vuelve
 
 nucleo=shared/build/dist/js/productionLibrary/brivel-shared.mjs
 if [[ ! -f $nucleo || -n $(find shared/src -newer "$nucleo" -print -quit) ]]; then

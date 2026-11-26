@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # Las reglas que se comprueban solas (scripts/reglas.mjs): primero, que fallan en segundos
+      - run: node scripts/reglas.mjs --probar && node scripts/reglas.mjs
       - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: "21" }
       - uses: gradle/actions/setup-gradle@v6

@@ -1,0 +1,69 @@
+filas-desiguales: lista que empieza por «Deportes»
+toque-pequeno: Año de nacimiento1990›
+toque-pequeno: Borrar mis datos
+toque-pequeno: Brazo
+toque-pequeno: Cadera
+toque-pequeno: Calendario
+toque-pequeno: Cintura
+toque-pequeno: Código fuente
+toque-pequeno: DeportesCorrer›
+toque-pequeno: Entrenar
+toque-pequeno: FuerzaGimnasio›
+toque-pequeno: Hoy
+toque-pequeno: INPUT
+toque-pequeno: Menos minutos el domingo
+toque-pequeno: Menos minutos el jueves
+toque-pequeno: Menos minutos el lunes
+toque-pequeno: Menos minutos el martes
+toque-pequeno: Menos minutos el miércoles
+toque-pequeno: Menos minutos el sábado
+toque-pequeno: Menos minutos el viernes
+toque-pequeno: Minutos el domingo
+toque-pequeno: Minutos el jueves
+toque-pequeno: Minutos el lunes
+toque-pequeno: Minutos el martes
+toque-pequeno: Minutos el miércoles
+toque-pequeno: Minutos el sábado
+toque-pequeno: Minutos el viernes
+toque-pequeno: Muslo
+toque-pequeno: Más minutos el domingo
+toque-pequeno: Más minutos el jueves
+toque-pequeno: Más minutos el lunes
+toque-pequeno: Más minutos el martes
+toque-pequeno: Más minutos el miércoles
+toque-pequeno: Más minutos el sábado
+toque-pequeno: Más minutos el viernes
+toque-pequeno: Opciones de Esta semana
+toque-pequeno: Opciones de ¿Cómo estás hoy?
+toque-pequeno: Pecho
+toque-pequeno: Perfil
+toque-pequeno: Peso
+toque-pequeno: Privacidad
+toque-pequeno: Progreso
+toque-pequeno: Todas
+toque-pequeno: Tu materialSolo tu peso›
+toque-pequeno: Tu nivelA menudo›
+toque-pequeno: Términos
+toque-pequeno: balón medicinal
+toque-pequeno: banco o cajón
+toque-pequeno: barra
+toque-pequeno: barra de dominadas
+toque-pequeno: brazos
+toque-pequeno: comba
+toque-pequeno: core
+toque-pequeno: cuerpo completo
+toque-pequeno: espalda
+toque-pequeno: fitball
+toque-pequeno: goma
+toque-pequeno: hombro
+toque-pequeno: mancuernas
+toque-pequeno: movilidad
+toque-pequeno: otro material
+toque-pequeno: pecho
+toque-pequeno: pesa rusa
+toque-pequeno: peso corporal
+toque-pequeno: pierna
+toque-pequeno: polea o máquina
+toque-pequeno: rodillo de espuma
+toque-pequeno: suspensión o anillas
+toque-pequeno: ¿Qué relojes?
