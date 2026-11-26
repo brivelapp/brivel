@@ -461,7 +461,7 @@ fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScre
                 a["brivel_source"].str(), a["id"].str()?.takeIf { it.startsWith(OWN_ID) })
         }
     return ProgressScreen(true, metrics, weekly, status, predictions, source, recent, GARMIN_DERIVED.takeIf { data.usesGarmin() },
-        milestones = listOfNotNull(whoStreak(weekly)) + longest(cache.activities), strengthRecords = records,
+        milestones = listOfNotNull(whoStreak(weekly, target)) + longest(cache.activities), strengthRecords = records,
         thresholds = data.cache?.let { thresholds(it.athlete) } ?: emptyList(), measures = measures,
         curves = curves(data.activities, since), badges = badges, weeklyTarget = target, weeklyTargetNote = weeklyTargetNote(target))
 }

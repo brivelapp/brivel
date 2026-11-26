@@ -19,9 +19,12 @@ class MilestonesTest {
 
     @Test fun whoStreakCountsUpToTheLastFullWeek() {
         fun weeks(vararg m: Double) = m.mapIndexed { i, v -> Point("w$i", v) }
-        assertEquals("2 semanas", whoStreak(weeks(100.0, 160.0, 200.0, 40.0))!!.value)  // esta semana aún no llega: no corta
-        assertEquals("3 semanas", whoStreak(weeks(100.0, 160.0, 200.0, 150.0))!!.value)
-        assertNull(whoStreak(weeks(160.0, 100.0, 10.0)))
+        assertEquals("2 semanas", whoStreak(weeks(100.0, 160.0, 200.0, 40.0), 150)!!.value)  // esta semana aún no llega: no corta
+        assertEquals("3 semanas", whoStreak(weeks(100.0, 160.0, 200.0, 150.0), 150)!!.value)
+        assertNull(whoStreak(weeks(160.0, 100.0, 10.0), 150))
+        // Con menos de 18 años la OMS pide 420: 300 a la semana no cuentan
+        assertNull(whoStreak(weeks(300.0, 300.0, 300.0), 420))
+        assertEquals("2 semanas", whoStreak(weeks(300.0, 420.0, 450.0, 0.0), 420)!!.value)
     }
 
     @Test fun heaviestSetPerExercise() {
