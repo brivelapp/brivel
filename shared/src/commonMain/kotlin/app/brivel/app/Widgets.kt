@@ -138,7 +138,7 @@ private fun slotViews(slots: List<WidgetSlot>, data: AppData, today: LocalDate):
                 ?: base.copy(empty = noWatch)
             "waist" -> data.measurements.filter { it.kind == "waist" }.maxByOrNull { it.date }
                 ?.let { base.copy(value = fmt(it.value, 1).replace('.', ','), unit = "cm") } ?: base.copy(empty = "Apúntala en «Tus medidas», en Progreso")
-            "activity" -> progress.weeklyMinutes.lastOrNull()?.let { p -> base.copy(value = pyRound(p.value).toString(), unit = "min", detail = "de 150 esta semana") }
+            "activity" -> progress.weeklyMinutes.lastOrNull()?.let { p -> base.copy(value = pyRound(p.value).toString(), unit = "min", detail = "de ${progress.weeklyTarget} esta semana") }
                 ?: base.copy(empty = noWatch)
             "medals" -> progress.badges?.let { b -> base.copy(value = "Nivel ${b.level}", detail = b.nextLevel) } ?: base
             else -> base  // readiness y week: los pinta cada app

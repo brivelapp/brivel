@@ -106,15 +106,15 @@ fun ProgressTab(app: BrivelApp, version: Int, act: Act, openProfile: () -> Unit)
         }
         if (screen.linked) {
             val last = screen.weeklyMinutes.lastOrNull()?.value ?: 0.0
-            Fold("Minutos por semana", "Esta semana, ${last.roundToInt()} de 150") {
+            Fold("Minutos por semana", "Esta semana, ${last.roundToInt()} de ${screen.weeklyTarget}") {
                 Module {
                     TitleRow {
                         SectionTitle("Actividad semanal")
-                        Text("${last.roundToInt()} / 150 min", fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        Text("${last.roundToInt()} / ${screen.weeklyTarget} min", fontFamily = Mono, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     }
-                    ProgressLine((last / 150).toFloat())
-                    Secondary("La OMS recomienda al menos 150 minutos moderados (o 75 intensos) a la semana.")
-                    Bars(screen.weeklyMinutes, target = 150.0)
+                    ProgressLine((last / screen.weeklyTarget).toFloat())
+                    Secondary(screen.weeklyTargetNote)
+                    Bars(screen.weeklyMinutes, target = screen.weeklyTarget.toDouble())
                 }
             }
         }

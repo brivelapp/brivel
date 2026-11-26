@@ -24,7 +24,7 @@ function Week({ screen, wide }: { screen: TodayScreen; wide: boolean }) {
       {/* Sin plan, la fuerza hecha frente a los 2 días; con plan, los minutos de cardio y la fuerza hecha */}
       {screen.noPlan
         ? <p className="muted">{screen.strengthDone} de 2 días de fuerza</p>
-        : <p className="muted">Cardio {screen.weekMinutes} de 150 min</p>}
+        : <p className="muted">Cardio {screen.weekMinutes} de {screen.weekTarget} min</p>}
       {screen.noPlan
         ? (screen.strengthDone >= 2 ? <p className="ok-text"><Icon src={check} size={18} />Cumples los 2 días de fuerza</p> : null)
         : <p className="muted">{screen.strengthLine}</p>}

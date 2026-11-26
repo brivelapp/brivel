@@ -3,6 +3,8 @@ package app.brivel.app
 // Lo que muestra cada apartado, calculado una vez para Android e iOS (docs/VISION.md §5): las dos apps solo pintan.
 
 import app.brivel.engine.plusDays
+import app.brivel.engine.FLOOR_AEROBIC
+import app.brivel.engine.YOUTH_AEROBIC
 import app.brivel.engine.RACE_DISTANCES
 import app.brivel.engine.danielsTime
 import app.brivel.engine.fmt
@@ -66,6 +68,7 @@ data class TodayScreen(
     val strengthLine: String = "",  // con plan: la fuerza hecha frente a la planificada y al mínimo de 2 días
     val nextRoutine: String? = null,  // sin plan y sin rutina hoy: «Mañana, Torso» o «El viernes, Torso»
     val rateRun: RunToRate? = null,  // quien empieza: ¿cómo fue su última carrera? (de ahí sale su ritmo suave)
+    val weekTarget: Int = FLOOR_AEROBIC,  // los minutos que le recomienda la OMS (weeklyTarget): «Cardio 25 de 150 min»
 )
 
 /** La carrera de hoy o de ayer que falta valorar (EFFORTS), con lo que lleva aprendido Brivel. */
@@ -129,7 +132,8 @@ fun buildToday(data: AppData, today: LocalDate): TodayScreen {
             WeekDot(WEEKDAY_SHORT[d.weekday] ?: d.weekday.take(1), d.date, d.isToday, d.items.isNotEmpty(), d.doneSports.isNotEmpty())
         },
         weekLine = "Esta semana: ${week.activeMinutes} min de actividad y fuerza $strength ${if (strength == 1) "día" else "días"}",
-        meetsWho = week.activeMinutes >= 150 && strength >= 2,
+        meetsWho = week.activeMinutes >= weeklyTarget(data, today) && strength >= 2,
+        weekTarget = weeklyTarget(data, today),
         // Sin la frase de los minutos: «Esta semana» ya da la cifra (Gabriel, 2026-11-26)
         warnings = week.warnings - setOfNotNull(week.minutesNote),
         info = week.info - setOfNotNull(week.minutesNote) + BADGES.filter { data.badges[it.id] == today.toString() }.map { "Medalla nueva: «${it.title}». Está en Progreso." },
@@ -336,7 +340,20 @@ data class ProgressScreen(
     val measures: List<Metric> = emptyList(),  // medidas corporales apuntadas a mano (Training.kt); no necesitan reloj
     val curves: List<Curve> = emptyList(),  // curvas de potencia y de ritmo de las actividades propias (Activities.kt)
     val badges: BadgesScreen? = null,  // medallas, puntos y nivel (Badges.kt)
+    val weeklyTarget: Int = FLOOR_AEROBIC,  // la meta de «Minutos por semana» (weeklyTarget) y su explicación
+    val weeklyTargetNote: String = weeklyTargetNote(FLOOR_AEROBIC),
 )
+
+/**
+ * Los minutos a la semana que la OMS recomienda a esta persona: 150, y con menos de 18 años 60 al día de media (420),
+ * la misma edad y el mismo suelo que usa el motor (aerobicFloor). Antes las pantallas decían «de 150» a todos (2026-11-26).
+ */
+fun weeklyTarget(data: AppData, today: LocalDate): Int =
+    if (data.profile?.birthYear?.let { today.year - it < 18 } == true) YOUTH_AEROBIC else FLOOR_AEROBIC
+
+fun weeklyTargetNote(target: Int): String =
+    if (target == YOUTH_AEROBIC) "A tu edad, la OMS recomienda 60 minutos al día de media: unos 420 a la semana."
+    else "La OMS recomienda al menos 150 minutos moderados (o 75 intensos) a la semana."
 
 /** h:mm:ss o mm:ss. */
 fun raceTime(minutes: Double): String {
@@ -361,8 +378,10 @@ fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScre
     val records = strengthRecords(data.sets)
     val measures = measureMetrics(data.measurements)
     val badges = badgesScreen(data, today)
+    val target = weeklyTarget(data, today)
     val cache = data.deviceData(today)
-        ?: return ProgressScreen(false, emptyList(), emptyList(), strengthRecords = records, measures = measures, badges = badges)
+        ?: return ProgressScreen(false, emptyList(), emptyList(), strengthRecords = records, measures = measures, badges = badges,
+            weeklyTarget = target, weeklyTargetNote = weeklyTargetNote(target))
     val since = today.plusDays(-days).toString()
     val wellness = cache.wellness.filter { (it["id"].str() ?: "") >= since }.sortedBy { it["id"].str() }
     fun series(key: String, label: String, unit: String, explanation: String, better: Boolean?,
@@ -439,7 +458,7 @@ fun buildProgress(data: AppData, today: LocalDate, days: Int = 90): ProgressScre
     return ProgressScreen(true, metrics, weekly, status, predictions, source, recent, GARMIN_DERIVED.takeIf { data.usesGarmin() },
         milestones = listOfNotNull(whoStreak(weekly)) + longest(cache.activities), strengthRecords = records,
         thresholds = data.cache?.let { thresholds(it.athlete) } ?: emptyList(), measures = measures,
-        curves = curves(data.activities, since), badges = badges)
+        curves = curves(data.activities, since), badges = badges, weeklyTarget = target, weeklyTargetNote = weeklyTargetNote(target))
 }
 
 /** De dónde salen los puntos de una métrica: Garmin, sola o con el móvil; null si Garmin no aporta ninguno. */

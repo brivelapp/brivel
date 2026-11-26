@@ -62,6 +62,14 @@ const REGLAS = [
     mal: `<span className="name" onClick={open}>`, bien: `<button className="link" onClick={open}>`,
   },
   {
+    id: "meta-de-minutos-fija",
+    origen: "Las pantallas decían «de 150» también a los menores, cuya meta es 420 (2026-11-26)",
+    archivos: /^(web\/src|androidApp\/src\/main|iosApp\/iosApp)\/.*\.(tsx?|kt|swift)$/,
+    patron: /(\bde|\/|>=?|<=?)\s*150\b(?!\s*(ms|px|dp))/,
+    mensaje: "Meta de minutos escrita a mano: depende de la edad. Usa weekTarget (Hoy) o weeklyTarget/weeklyTargetNote (Progreso), que salen del núcleo.",
+    mal: `<p>Cardio {m} de 150 min</p>`, bien: `<p>Cardio {m} de {screen.weekTarget} min</p>`,
+  },
+  {
     id: "texto-oms-entre-parentesis",
     origen: "«Quita el texto de (OMS) del inicio» (2026-11-23)",
     archivos: INTERFAZ,

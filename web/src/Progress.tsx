@@ -232,13 +232,13 @@ export function Progress({ core, act, openProfile }: { core: WebApp; act: Act; o
           </Fold>
         )}
         {screen.linked && (
-          <Fold title="Minutos por semana" line={`Esta semana, ${Math.round(last)} de 150`}>
+          <Fold title="Minutos por semana" line={`Esta semana, ${Math.round(last)} de ${screen.weeklyTarget}`}>
             <section className="module">
-              <div className="row between"><h3>Actividad semanal</h3><span className="mono">{Math.round(last)} / 150 min</span></div>
-              <p className="muted small-text">La OMS recomienda al menos 150 minutos moderados (o 75 intensos) a la semana.</p>
+              <div className="row between"><h3>Actividad semanal</h3><span className="mono">{Math.round(last)} / {screen.weeklyTarget} min</span></div>
+              <p className="muted small-text">{screen.weeklyTargetNote}</p>
               <div className="week-bars" role="img" aria-label={`Minutos por semana; esta semana, ${Math.round(last)}`}>
-                <span className="target" style={{ bottom: `${(150 / top) * 100}%` }} />
-                {screen.weeklyMinutes.map((p) => <span key={p.date} className={p.value >= 150 ? "on" : ""} style={{ height: `${(p.value / top) * 100}%` }} />)}
+                <span className="target" style={{ bottom: `${(screen.weeklyTarget / top) * 100}%` }} />
+                {screen.weeklyMinutes.map((p) => <span key={p.date} className={p.value >= screen.weeklyTarget ? "on" : ""} style={{ height: `${(p.value / top) * 100}%` }} />)}
               </div>
             </section>
           </Fold>

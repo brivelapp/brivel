@@ -125,6 +125,19 @@ class BrivelAppTest {
     }
 
     @Test
+    fun minorsAreMeasuredAgainstTheirOwnWhoTarget() {
+        val a = app()
+        a.saveProfile(profile.copy(birthYear = 2011))  // 15 años: la OMS pide 60 al día de media
+        a.setGoal(GoalKind.FITNESS)
+        assertEquals(420, a.todayScreen().weekTarget)
+        assertEquals(420, a.progress().weeklyTarget)
+        assertTrue("60 minutos al día" in a.progress().weeklyTargetNote)
+        a.saveProfile(profile)  // 1990: adulto
+        assertEquals(150, a.todayScreen().weekTarget)
+        assertEquals(150, a.progress().weeklyTarget)
+    }
+
+    @Test
     fun healthScreeningSetsTheCeilingOrStopsThePlan() {
         val a = app()
         a.saveProfile(profile)

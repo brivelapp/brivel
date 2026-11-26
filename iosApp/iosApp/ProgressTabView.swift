@@ -70,16 +70,16 @@ struct ProgressTabView: View {
                     }
                 }
                 if screen.linked {
-                    Fold(title: "Minutos por semana", line: "Esta semana, \(Int(last.rounded())) de 150") {
+                    Fold(title: "Minutos por semana", line: "Esta semana, \(Int(last.rounded())) de \(screen.weeklyTarget)") {
                         Module {
                             TitleRow {
                                 Text("Actividad semanal").font(.section)
                             } trailing: {
-                                Text("\(Int(last.rounded())) / 150 min").font(.mono(15, .semibold))
+                                Text("\(Int(last.rounded())) / \(screen.weeklyTarget) min").font(.mono(15, .semibold))
                             }
-                            ProgressLine(fraction: last / 150)
-                            Secondary("La OMS recomienda al menos 150 minutos moderados (o 75 intensos) a la semana.")
-                            Bars(points: screen.weeklyMinutes, target: 150)
+                            ProgressLine(fraction: last / Double(screen.weeklyTarget))
+                            Secondary(screen.weeklyTargetNote)
+                            Bars(points: screen.weeklyMinutes, target: Double(screen.weeklyTarget))
                         }
                     }
                 }

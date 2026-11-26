@@ -9,7 +9,7 @@ export interface DayView { date: string; isToday: boolean; isPast: boolean; item
 export interface WeekDot { letter: string; date: string; isToday: boolean; planned: boolean; done: boolean }
 export interface TodayScreen {
   dateLabel: string; goalLine: string | null; stateTitle: string; stateDetail: Reason[]; tone: Tone; day: DayView
-  meetsWho: boolean; weekMinutes: number; strengthDays: number; weekDots: WeekDot[]; warnings: string[]; info: string[]
+  meetsWho: boolean; weekMinutes: number; weekTarget: number; strengthDays: number; weekDots: WeekDot[]; warnings: string[]; info: string[]
   askReadiness: boolean; goalFinished: boolean; garminNote: string | null
   noPlan: boolean; strengthDone: number; strengthLine: string; nextRoutine: string | null
   rateRun: { id: string; question: string; detail: string; note: string; source: string | null } | null
@@ -48,7 +48,7 @@ export interface Metric { key: string; label: string; unit: string; explanation:
   normalLow: number | null; normalHigh: number | null; higherIsBetter: boolean | null; source: string | null }
 export interface RecentActivity { date: string; title: string; sport: string; minutes: number; detail: string | null; zoneMinutes: number[]; source: string | null
   own: string | null }
-export interface ProgressScreen { linked: boolean; metrics: Metric[]; weeklyMinutes: Point[]; status: { label: string; text: string } | null
+export interface ProgressScreen { linked: boolean; metrics: Metric[]; weeklyMinutes: Point[]; weeklyTarget: number; weeklyTargetNote: string; status: { label: string; text: string } | null
   predictions: { distance: string; time: string }[]; predictionSource: string | null; recent: RecentActivity[]; garminNote: string | null
   milestones: Milestone[]; strengthRecords: Milestone[]; thresholds: { label: string; value: string; explanation: string }[]
   measures: Metric[]; curves: Curve[]; badges: BadgesScreen | null }
