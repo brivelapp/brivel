@@ -38,7 +38,9 @@ function revisar(minimo: number): Hallazgo[] {
   for (const el of document.querySelectorAll("button, a[href], input:not([type=hidden]), select, textarea, summary, [role=button]")) {
     if (!visible(el) || (el.parentElement?.tagName === "P" && el.matches("a, button.link"))) continue
     const r = (el.closest("label") ?? el).getBoundingClientRect()
-    if (r.width < minimo || r.height < minimo) hallazgos.push({ tipo: "toque-pequeno", detalle: `${nombre(el)} (${Math.round(r.width)}×${Math.round(r.height)})` })
+    // Los días del calendario: 7 columnas no caben a 44 px en 320; Gabriel aceptó ahí el mínimo de WCAG 2.5.8 (AA), 24 px (2026-11-26)
+    const min = el.matches("[role=gridcell]") ? 24 : minimo
+    if (r.width < min || r.height < min) hallazgos.push({ tipo: "toque-pequeno", detalle: `${nombre(el)} (${Math.round(r.width)}×${Math.round(r.height)})` })
   }
   // Filas de una misma lista (las que abren pantalla y las que se despliegan, cerradas) con la misma altura
   for (const lista of new Set([...document.querySelectorAll(".row-button, details.fold:not([open])")].map((f) => f.parentElement!))) {

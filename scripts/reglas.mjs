@@ -104,6 +104,18 @@ const REGLAS = [
   },
 ]
 
+// Reglas sobre qué archivos hay en el repo, no sobre sus líneas
+const REGLAS_REPO = [
+  {
+    id: "cuentas-sin-politica-v8",
+    origen: "«La rama del ciclo 12 creo que era con los inicios de sesión de Google y Apple, a la espera de Apple» (2026-11-26): casi se fusiona",
+    falla: (rutas) => rutas.includes("server/src/cuentas.ts") && rutas.includes("docs/legal/CAMBIOS_POLITICA_V8.md"),
+    mensaje: "Entrar con Google o Apple (server/src/cuentas.ts) no puede llegar a master con la política v8 en borrador (docs/legal/CAMBIOS_POLITICA_V8.md) ni sin la cuenta de Apple Developer. Publica la v8 y retira el borrador, o deja ciclo-12 sin fusionar.",
+    mal: ["server/src/cuentas.ts", "docs/legal/CAMBIOS_POLITICA_V8.md"], bien: ["server/src/cuentas.ts", "docs/legal/POLITICA_PRIVACIDAD.md"],
+  },
+]
+const revisarRepo = (rutas) => REGLAS_REPO.filter((r) => r.falla(rutas)).map((r) => `[${r.id}] ${r.mensaje}\n    Origen: ${r.origen}`)
+
 function revisar(regla, ruta, texto) {
   if (!regla.archivos.test(ruta) || regla.excepto?.test(ruta)) return []
   const comentario = (linea) => regla.soloTexto && /^\s*(\/\/|\/?\*)/.test(linea)  // los textos vetados, solo en lo que ve el usuario
@@ -118,7 +130,11 @@ if (process.argv.includes("--probar")) {
     if (revisar(r, ruta, r.mal).length !== 1) { console.error(`✗ ${r.id} no caza su ejemplo malo: ${r.mal}`); mal++ }
     if (revisar(r, ruta, r.bien).length !== 0) { console.error(`✗ ${r.id} se queja del ejemplo bueno: ${r.bien}`); mal++ }
   }
-  console.log(mal ? `${mal} reglas mal hechas` : `${REGLAS.length} reglas probadas`)
+  for (const r of REGLAS_REPO) {
+    if (!r.falla(r.mal)) { console.error(`✗ ${r.id} no caza su ejemplo malo`); mal++ }
+    if (r.falla(r.bien)) { console.error(`✗ ${r.id} se queja del ejemplo bueno`); mal++ }
+  }
+  console.log(mal ? `${mal} reglas mal hechas` : `${REGLAS.length + REGLAS_REPO.length} reglas probadas`)
   process.exit(mal ? 1 : 0)
 }
 
@@ -126,6 +142,6 @@ const archivos = execFileSync("git", ["ls-files"], { encoding: "utf8" }).split("
 const fallos = archivos.flatMap((ruta) => {
   const reglas = REGLAS.filter((r) => r.archivos.test(ruta) && !r.excepto?.test(ruta))
   return reglas.length ? reglas.flatMap((r) => revisar(r, ruta, readFileSync(ruta, "utf8"))) : []
-})
-console.log(fallos.length ? fallos.join("\n\n") + `\n\n${fallos.length} incumplimientos de las reglas de Brivel` : `Reglas de Brivel: ${REGLAS.length} reglas, todo en orden`)
+}).concat(revisarRepo(archivos))
+console.log(fallos.length ? fallos.join("\n\n") + `\n\n${fallos.length} incumplimientos de las reglas de Brivel` : `Reglas de Brivel: ${REGLAS.length + REGLAS_REPO.length} reglas, todo en orden`)
 process.exit(fallos.length ? 1 : 0)

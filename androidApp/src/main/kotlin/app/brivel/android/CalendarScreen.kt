@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -129,6 +130,9 @@ private fun WholePlan(app: BrivelApp, version: Int) {
     }
 }
 
+/** Marca de las celdas de día para la verificación de pantallas: en el calendario basta el mínimo de WCAG 2.5.8 (24 dp). */
+const val DAY_CELL = "dia-del-calendario"
+
 @Composable
 private fun DayCell(d: CalendarDay, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val shape = RoundedCornerShape(12.dp)
@@ -136,7 +140,7 @@ private fun DayCell(d: CalendarDay, selected: Boolean, modifier: Modifier, onCli
         modifier.aspectRatio(0.8f).clip(shape)
             .background(if (selected) Palette.okSoft else if (d.inMonth) Palette.surface else Palette.bg)
             .then(if (d.isToday) Modifier.border(2.dp, Palette.ok, shape) else Modifier)
-            .clickable(onClick = onClick).padding(4.dp),
+            .clickable(onClick = onClick).testTag(DAY_CELL).padding(4.dp),
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Text("${d.dayOfMonth}", fontFamily = Mono, fontSize = 12.sp, color = if (d.inMonth) Palette.text else Palette.muted)

@@ -131,7 +131,9 @@ class PantallasTest {
         for (n in clics) {
             val b = n.boundsInRoot
             val (an, al) = (b.width / densidad) to (b.height / densidad)
-            if (an <= 0 || al <= 0 || (an >= 47.5f && al >= 47.5f)) continue
+            // Días del calendario: 7 columnas no caben a 48 dp en un móvil pequeño; Gabriel aceptó el mínimo de WCAG 2.5.8 (2026-11-26)
+            val min = if (n.config.getOrNull(SemanticsProperties.TestTag) == DAY_CELL) 23.5f else 47.5f
+            if (an <= 0 || al <= 0 || (an >= min && al >= min)) continue
             val choca = clics.any { o ->
                 o.id != n.id && !dentro(b, o.boundsInRoot) && !dentro(o.boundsInRoot, b) && o.touchBoundsInRoot.overlaps(n.touchBoundsInRoot)
             }
