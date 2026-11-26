@@ -113,6 +113,18 @@ class BrivelAppTest {
     }
 
     @Test
+    fun todayLeavesOutTheMinutesSentenceThePlanStillHas() {
+        val a = app()
+        a.saveProfile(profile.copy(days = mapOf("MON" to 25)))  // 25 min a la semana: no llega a 150
+        a.setGoal(GoalKind.FITNESS)
+        val week = Planner(a.data, today).week(mondayOf(today))
+        val note = assertNotNull(week.minutesNote)
+        assertTrue(note in week.warnings + week.info, "el plan (calendario, validación) sigue diciéndolo")
+        val screen = a.todayScreen()
+        assertTrue(note !in screen.warnings + screen.info, "Hoy ya da la cifra: «Cardio 25 de 150 min»")
+    }
+
+    @Test
     fun healthScreeningSetsTheCeilingOrStopsThePlan() {
         val a = app()
         a.saveProfile(profile)

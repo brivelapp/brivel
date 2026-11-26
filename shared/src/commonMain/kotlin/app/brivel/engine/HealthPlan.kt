@@ -102,6 +102,8 @@ data class WeekPlan(
     val info: List<String>,
     val equivalentMin: Int,
     val changed: Boolean? = null,
+    /** La frase de los minutos frente a los de la OMS (ya está en warnings o info); Hoy la omite: ya da la cifra (2026-11-26). */
+    val minutesNote: String? = null,
 )
 
 // ---------------------------------------------------------------- §3 dosis semanal
@@ -458,15 +460,19 @@ fun weekPlan(p: HealthProfile, start: LocalDate, step: WeekStep = firstStep(p)):
     val minutes = fmt(doneEq, 0)
     val floor = aerobicFloor(p)
     val floorText = if (isYouth(p)) "$floor min (60 al día de media a tu edad)" else "$floor min"
+    var minutesNote: String? = null
     if (doneEq + 5 < dose.aerobic && doneEq < floor && p.level == "beginner") {
-        info += "Empiezas con $minutes min de actividad a la semana. Para llegar a los $floorText que recomienda la " +
+        minutesNote = "Empiezas con $minutes min de actividad a la semana. Para llegar a los $floorText que recomienda la " +
             "OMS, más adelante te vendrá bien sumar un día o unos minutos."
+        info += minutesNote
     } else if (doneEq + 5 < dose.aerobic && doneEq < floor) {
-        warnings += "Con tus días y minutos llegas a $minutes min de actividad a la semana. La OMS recomienda al menos " +
+        minutesNote = "Con tus días y minutos llegas a $minutes min de actividad a la semana. La OMS recomienda al menos " +
             "$floorText: si puedes, añade un día o unos minutos."
+        warnings += minutesNote
     } else if (doneEq + 5 < dose.aerobic) {
-        info += "Con tu tiempo llegas a $minutes min de actividad a la semana: ya cumples la recomendación de la OMS " +
+        minutesNote = "Con tu tiempo llegas a $minutes min de actividad a la semana: ya cumples la recomendación de la OMS " +
             "($floorText). Si algún día tienes más tiempo, el plan lo aprovecha."
+        info += minutesNote
     }
 
 
@@ -479,7 +485,7 @@ fun weekPlan(p: HealthProfile, start: LocalDate, step: WeekStep = firstStep(p)):
         HealthDay(day.toString(), wd, sessions, if (wd == extraRest) REST_NOTE else null,
             if (wd == extraRest) p.days[wd] else null)
     }
-    return WeekPlan(p.goal, step, dose, out, warnings, info, pyRound(doneEq))
+    return WeekPlan(p.goal, step, dose, out, warnings, info, pyRound(doneEq), minutesNote = minutesNote)
 }
 
 // ---------------------------------------------------------------- §8 ajuste diario sin reloj

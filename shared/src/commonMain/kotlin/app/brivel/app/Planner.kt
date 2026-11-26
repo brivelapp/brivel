@@ -117,6 +117,7 @@ data class WeekView(
     val info: List<String>,
     val step: WeekStep?,  // sin fecha: bloque, semana de subida o de descarga y dosis
     val changed: Boolean,
+    val minutesNote: String? = null,  // WeekPlan.minutesNote: está en warnings o info, y Hoy no la repite
 )
 
 private val RACE_SPORTS = setOf("running", "cycling", "swimming_pool")
@@ -317,7 +318,7 @@ class Planner(private val data: AppData, private val today: LocalDate) {
             dayView(d.date, d.weekday, applyChoice(d.date, items, step.block, mine, rotate), note, d.availableMin, emptyList(), adjustments, null)
         }
         return WeekView(monday.toString(), days, activeMinutes(days), days.count { d -> d.items.any { it.isStrength } },
-            plan.warnings, plan.info, step, plan.changed == true)
+            plan.warnings, plan.info, step, plan.changed == true, plan.minutesNote)
     }
 
     // ------------------------------------------------------------ hacia una carrera

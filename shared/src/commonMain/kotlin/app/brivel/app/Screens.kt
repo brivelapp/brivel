@@ -130,8 +130,9 @@ fun buildToday(data: AppData, today: LocalDate): TodayScreen {
         },
         weekLine = "Esta semana: ${week.activeMinutes} min de actividad y fuerza $strength ${if (strength == 1) "día" else "días"}",
         meetsWho = week.activeMinutes >= 150 && strength >= 2,
-        warnings = week.warnings,
-        info = week.info + BADGES.filter { data.badges[it.id] == today.toString() }.map { "Medalla nueva: «${it.title}». Está en Progreso." },
+        // Sin la frase de los minutos: «Esta semana» ya da la cifra (Gabriel, 2026-11-26)
+        warnings = week.warnings - setOfNotNull(week.minutesNote),
+        info = week.info - setOfNotNull(week.minutesNote) + BADGES.filter { data.badges[it.id] == today.toString() }.map { "Medalla nueva: «${it.title}». Está en Progreso." },
         // Sin plan, las respuestas no ajustarían nada: no se pregunta
         askReadiness = !noPlan && !planner.hasRecoverySignals && data.readiness[today.toString()] == null && day.items.isNotEmpty(),
         linked = data.cache != null, goalFinished = goalFinished,
