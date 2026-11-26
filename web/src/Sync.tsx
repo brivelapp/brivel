@@ -1,8 +1,34 @@
 import { useState } from "react"
 import type { WebApp } from "brivel-shared"
-import { clearKeys, saveKeys } from "./sync"
+import { clearKeys, loadKeys, saveKeys } from "./sync"
+// El logo «G» de Google con sus cuatro colores, tal cual lo pide su guía de marca (Sign in with Google branding)
+import googleLogo from "../../iosApp/iosApp/Assets.xcassets/google_g.imageset/google_g.svg"
 
-type View = "idle" | "create" | "join" | "code"
+type View = "idle" | "create" | "join" | "code" | "google" | "apple"
+type Provider = "google" | "apple"
+
+const NAMES: Record<Provider, string> = { google: "Google", apple: "Apple" }
+/** Con qué cuenta se entra en este navegador (App.tsx lo apunta al volver del proveedor). */
+export const ACCOUNT_KEY = "brivel.account"
+const savedAccount = (): Provider | null => {
+  try { const v = localStorage.getItem(ACCOUNT_KEY); return v === "google" || v === "apple" ? v : null } catch { return null }
+}
+
+/** Los botones de Google y Apple, con los colores y el logo que piden sus guías de marca. */
+function AccountButtons({ onPick }: { onPick: (p: Provider) => void }) {
+  return (
+    <div className="account-buttons">
+      <button type="button" className="account google" onClick={() => onPick("google")}>
+        <img src={googleLogo} alt="" width={18} height={18} />
+        Continuar con Google
+      </button>
+      <button type="button" className="account apple" onClick={() => onPick("apple")}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+        Continuar con Apple
+      </button>
+    </div>
+  )
+}
 
 const errorText = (e: unknown) => (e instanceof Error && e.message ? e.message : "No se pudo sincronizar")
 
@@ -12,8 +38,9 @@ const errorText = (e: unknown) => (e instanceof Error && e.message ? e.message :
  */
 export function SyncCard({ core, onDone, joinOnly = false }:
   { core: WebApp; onDone: (message: string | null) => void; joinOnly?: boolean }) {
-  // joinOnly: «Iniciar sesión» de la portada, directo a escribir el código
-  const [view, setView] = useState<View>(joinOnly ? "join" : "idle")
+  // joinOnly: «Iniciar sesión» de la portada: entrar con una cuenta o escribir el código
+  const [view, setView] = useState<View>("idle")
+  const [account, setAccount] = useState<Provider | null>(savedAccount)
   const [consent, setConsent] = useState(false)
   const [adult, setAdult] = useState(false)
   const [typed, setTyped] = useState("")
@@ -44,7 +71,16 @@ export function SyncCard({ core, onDone, joinOnly = false }:
     return "Sincronizado: se han juntado los datos de este navegador con los de la copia"
   })
 
+  const signOut = () => run(async () => {
+    const keys = await loadKeys()
+    if (keys) await core.signOutAccount(keys)
+    try { localStorage.removeItem(ACCOUNT_KEY) } catch { /* sin almacenamiento: no pasa nada */ }
+    setAccount(null)
+    return "Ya no entras con tu cuenta en ningún dispositivo. La sincronización con el código sigue"
+  })
+
   const forget = () => run(async () => {
+    try { localStorage.removeItem(ACCOUNT_KEY) } catch { /* sin almacenamiento: no pasa nada */ }
     core.forgetSync()
     await clearKeys()
     return "Este navegador ya no sincroniza. La copia sigue en el servidor"
@@ -86,10 +122,12 @@ export function SyncCard({ core, onDone, joinOnly = false }:
     return (
       <section className="module">
         <h3>Sincronización activada</h3>
-        <p className="muted">Una copia cifrada en el servidor que solo tus dispositivos pueden leer.</p>
+        <p className="muted">{account ? `Entras con ${NAMES[account]}: en otro dispositivo, entra con la misma cuenta.`
+          : "Una copia cifrada en el servidor que solo tus dispositivos pueden leer."}</p>
         <button className="primary" disabled={busy}
           onClick={() => run(async () => (await core.syncNow()) ?? "Sincronizado")}>Sincronizar ahora</button>
         <div className="row wrap">
+          {account && <button className="link" disabled={busy} onClick={signOut}>Dejar de entrar con {NAMES[account]}</button>}
           <button className="link" disabled={busy} onClick={forget}>Dejar de sincronizar aquí</button>
           <button className="link" disabled={busy} onClick={erase}>Borrar la copia del servidor</button>
         </div>
@@ -100,11 +138,40 @@ export function SyncCard({ core, onDone, joinOnly = false }:
   if (view === "idle") {
     return (
       <section className="module">
-        <h3>Usar en otros dispositivos</h3>
-        <p className="muted">Opcional. Sin activarlo, tus datos siguen solo en este navegador.</p>
+        <h3>{joinOnly ? "Entra con tu cuenta" : "Usar en otros dispositivos"}</h3>
+        <p className="muted">Entra con Google o Apple y tendrás tus datos en todos tus dispositivos, sin códigos.
+          {!joinOnly && " Opcional: sin activarlo, tus datos siguen solo en este navegador."}</p>
+        <AccountButtons onPick={setView} />
+        <p className="muted small">O con un código, si prefieres que solo tus dispositivos puedan leer la copia:</p>
         <div className="row wrap">
-          <button className="primary" onClick={() => setView("create")}>Activar</button>
+          {!joinOnly && <button className="secondary" onClick={() => setView("create")}>Activar con un código</button>}
           <button className="secondary" onClick={() => setView("join")}>Tengo un código</button>
+        </div>
+      </section>
+    )
+  }
+
+  if (view === "google" || view === "apple") {
+    const provider = view
+    return (
+      <section className="module">
+        <h3>Continuar con {NAMES[provider]}</h3>
+        <label className="check">
+          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+          <span>Acepto que Brivel guarde en su servidor de la UE una copia de mis datos, también los de salud, y la clave
+            para abrirla, para recuperarlos entrando con mi cuenta. De {NAMES[provider]} solo recibe un identificador, sin
+            correo ni nombre. Puedo retirarlo cuando quiera borrando la copia.
+            {" "}<a href="privacidad">Política de privacidad</a></span>
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={adult} onChange={(e) => setAdult(e.target.checked)} />
+          <span>Tengo 14 años o más</span>
+        </label>
+        <p className="muted small">Con un código, en cambio, la copia va cifrada de forma que solo tus dispositivos pueden leerla.</p>
+        <div className="row wrap">
+          <button className="primary" disabled={!consent || !adult}
+            onClick={() => { location.href = `/api/cuenta/${provider}?plataforma=web` }}>Continuar</button>
+          <button className="secondary" onClick={() => setView("idle")}>Cancelar</button>
         </div>
       </section>
     )

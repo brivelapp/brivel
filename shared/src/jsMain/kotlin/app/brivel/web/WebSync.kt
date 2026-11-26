@@ -120,3 +120,24 @@ internal class WebTransport(private val url: String, private val bearer: String,
         send("DELETE")
     }
 }
+
+/**
+ * Entrar con Google o Apple (server/src/cuentas.ts): canjea el billete y devuelve el secreto de la cuenta y si es nueva.
+ * La web no guarda el código, así que manda uno nuevo: si la cuenta ya existía, recibe el suyo.
+ */
+internal suspend fun redeemAccount(url: String, ticket: String, secret: ByteArray): Pair<ByteArray, Boolean> {
+    val init = json("method" to "POST", "cache" to "no-store", "headers" to json("Content-Type" to "application/json"),
+        "body" to JSON.stringify(json("billete" to ticket, "secreto" to base64Url.encode(secret))))
+    val response = js("globalThis").fetch(url, init).unsafeCast<Promise<Response>>().await()
+    val body = runCatching { JSON.parse<dynamic>(response.text().await()) }.getOrNull()
+    if (!response.ok) throw SyncException(response.status.toInt(), (body?.error as? String) ?: "No se pudo entrar: vuelve a intentarlo")
+    return base64Url.decode(body.secreto as String) to (body.nueva as Boolean)
+}
+
+/** Dejar de entrar con Google o Apple: el servidor olvida la cuenta; la copia y el código siguen. */
+internal suspend fun forgetAccount(url: String, bearer: String) {
+    val init = json("method" to "DELETE", "cache" to "no-store", "headers" to json("Authorization" to "Bearer $bearer"))
+    val response = js("globalThis").fetch(url, init).unsafeCast<Promise<Response>>().await()
+    if (!response.ok) throw SyncException(response.status.toInt(), "No se pudo quitar la cuenta: vuelve a intentarlo")
+}
+

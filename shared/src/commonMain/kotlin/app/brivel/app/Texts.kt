@@ -158,6 +158,16 @@ const val SYNC_NO_RECOVERY = "Nadie puede recuperar el código. Si lo pierdes y 
     "se pierde; los datos de cada dispositivo siguen en él."
 const val SYNC_JOIN_NOTE = "Se juntan los datos de este móvil con los de la copia."
 
+// Entrar con Google o Apple (decisión de Gabriel, 2026-11-19): el servidor guarda la clave de la copia (política v8)
+const val ACCOUNT_INTRO = "Entra con Google o Apple y tendrás tus datos en todos tus dispositivos, sin códigos."
+const val ACCOUNT_CONSENT = "Acepto que Brivel guarde en su servidor de la UE una copia de mis datos, también los de salud, y la " +
+    "clave para abrirla, para recuperarlos entrando con mi cuenta. De Google o Apple solo recibe un identificador, sin " +
+    "correo ni nombre. Puedo retirarlo cuando quiera borrando la copia. Detalles en brivel.app/privacidad."
+const val ACCOUNT_CODE_NOTE = "Con un código, en cambio, la copia va cifrada de forma que solo tus dispositivos pueden leerla."
+
+/** «Google» o «Apple» para los textos; null si no se entra con ninguna. */
+fun accountName(provider: String?): String? = when (provider) { "google" -> "Google"; "apple" -> "Apple"; else -> null }
+
 // Garmin Connect (política de privacidad, apartado 5): los mismos textos que web/src/Garmin.tsx
 const val GARMIN_POLICY_VERSION = "2026-11-04.5"
 const val GARMIN_TITLE = "Garmin Connect™"

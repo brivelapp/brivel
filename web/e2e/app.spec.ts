@@ -401,6 +401,27 @@ test("con una carrera de objetivo se añade una preparatoria, como en las apps",
   await expect(page.getByText("Domingo 24 de enero · importante")).toBeVisible()
 })
 
+test("iniciar sesión: Google o Apple con su consentimiento, o el código", async ({ page }) => {
+  await page.goto("/")
+  await page.getByRole("button", { name: "Iniciar sesión" }).first().click()
+  await expect(page.getByRole("button", { name: "Continuar con Apple" })).toBeVisible()
+  await page.getByRole("button", { name: "Continuar con Google" }).click()
+  const go = page.getByRole("button", { name: "Continuar", exact: true })
+  await expect(go).toBeDisabled()  // sin marcar: el consentimiento es explícito (RGPD art. 9.2.a)
+  await page.getByText(/y la clave\s+para abrirla/).click()
+  await page.getByText("Tengo 14 años o más").click()
+  await expect(go).toBeEnabled()
+  await page.getByRole("button", { name: "Cancelar" }).click()
+  await page.getByRole("button", { name: "Tengo un código" }).click()
+  await expect(page.getByLabel("Código del otro dispositivo")).toBeVisible()
+})
+
+test("la vuelta de Google con un error lo enseña y limpia la dirección", async ({ page }) => {
+  await page.goto("/#cuenta-error=No%20se%20pudo%20entrar%3A%20vuelve%20a%20intentarlo")
+  await expect(page.getByText("No se pudo entrar: vuelve a intentarlo")).toBeVisible()
+  await expect(page).toHaveURL(/\/$/)
+})
+
 test("Hoy a gusto: se añade un widget eligiendo su tamaño, cambia de tamaño desde su menú, se ordena y se quita", async ({ page }) => {
   await signUp(page)
   await page.getByRole("button", { name: "Añadir a Hoy" }).click()

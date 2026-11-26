@@ -98,3 +98,11 @@ fun BrivelTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -
         MaterialTheme(colorScheme = scheme, typography = typography, content = content)
     }
 }
+
+/** Fondo, texto y borde de «Continuar con Google / Apple»: los de sus guías de marca (Google Identity, Apple HIG). */
+fun accountColors(google: Boolean, dark: Boolean): Triple<Color, Color, Color> = when {
+    google && !dark -> Triple(Color(0xFFFFFFFF), Color(0xFF1F1F1F), Color(0xFF747775))
+    google -> Triple(Color(0xFF131314), Color(0xFFE3E3E3), Color(0xFF8E918F))
+    !dark -> Triple(Color.Black, Color.White, Color.Black)
+    else -> Triple(Color.White, Color.Black, Color.White)
+}

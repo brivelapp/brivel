@@ -139,6 +139,21 @@ class WebApp {
         keys
     }
 
+    /**
+     * Entrar con Google o Apple: `ticket` llega en brivel.app/#cuenta=… al volver del proveedor. Si la cuenta es nueva,
+     * se queda con una copia nueva de los datos de aquí; si ya existía, se une a ella juntando los datos.
+     */
+    fun signIn(ticket: String): Promise<WebSyncKeys> = promise {
+        val (secret, created) = redeemAccount(window.location.origin + "/api/cuenta/canjear", ticket, SyncCode.generate().secret)
+        val keys = webKeys(secret)
+        syncerFor(keys).also { it.sync(create = created); syncer = it }
+        app.recordSyncConsent()
+        keys
+    }
+
+    /** Deja de entrar con Google o Apple en todos los dispositivos; la copia y el código siguen. */
+    fun signOutAccount(keys: WebSyncKeys): Promise<Unit> = promise { forgetAccount(window.location.origin + "/api/cuenta", keys.bearer) }
+
     /** Devuelve el aviso si los dos dispositivos cambiaron lo mismo; null si no. */
     fun retireFromWatch(): Promise<Unit> = promise { app.retireFromWatch() }
     fun syncNow(): Promise<String?> = promise {

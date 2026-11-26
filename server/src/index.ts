@@ -1,5 +1,7 @@
-// API de Brivel. /api/boveda guarda la copia cifrada de la sincronización (docs/SINCRONIZACION.md): el servidor no
-// puede leerla. Sin CORS (la web es del mismo origen) y sin registrar cabeceras ni cuerpos: el token iría en ellos.
+// API de Brivel. /api/boveda guarda la copia cifrada de la sincronización (docs/SINCRONIZACION.md): con el código solo,
+// el servidor no puede leerla; si se entra con Google o Apple, guarda el secreto de esa cuenta (cuentas.ts). Sin CORS (la web es del mismo origen) y sin registrar cabeceras ni cuerpos: el token iría en ellos.
+
+import { cuentas, forgetVault, type Secrets } from "./cuentas"
 
 // Sin el tope de 1 MB (Gabriel, 2026-11-19): queda uno alto solo contra abusos; una copia normal ocupa pocos MB
 const MAX_BYTES = 16 * 1024 * 1024
@@ -7,7 +9,7 @@ const CHUNK = 1024 * 1024  // D1 admite como mucho 2 MB por fila: la copia va en
 const UNUSED_DAYS = 365  // copias sin subir ni bajar en 12 meses: se borran (política de privacidad, apartado 4)
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env: Env & Secrets, ctx) {
     const { pathname } = new URL(request.url)
     // Garmin Connect va en un Worker privado (su documentación es confidencial): se le pasa tal cual, con sus propios
     // límites, porque los envíos de Garmin no deben chocar con el límite por IP de la web
@@ -19,6 +21,8 @@ export default {
       const row = await env.DB.prepare("select 1 as ok").first<{ ok: number }>()
       return Response.json({ ok: row?.ok === 1 })
     }
+    const handled = await cuentas(request, env, ctx, ip)
+    if (handled) return handled
     if (pathname !== "/api/boveda") return error(404, "No encontrado")
 
     const id = await account(request)
@@ -48,6 +52,7 @@ export default {
           env.DB.prepare("delete from trozos where id = ?").bind(id),
           env.DB.prepare("delete from bovedas where id = ?").bind(id),
         ])
+        await forgetVault(env, ctx, id)  // y las cuentas de Google o Apple que entraban en ella
         return new Response(null, { status: 204 })
       default:
         return error(405, "Método no permitido")
@@ -55,14 +60,17 @@ export default {
   },
 
   // Cada día (wrangler.jsonc, triggers): borra las copias que ningún dispositivo ha usado en 12 meses
-  async scheduled(_controller, env) {
+  async scheduled(_controller, env: Env & Secrets, ctx) {
     const cutoff = new Date(Date.now() - UNUSED_DAYS * 24 * 60 * 60 * 1000).toISOString()
+    const { results } = await env.DB.prepare("select id from bovedas where usado < ?").bind(cutoff).all<{ id: string }>()
+    for (const { id } of results) await forgetVault(env, ctx, id)
+    await env.DB.prepare("delete from billetes where caduca < ?").bind(new Date().toISOString()).run()
     await env.DB.batch([
       env.DB.prepare("delete from trozos where id in (select id from bovedas where usado < ?)").bind(cutoff),
       env.DB.prepare("delete from bovedas where usado < ?").bind(cutoff),
     ])
   },
-} satisfies ExportedHandler<Env>
+} satisfies ExportedHandler<Env & Secrets>
 
 /** If-None-Match: * crea la cuenta (versión 1); If-Match: "n" guarda la n + 1 solo si nadie subió antes. */
 async function put(request: Request, env: Env, id: string, ip: string): Promise<Response> {
