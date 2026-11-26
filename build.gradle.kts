@@ -10,7 +10,8 @@ plugins {
 }
 
 // Análisis estático del Kotlin de las apps y el núcleo (./gradlew detekt). Lo que ya había está en la línea base:
-// solo falla lo nuevo, y lo arreglado hay que quitarlo de ella (./gradlew detektBaseline la regenera).
+// solo falla lo nuevo. Detekt no avisa de lo que se arregla: al arreglar algo de la lista, regenérala con
+// ./gradlew detektBaseline y comprueba en el diff que solo quita líneas.
 detekt {
     source.setFrom("shared/src", "androidApp/src")
     config.setFrom("config/detekt.yml")
