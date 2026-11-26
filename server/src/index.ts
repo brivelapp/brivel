@@ -1,9 +1,6 @@
 // API de Brivel. /api/boveda guarda la copia cifrada de la sincronización (docs/SINCRONIZACION.md): con el código solo,
 // el servidor no puede leerla; si se entra con Google o Apple, guarda el secreto de esa cuenta (cuentas.ts). Sin CORS (la web es del mismo origen) y sin registrar cabeceras ni cuerpos: el token iría en ellos.
 
-// Sin el tope de 1 MB (Gabriel, 2026-11-19): queda uno alto solo contra abusos; una copia normal ocupa pocos MB
-const MAX_BYTES = 16 * 1024 * 1024
-const CHUNK = 1024 * 1024  // D1 admite como mucho 2 MB por fila: la copia va en trozos (migrations/0002_trozos.sql)
 import { cuentas, forgetVault, type Secrets } from "./cuentas"
 
 // Sin el tope de 1 MB (Gabriel, 2026-11-19): queda uno alto solo contra abusos; una copia normal ocupa pocos MB
