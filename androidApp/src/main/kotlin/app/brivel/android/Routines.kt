@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -121,11 +122,15 @@ private fun RoutineEditor(app: BrivelApp, act: Act, start: Routine, close: () ->
                 app.library(query, null, null).groupBy { it.patternLabel }.forEach { (group, cards) ->
                     SectionTitle(group)
                     cards.forEach { c ->
-                        Text(c.name, modifier = Modifier.fillMaxWidth().clickable {
+                        // Fila con › (Pulso: lo que se pulsa se distingue), no un texto suelto que no parece pulsable
+                        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable {
                             r = r.copy(exercises = r.exercises + if (c.timed) RoutineExercise(c.name, 3, 20, 40) else RoutineExercise(c.name, 3, 8, 12))
                             picking = false
                             query = ""
-                        }.padding(vertical = 10.dp))
+                        }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(c.name, Modifier.weight(1f))
+                            RowChevron()
+                        }
                     }
                 }
             }

@@ -62,6 +62,14 @@ const REGLAS = [
     mal: `<span className="name" onClick={open}>`, bien: `<button className="link" onClick={open}>`,
   },
   {
+    id: "clic-sin-boton-android",
+    origen: "«Algunos botones no se distinguen de labels sin acción» (2026-11-09)",
+    archivos: /^androidApp\/src\/main\/.*\.kt$/,
+    patron: /\bText\([^\n]*\.clickable\b/,
+    mensaje: "Texto suelto que se pulsa: no parece pulsable. Usa un botón (PrimaryButton, SecondaryButton, TextButton con LinkText) o una fila con RowChevron.",
+    mal: `Text(c.name, modifier = Modifier.clickable { pick(c) })`, bien: `Row(Modifier.clickable { pick(c) }) { Text(c.name); RowChevron() }`,
+  },
+  {
     id: "meta-de-minutos-fija",
     origen: "Las pantallas decían «de 150» también a los menores, cuya meta es 420 (2026-11-26)",
     archivos: /^(web\/src|androidApp\/src\/main|iosApp\/iosApp)\/.*\.(tsx?|kt|swift)$/,
@@ -96,7 +104,7 @@ function revisar(regla, ruta, texto) {
 if (process.argv.includes("--probar")) {
   let mal = 0
   for (const r of REGLAS) {
-    const ruta = { "color-suelto-android": "androidApp/src/main/X.kt", "color-suelto-ios": "iosApp/iosApp/X.swift" }[r.id]
+    const ruta = { "color-suelto-android": "androidApp/src/main/X.kt", "clic-sin-boton-android": "androidApp/src/main/X.kt", "color-suelto-ios": "iosApp/iosApp/X.swift" }[r.id]
       ?? (r.archivos.test("web/src/x.css") ? "web/src/x.css" : r.archivos.test("web/src/X.tsx") ? "web/src/X.tsx" : "shared/src/commonMain/X.kt")
     if (revisar(r, ruta, r.mal).length !== 1) { console.error(`✗ ${r.id} no caza su ejemplo malo: ${r.mal}`); mal++ }
     if (revisar(r, ruta, r.bien).length !== 0) { console.error(`✗ ${r.id} se queja del ejemplo bueno: ${r.bien}`); mal++ }

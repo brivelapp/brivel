@@ -100,7 +100,7 @@ class HealthConnectReader(private val context: Context) {
         // Desde medianoche: empezar a la hora actual cortaba cada «día» de esa hora a la misma del día siguiente
         val steps = if (HealthPermission.getReadPermission(StepsRecord::class) !in granted) emptyMap() else client.aggregateGroupByPeriod(
             AggregateGroupByPeriodRequest(setOf(StepsRecord.COUNT_TOTAL),
-                TimeRangeFilter.between(LocalDate.now(zone).minusDays(days).atStartOfDay(), LocalDateTime.ofInstant(to, zone)), Period.ofDays(1)),
+                stepsWindow(LocalDate.now(zone), days, LocalDateTime.ofInstant(to, zone)).let { (from, until) -> TimeRangeFilter.between(from, until) }, Period.ofDays(1)),
         ).mapNotNull { r -> r.result[StepsRecord.COUNT_TOTAL]?.let { r.startTime.toLocalDate().toString() to it.toDouble() } }.toMap()
         val vo2 = maybe(Vo2MaxRecord::class).groupBy { date(it.time) }
             .mapValues { (_, r) -> r.maxBy { it.time }.vo2MillilitersPerMinuteKilogram }
@@ -161,3 +161,8 @@ class HealthConnectReader(private val context: Context) {
         )
     }
 }
+
+/** Los días de pasos van de medianoche a medianoche (Health Connect los agrupa desde el inicio): empezar a la hora de
+ *  sincronizar cortaba cada «día» a esa hora y Brivel marcaba 13 918 donde Health Connect decía 9 640 (2026-11-18). */
+internal fun stepsWindow(today: LocalDate, days: Long, now: LocalDateTime): Pair<LocalDateTime, LocalDateTime> =
+    today.minusDays(days).atStartOfDay() to now
