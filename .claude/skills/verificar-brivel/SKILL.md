@@ -33,8 +33,13 @@ web y lanza `web/e2e/verificar.spec.ts`. Si `rtk` deja la salida vacía, usa `rt
 
 ## 3. Entregar
 
-Al contar el cambio, enseña las pruebas: qué pantallas miraste, en qué anchos y lo que encontraste. Si quedan
-hallazgos sin arreglar, dilo. No digas «funciona» sin haber pasado este paso.
+Al contar el cambio, enseña las pruebas, siempre estas cuatro:
+1. **La orden y su resultado:** qué lanzaste y si pasó o falló (el resumen final del script o «N passed / N failed»).
+2. **Las líneas del informe:** copia tal cual las de `informe.md` de las pantallas que tocaste, en cada ancho mirado.
+3. **Las capturas:** la ruta de cada una que miraste y qué se ve en ella.
+4. **Que no tocaste nada de más:** `git status --short` (solo deben salir tus cambios; `web/verificacion` está ignorado).
+
+Si quedan hallazgos sin arreglar, dilo. No digas «funciona» sin haber pasado este paso.
 
 ## Mantener el mapa
 
