@@ -14,7 +14,7 @@ para los ciclos de mejora.
 scripts/mantenimiento.sh        # escribe mantenimiento/senales.md (ignorado por git) y lo muestra
 ```
 
-Después, el correo: busca en Gmail `to:hola@brivel.app newer_than:7d`. Cuenta solo los que describan un fallo
+Después, el correo: busca en Gmail `to:hola@brivel.app newer_than:7d` y apunta la consulta y cuántos hilos salen. Cuenta solo los que describan un fallo
 (no los avisos de Garmin, Apple o Google, que se le pasan a Gabriel tal cual). **Nunca respondas ni reenvíes**: escribir
 a un usuario es decisión de Gabriel. No copies a la rama, a commits ni a la entrega el nombre, la dirección o el texto
 del usuario: el repo es público. Describe el fallo con tus palabras.
@@ -51,8 +51,9 @@ Si no hay nada de 1 a 4 y la 5 pide cambiar el diseño, para y cuéntalo: no inv
 
 ## 5. Entregar
 
+En español, con estos cinco puntos numerados siempre; si uno no aplica (no tocaste código), di «no aplica» y por qué.
 1. Qué señal elegiste y por qué esa (y las demás que viste, en una línea cada una).
 2. La prueba fallando antes y pasando después (orden y resultado).
-3. El commit, la rama y el número y resultado del CI.
+3. El commit, la rama y el número y resultado del CI (si sigue en marcha, qué trabajos faltan).
 4. `git status --short`.
 5. Lo que necesita a Gabriel (responder a un usuario, fusionar, una decisión de diseño).
