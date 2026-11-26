@@ -37,7 +37,8 @@ internal class BadgeFacts(data: AppData, private val today: LocalDate) {
 
     val first: Pair<Double, String?> = acts.filter { (it["moving_time"].num() ?: 0.0) >= MIN_ACTIVITY_S }.minOfOrNull { it.date() }
         .let { (if (it == null) 0.0 else 1.0) to it }
-    val whoWeeks = streak(weeklyMinutes(acts, today, 52).map { it.value >= 150 }).toDouble() to null
+    private val whoTarget = weeklyTarget(data, today)  // 420 con menos de 18 años
+    val whoWeeks = streak(weeklyMinutes(acts, today, 52).map { it.value >= whoTarget }).toDouble() to null
 
     private val strengthDates = (data.sets.filter { it.counts() }.map { it.date } + of("strength").map { it.date() } +
         data.manualDone.filter { it.sport == "strength" }.map { it.date }).toSet()
@@ -79,7 +80,7 @@ private fun amount(x: Double, unit: String) =
 /** Todas las medallas. Puntos: 1, 2, 4 u 8 según lo que cuestan. */
 internal val BADGES: List<BadgeDef> = listOf(
     chain("first", "Constancia", "", { "Registra tu primera actividad de 10 minutos o más." }, { it.first }, Triple(1.0, 1, "Primer paso")),
-    chain("who", "Constancia", "semanas", { "Cumple $it seguidas la recomendación de la OMS: 150 minutos de actividad moderada a la semana." },
+    chain("who", "Constancia", "semanas", { "Cumple $it seguidas la recomendación de la OMS para tu edad: 150 minutos de actividad moderada a la semana, o 420 si tienes menos de 18 años." },
         { it.whoWeeks }, Triple(4.0, 2, "Un mes en marcha"), Triple(12.0, 4, "Un trimestre en marcha"), Triple(26.0, 8, "Medio año en marcha"),
         Triple(52.0, 8, "Un año en marcha")),
     chain("strength-weeks", "Constancia", "semanas", { "Haz fuerza dos días o más por semana durante $it seguidas, como recomienda la OMS." },

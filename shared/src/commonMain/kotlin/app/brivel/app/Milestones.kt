@@ -36,11 +36,11 @@ internal fun longest(activities: List<JsonObject>): List<Milestone> = LONGEST.ma
 }
 
 /**
- * Semanas seguidas con 150 minutos moderados equivalentes o más (OMS 2020), hasta la última completa; la de ahora suma
- * si ya llega. `weekly`: de la más antigua a la actual.
+ * Semanas seguidas con los minutos moderados equivalentes que la OMS recomienda a esa edad (`target`, de weeklyTarget:
+ * 150, o 420 con menos de 18), hasta la última completa; la de ahora suma si ya llega. `weekly`: de la más antigua a la actual.
  */
-internal fun whoStreak(weekly: List<Point>): Milestone? {
-    val done = weekly.map { it.value >= 150 }
+internal fun whoStreak(weekly: List<Point>, target: Int): Milestone? {
+    val done = weekly.map { it.value >= target }
     val upTo = if (done.lastOrNull() == true) done.size else done.size - 1
     val streak = done.take(upTo.coerceAtLeast(0)).takeLastWhile { it }.size
     if (streak == 0) return null
