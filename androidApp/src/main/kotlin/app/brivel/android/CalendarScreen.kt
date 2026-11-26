@@ -82,7 +82,7 @@ fun CalendarTab(app: BrivelApp, version: Int, act: Act) {
                 Secondary(listOfNotNull("${a.minutes} min", a.start?.let { "a las $it" }).joinToString(" "))
             }
         }
-        key(selected) { DayContent(app, day, app.watchRoute != null, act, today = day.isToday) }  // sin arrastrar lo abierto de otro día
+        key(selected) { DayContent(app, day, act, today = day.isToday) }  // sin arrastrar lo abierto de otro día
         WholePlan(app, version)
         Spacer(Modifier.height(24.dp))
     }

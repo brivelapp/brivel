@@ -104,7 +104,7 @@ private fun RoutineEditor(app: BrivelApp, act: Act, start: Routine, close: () ->
             TonalButton(onClick = { picking = true }) { Text("Añadir ejercicio") }
             SectionTitle("Reserva al acabar cada serie")
             ChipRow {
-                (0..5).forEach { n ->
+                for (n in 0..5) {
                     Chip(selected = r.rir == n, label = { Text(if (n == 0) "Hasta no poder más" else "$n") }, onClick = { r = r.copy(rir = n) })
                 }
             }

@@ -7,7 +7,7 @@ Corto a propósito: lo que se puede comprobar solo, se comprueba en el código y
   `androidApp/src/test/kotlin/app/brivel/android/PantallasTest.kt` (nombre, archivo y cómo llegar).
 - **Antes de decir que algo está hecho**, si se ve en la web: skill `.claude/skills/verificar-brivel`
   (`scripts/verificar-web.sh`) y mirar las capturas. Se entrega con pruebas, no con un resumen del diff.
-- **Reglas:** `scripts/reglas.mjs` y `web/e2e/verificar.spec.ts` fallan con el porqué y cómo arreglarlo. Si te
+- **Reglas:** `scripts/reglas.mjs`, `web/e2e/verificar.spec.ts` y `./gradlew detekt` (Kotlin, `config/`) fallan con el porqué y cómo arreglarlo. Si te
   corrigen algo que podría volver a pasar, conviértelo en una regla o una prueba ahí, no en una línea de este archivo.
 - **El motor:** sus números no cambian sin que pasen la validación y los goldens (`./gradlew :shared:jvmTest`).
 - **Ramas:** una por cambio; a `master` solo con el CI en verde. Nunca `git commit -a`: añade los archivos por nombre.

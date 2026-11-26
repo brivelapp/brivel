@@ -44,3 +44,5 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 androidKmpLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 kover = { id = "org.jetbrains.kotlinx.kover", version = "0.9.11" }
+# detekt: la 1.23 (la última estable, 2025) es anterior a Kotlin 2.4; la rama 2.0 (id dev.detekt) es la que lo analiza
+detekt = { id = "dev.detekt", version = "2.0.0-alpha.6" }

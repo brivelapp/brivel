@@ -8,7 +8,7 @@ import kotlin.test.assertNull
 // En commonTest para que las expresiones regulares se prueben también en JavaScript (la web).
 
 /** Como lo exporta Strava: tipo de actividad, extensión de Garmin con el pulso y un punto sin hora que se ignora. */
-internal val GPX = """<?xml version="1.0" encoding="UTF-8"?>
+internal const val GPX = """<?xml version="1.0" encoding="UTF-8"?>
 <gpx creator="StravaGPX" version="1.1" xmlns="http://www.topografix.com/GPX/1/1"
   xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">
  <metadata><time>2024-11-08T07:00:00Z</time></metadata>
@@ -30,7 +30,7 @@ internal val GPX = """<?xml version="1.0" encoding="UTF-8"?>
 </gpx>"""
 
 /** Como lo exporta Garmin Connect: dos vueltas con sus totales y la extensión con velocidad y vatios. */
-internal val TCX = """<?xml version="1.0" encoding="UTF-8"?>
+internal const val TCX = """<?xml version="1.0" encoding="UTF-8"?>
 <TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"
   xmlns:ns3="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
  <Activities>

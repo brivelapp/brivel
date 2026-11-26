@@ -259,7 +259,7 @@ private fun SetView(app: BrivelApp, e: StrengthExercise, setNo: Int, next: Stren
     var typing by remember { mutableStateOf(false) }
 
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        (1..maxOf(e.sets, e.done.size)).forEach { n ->
+        for (n in 1..maxOf(e.sets, e.done.size)) {
             Box(Modifier.weight(1f).height(5.dp).clip(RoundedCornerShape(3.dp))
                 .background(if (e.done.any { it.set == n }) Palette.ok else Palette.chip))
         }
@@ -401,7 +401,7 @@ private fun RestView(left: Int, total: Int, e: StrengthExercise?, setNo: Int, lo
             ex.rir?.let {
                 Secondary("¿Cuántas más podías hacer?")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    (0..4).forEach { n ->
+                    for (n in 0..4) {
                         val on = s.rir == n
                         Box(Modifier.weight(1f).heightIn(min = 44.dp).clip(CircleShape)
                             .background(if (on) Palette.ok else Palette.surface)
@@ -455,7 +455,7 @@ private fun SessionRows(e: StrengthExercise, isCurrent: Boolean, currentSet: Int
             }
             Spacer(Modifier.width(36.dp))
         }
-        (1..maxOf(e.sets, e.done.size)).forEach { n ->
+        for (n in 1..maxOf(e.sets, e.done.size)) {
             val today = e.done.firstOrNull { it.set == n }
             val before = e.previous.firstOrNull { it.set == n }
             val now = isCurrent && n == currentSet && today == null
