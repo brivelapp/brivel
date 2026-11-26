@@ -154,7 +154,7 @@ private fun ColumnScope.WeekWidget(screen: TodayScreen, wide: Boolean) {
         Secondary("${screen.strengthDone} de 2 días de fuerza")
         if (screen.strengthDone >= 2) Text("Cumples los 2 días de fuerza", color = Palette.ok, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
     } else {
-        Secondary("Cardio ${screen.weekMinutes} de ${screen.weekTarget} min")
+        Secondary("Cardio ${screen.weekDone} de ${screen.weekTarget} min")
         Secondary(screen.strengthLine)
     }
     if (wide) {

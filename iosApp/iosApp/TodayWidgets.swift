@@ -127,7 +127,7 @@ private struct WeekWidget: View {
                 Text("Cumples los 2 días de fuerza").font(.ui(14, .semibold, relativeTo: .subheadline)).foregroundStyle(Palette.ok)
             }
         } else {
-            Secondary("Cardio \(screen.weekMinutes) de \(screen.weekTarget) min")
+            Secondary("Cardio \(screen.weekDone) de \(screen.weekTarget) min")
             Secondary(screen.strengthLine)
         }
         if wide {

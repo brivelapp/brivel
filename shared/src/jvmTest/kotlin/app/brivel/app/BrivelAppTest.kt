@@ -129,12 +129,25 @@ class BrivelAppTest {
         val a = app()
         a.saveProfile(profile.copy(birthYear = 2011))  // 15 años: la OMS pide 60 al día de media
         a.setGoal(GoalKind.FITNESS)
-        assertEquals(420, a.todayScreen().weekTarget)
-        assertEquals(420, a.progress().weeklyTarget)
+        assertEquals(420, a.progress().weeklyTarget)  // Progreso: la OMS a su edad; Hoy enseña la semana del plan
         assertTrue("60 minutos al día" in a.progress().weeklyTargetNote)
         a.saveProfile(profile)  // 1990: adulto
-        assertEquals(150, a.todayScreen().weekTarget)
         assertEquals(150, a.progress().weeklyTarget)
+    }
+
+    @Test
+    fun todayCountsCardioDoneAgainstWhatThePlanSetsThisWeek() {
+        val a = app()
+        a.saveProfile(profile)
+        a.setGoal(GoalKind.FITNESS)
+        val before = a.todayScreen()
+        assertTrue(before.weekTarget > 0)  // lo que el plan pone de cardio esta semana, no la OMS
+        assertEquals(0, before.weekDone)
+        val cardio = (0 until 7).map { a.day(today.plusDays(-today.dayOfWeek.ordinal + it).toString()) }
+            .first { d -> d.items.any { !it.isStrength } }
+        a.markDone(cardio.date, cardio.items.first { !it.isStrength }.sport)
+        val after = a.todayScreen()
+        assertTrue(after.weekDone in 1..after.weekTarget, "hecho ${after.weekDone} de ${after.weekTarget}")
     }
 
     @Test

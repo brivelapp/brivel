@@ -9,7 +9,7 @@ export interface DayView { date: string; isToday: boolean; isPast: boolean; item
 export interface WeekDot { letter: string; date: string; isToday: boolean; planned: boolean; done: boolean }
 export interface TodayScreen {
   dateLabel: string; goalLine: string | null; stateTitle: string; stateDetail: Reason[]; tone: Tone; day: DayView
-  meetsWho: boolean; weekMinutes: number; weekTarget: number; strengthDays: number; weekDots: WeekDot[]; warnings: string[]; info: string[]
+  meetsWho: boolean; weekMinutes: number; weekTarget: number; weekDone: number; strengthDays: number; weekDots: WeekDot[]; warnings: string[]; info: string[]
   askReadiness: boolean; goalFinished: boolean; garminNote: string | null
   noPlan: boolean; strengthDone: number; strengthLine: string; nextRoutine: string | null
   rateRun: { id: string; question: string; detail: string; note: string; source: string | null } | null

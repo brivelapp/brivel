@@ -5,6 +5,7 @@ package app.brivel.app
 import app.brivel.engine.plusDays
 import app.brivel.engine.FLOOR_AEROBIC
 import app.brivel.engine.YOUTH_AEROBIC
+import app.brivel.engine.equivalentMinutes
 import app.brivel.engine.RACE_DISTANCES
 import app.brivel.engine.danielsTime
 import app.brivel.engine.fmt
@@ -68,7 +69,10 @@ data class TodayScreen(
     val strengthLine: String = "",  // con plan: la fuerza hecha frente a la planificada y al mínimo de 2 días
     val nextRoutine: String? = null,  // sin plan y sin rutina hoy: «Mañana, Torso» o «El viernes, Torso»
     val rateRun: RunToRate? = null,  // quien empieza: ¿cómo fue su última carrera? (de ahí sale su ritmo suave)
-    val weekTarget: Int = FLOOR_AEROBIC,  // los minutos que le recomienda la OMS (weeklyTarget): «Cardio 25 de 150 min»
+    // «Cardio 40 de 160 min»: lo hecho frente a lo que el plan pone esta semana, en las dos cifras minutos equivalentes
+    // de las sesiones de cardio (Gabriel, 2026-11-26: «un objetivo coherente con el plan establecido»). Sin plan, la OMS
+    val weekTarget: Int = FLOOR_AEROBIC,
+    val weekDone: Int = 0,
 )
 
 /** La carrera de hoy o de ayer que falta valorar (EFFORTS), con lo que lleva aprendido Brivel. */
@@ -133,7 +137,8 @@ fun buildToday(data: AppData, today: LocalDate): TodayScreen {
         },
         weekLine = "Esta semana: ${week.activeMinutes} min de actividad y fuerza $strength ${if (strength == 1) "día" else "días"}",
         meetsWho = week.activeMinutes >= weeklyTarget(data, today) && strength >= 2,
-        weekTarget = weeklyTarget(data, today),
+        weekTarget = if (noPlan) weeklyTarget(data, today) else cardioMinutes(week.days, onlyDone = false),
+        weekDone = cardioMinutes(week.days, onlyDone = true),
         // Sin la frase de los minutos: «Esta semana» ya da la cifra (Gabriel, 2026-11-26)
         warnings = week.warnings - setOfNotNull(week.minutesNote),
         info = week.info - setOfNotNull(week.minutesNote) + BADGES.filter { data.badges[it.id] == today.toString() }.map { "Medalla nueva: «${it.title}». Está en Progreso." },
@@ -490,3 +495,9 @@ private fun AppData.sourceOf(key: String, since: String): String? {
 internal fun strengthLine(done: Int, planned: Int): String =
     if (done >= 2) "Fuerza: $done días hechos, mínimo cumplido"
     else "Fuerza: $done de $planned ${if (planned == 1) "día" else "días"} (mínimo 2)"
+
+/** Minutos equivalentes (como los cuenta el plan) de las sesiones de cardio de la semana; con onlyDone, solo las hechas. */
+private fun cardioMinutes(days: List<DayView>, onlyDone: Boolean): Int = pyRound(days.sumOf { d ->
+    d.items.filter { !it.isStrength && (!onlyDone || it.slot in d.doneSports || it.sport in d.doneSports) }
+        .mapNotNull { it.session }.sumOf { equivalentMinutes(it) }
+}.toDouble())
