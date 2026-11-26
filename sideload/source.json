@@ -16,6 +16,15 @@
       "category": "health",
       "versions": [
         {
+          "version": "0.2.250",
+          "buildVersion": "250",
+          "date": "2026-11-26T21:45:00Z",
+          "localizedDescription": "Cardio de Hoy frente a lo que pone el plan; menores de 18 con su meta de 420 minutos también en la racha y las medallas; todo lo que se pulsa en la web mide 44 px; pasos desde medianoche. Formato de datos 12.",
+          "downloadURL": "https://github.com/brivelapp/brivel/releases/download/prueba-2026-11-26-1/Brivel.ipa",
+          "size": 5651727,
+          "minOSVersion": "17.0"
+        },
+        {
           "version": "0.2.227",
           "buildVersion": "227",
           "date": "2026-11-23T19:40:00Z",
