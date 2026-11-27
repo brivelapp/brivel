@@ -110,6 +110,7 @@ private struct SessionEditor: View {
             .background(Palette.bg)
             .navigationTitle(start == nil ? "Nueva sesión" : "Editar sesión").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() } } }
+            .keyboardDone()
             .onAppear {
                 guard !loaded, let start else { loaded = true; return }
                 name = start.name
@@ -144,7 +145,7 @@ private struct SessionEditor: View {
 struct SessionsSection: View {
     @EnvironmentObject var model: AppModel
     @State private var editing: OwnSession?
-    @State private var creating = false
+    @State private var creating = UserDefaults.standard.string(forKey: "sheet") == "new"  // `-sheet new`: el CI abre el formulario
 
     var body: some View {
         Module {

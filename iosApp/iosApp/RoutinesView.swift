@@ -183,7 +183,7 @@ private struct NewExercise: View {
 struct RoutinesSection: View {
     @EnvironmentObject var model: AppModel
     @State private var editing: Routine?
-    @State private var creating = false
+    @State private var creating = UserDefaults.standard.string(forKey: "sheet") == "new"  // `-sheet new`: el CI abre el formulario
     @State private var adding = false
 
     var body: some View {

@@ -226,6 +226,15 @@ extension View {
                 }.font(.ui(16, .bold))
             }
         }
+        // `-focus YES` al lanzar: las capturas del CI abren el teclado en el primer campo para ver dónde queda «Listo»
+        .onAppear {
+            guard UserDefaults.standard.bool(forKey: "focus") else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                let windows = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows)
+                func first(_ v: UIView) -> UITextField? { v as? UITextField ?? v.subviews.lazy.compactMap(first).first }
+                windows.reversed().lazy.compactMap { first($0) }.first?.becomeFirstResponder()
+            }
+        }
     }
 }
 
@@ -557,6 +566,7 @@ struct SubScreen<Content: View>: View {
                 content
             }.padding(.horizontal, 18).padding(.vertical, 16)
         }.background(Palette.bg)
+        .keyboardDone()  // Tu semana y Tus medidas tienen cifras: sin esto, el teclado numérico no se cerraba
     }
 }
 

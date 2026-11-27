@@ -264,7 +264,7 @@ struct RecordSection: View {
 struct GearSection: View {
     @EnvironmentObject var model: AppModel
     @State private var editing: GearRow?
-    @State private var adding = false
+    @State private var adding = UserDefaults.standard.string(forKey: "sheet") == "new"  // `-sheet new`: el CI abre el formulario
     @State private var deleting: GearRow?
 
     var body: some View {

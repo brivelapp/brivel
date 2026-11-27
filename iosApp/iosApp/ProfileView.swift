@@ -101,7 +101,7 @@ struct ProfileView: View {
     @State private var loaded = false
     @Binding var settings: Bool  // la rueda del Perfil abre Ajustes
     var openGoal: () -> Void = {}
-    @State private var screen: String? = nil  // Tu semana, Objetivo y el material tienen su pantalla (2026-11-23)
+    @State private var screen = UserDefaults.standard.string(forKey: "page")  // `-page week` en el CI; Tu semana, Objetivo y el material tienen su pantalla (2026-11-23)
 
     /// «3 días · 2 h 30 min»: los días con minutos y el total de la semana.
     private func weekLine(_ days: [String: Int]) -> String {

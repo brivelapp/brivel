@@ -7,7 +7,7 @@ private let bodyKeys = ["sleep", "sleepScore", "deepSleep", "remSleep", "hrv", "
 struct ProgressTabView: View {
     @EnvironmentObject var model: AppModel
     let openProfile: () -> Void
-    @State private var page: String? = nil  // Medallas y Tus medidas tienen su pantalla (2026-11-23)
+    @State private var page = UserDefaults.standard.string(forKey: "page")  // `-page measures` en el CI; Medallas y Tus medidas tienen su pantalla (2026-11-23)
 
     var body: some View {
         let _ = model.version

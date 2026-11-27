@@ -62,7 +62,7 @@ private struct Question<Content: View>: View {
 /// Primera vez: bienvenida y una pregunta por pantalla hasta el aviso de salud. Con perfil, solo el objetivo.
 struct OnboardingView: View {
     @EnvironmentObject var model: AppModel
-    @State private var step = -1
+    @State private var step = UserDefaults.standard.object(forKey: "step") == nil ? -1 : UserDefaults.standard.integer(forKey: "step")  // `-step 6` en el CI
     @State private var goal: GoalKind?
     @State private var raceName = ""
     @State private var raceSport = "running"

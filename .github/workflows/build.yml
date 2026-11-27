@@ -94,6 +94,9 @@ jobs:
       # Capturas en el simulador para revisar la interfaz de iOS sin un Mac
       - working-directory: iosApp
         run: |
+          # Teclado de software en el simulador (con el del Mac conectado no sale y no se ve «Listo»)
+          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
+          xcrun simctl list runtimes
           DEVICE=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k in sorted(d, reverse=True) if 'iOS' in k for x in d[k] if x['name'].startswith('iPhone')))")
           xcrun simctl boot "$DEVICE"
           xcrun simctl bootstatus "$DEVICE" -b
@@ -140,6 +143,17 @@ jobs:
             shoot "$1" "$2-perfil-fuerza" -tab 4 -scrollTo fuerza
             shoot "$1" "$2-ajustes" -tab 4 -settings YES
             shoot "$1" "$2-fuerza" -tab 0 -strength auto
+            # «Listo» encima del teclado numérico en cada pantalla con cifras (`-focus YES` abre el teclado en el primer campo)
+            shoot "$1" "$2-teclado-perfil-ano" -tab 4 -focus YES
+            shoot "$1" "$2-teclado-semana" -tab 4 -page week -focus YES
+            shoot "$1" "$2-teclado-medidas" -tab 3 -page measures -focus YES
+            shoot "$1" "$2-teclado-sesion" -tab 2 -page sessions -sheet new -focus YES
+            shoot "$1" "$2-teclado-rutina" -tab 2 -page routines -sheet new -focus YES
+            shoot "$1" "$2-teclado-material" -tab 4 -page gear -sheet new -focus YES
+            xcrun simctl spawn "$1" defaults delete app.brivel brivel.data  # el alta solo sale sin perfil
+            shoot "$1" "$2-teclado-alta-semana" -step 3 -focus YES
+            shoot "$1" "$2-teclado-alta-ano" -step 6 -focus YES
+            xcrun simctl spawn "$1" defaults write app.brivel brivel.data -string "$DATA"
           }
           device() {  # nombre (prefijo) del modelo: su simulador, creado si el sistema no trae uno
             local udid
@@ -173,6 +187,26 @@ jobs:
             fi
             xcrun simctl shutdown "$OTHER"
           done
+          # La versión de iOS más antigua que traiga el runner (si hay otra además de la 26), en su primer iPhone
+          read -r OLDRT OLDTYPE OLDVER < <(xcrun simctl list runtimes -j | python3 -c "
+          import json,sys
+          rs=[r for r in json.load(sys.stdin)['runtimes'] if r['platform']=='iOS' and r['isAvailable']]
+          rs.sort(key=lambda r: [int(x) for x in r['version'].split('.')])
+          old=rs[0] if len(rs)>1 else None
+          t=old and next((d['identifier'] for d in old.get('supportedDeviceTypes',[]) if d['name'].startswith('iPhone')),None)
+          print(old['identifier'],t,old['version']) if t else print('- - -')")
+          if [ "$OLDRT" != "-" ]; then
+            OLD=$(xcrun simctl create "iPhone viejo" "$OLDTYPE" "$OLDRT")
+            xcrun simctl boot "$OLD"
+            xcrun simctl bootstatus "$OLD" -b
+            xcrun simctl install "$OLD" build/Build/Products/Debug-iphonesimulator/Brivel.app
+            xcrun simctl spawn "$OLD" defaults write app.brivel brivel.data -string "$DATA"
+            xcrun simctl ui "$OLD" appearance light
+            sizes "$OLD" "ios-$OLDVER"
+            xcrun simctl shutdown "$OLD"
+          else
+            echo "El runner solo trae una versión de iOS"
+          fi
       - uses: actions/upload-artifact@v7
         with:
           name: ios-screenshots

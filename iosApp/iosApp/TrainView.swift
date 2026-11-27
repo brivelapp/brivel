@@ -11,7 +11,7 @@ struct TrainView: View {
         model.run { model.strengthDate = try model.core.startWorkout(routineId: routineId).date }
     }
 
-    @State private var page: String? = nil  // cada parte, su pantalla (2026-11-23)
+    @State private var page = UserDefaults.standard.string(forKey: "page")  // `-page sessions` en el CI; cada parte, su pantalla (2026-11-23)
 
     private func count(_ n: Int, _ one: String, _ many: String) -> String { n == 0 ? "Ninguna todavía" : n == 1 ? "1 \(one)" : "\(n) \(many)" }
 
