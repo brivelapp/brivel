@@ -144,16 +144,15 @@ jobs:
             shoot "$1" "$2-ajustes" -tab 4 -settings YES
             shoot "$1" "$2-fuerza" -tab 0 -strength auto
             # «Listo» encima del teclado numérico en cada pantalla con cifras (`-focus YES` abre el teclado en el primer campo)
-            shoot "$1" "$2-teclado-perfil-ano" -tab 4 -focus YES
+            shoot "$1" "$2-teclado-perfil-ano" -tab 4 -scrollTo ano -focus YES
             shoot "$1" "$2-teclado-semana" -tab 4 -page week -focus YES
             shoot "$1" "$2-teclado-medidas" -tab 3 -page measures -focus YES
             shoot "$1" "$2-teclado-sesion" -tab 2 -page sessions -sheet new -focus YES
             shoot "$1" "$2-teclado-rutina" -tab 2 -page routines -sheet new -focus YES
             shoot "$1" "$2-teclado-material" -tab 4 -page gear -sheet new -focus YES
-            xcrun simctl spawn "$1" defaults delete app.brivel brivel.data  # el alta solo sale sin perfil
-            shoot "$1" "$2-teclado-alta-semana" -step 3 -focus YES
-            shoot "$1" "$2-teclado-alta-ano" -step 6 -focus YES
-            xcrun simctl spawn "$1" defaults write app.brivel brivel.data -string "$DATA"
+            # El alta solo sale sin perfil: `-brivel.data {}` lo tapa al lanzar (borrarlo con `defaults delete` no llegaba a la app)
+            shoot "$1" "$2-teclado-alta-semana" -step 3 -focus YES -brivel.data "{}"
+            shoot "$1" "$2-teclado-alta-ano" -step 6 -focus YES -brivel.data "{}"
           }
           device() {  # nombre (prefijo) del modelo: su simulador, creado si el sistema no trae uno
             local udid

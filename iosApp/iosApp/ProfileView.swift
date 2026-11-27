@@ -174,7 +174,8 @@ struct ProfileView: View {
                             CheckList(options: levelChoices.map { ($0.0, $0.1, $0.2) }, selected: [draft.level]) { draft.level = $0; save() }
                         }
                     }
-                    Fold(title: "Año de nacimiento", line: draft.birthYear.map(String.init) ?? "Sin poner") {
+                    // `-scrollTo ano`: el CI lo abre para ver «Listo» encima del teclado
+                    Fold(title: "Año de nacimiento", line: draft.birthYear.map(String.init) ?? "Sin poner", startOpen: UserDefaults.standard.string(forKey: "scrollTo") == "ano") {
                         Module {
                             Secondary("Para calcular tus zonas de pulso")
                             TextField("1990", text: Binding(get: { draft.birthYear.map(String.init) ?? "" }, set: { v in
